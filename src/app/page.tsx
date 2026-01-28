@@ -1,5 +1,7 @@
 import pool from '@/db';
 
+export const dynamic = 'force-dynamic';
+
 const IMAGES = {
   GITHUB: "https://lh3.googleusercontent.com/aida-public/AB6AXuCsyAU2EgsJZ03O8IBMq9bUgtjfIghXanHowYoovPvYnNhdQKeEZ2CkGZn3wiHwHQPuPoCvVCO_bhOxXlfmHrx0LFmRNOpa34oaccHswVG9zQ-fr0klDO0KzXdqetmsiDKAyc1yot-ImlZLKTUNHwwkrBWgSnzt2WE2ImQrIFybeQJ9P0gJMzorOWiLa27spGCg4EK-38D7Hy0Vrm0uU-8j27T779o6yj3AL3mWl41MyntqqQO36xDqv7ZEVNE1XV3oA8pPbyUhbyc",
   FIGMA: "https://lh3.googleusercontent.com/aida-public/AB6AXuCQbwfqgozXDF2N1fKlykk89gMkZyPkX_nD_Zq1RasKpwNI4M_PxD-DO7N4NORQt5l994o3fGjFnq8TAmUTIFNrck4mZ8emkgB0QbHZDJIPrnUzlKKM-gOL380KThhOvp3_o-719T4dNHBdEwocNkSzr-zOC3D_9ljzGHjxPIvdi62K2A9xXkuByl1YP6TjxO8HNp4IroNVlQ8SoTiMdXiUEsbB3whFobBP2oeCZpDDi4vSbe7f_tD5PdTi0d3z6sMR7400DAGW-mE",

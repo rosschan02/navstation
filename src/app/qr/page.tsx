@@ -1,6 +1,8 @@
 import pool from '@/db';
 import type { QRCodeItem } from '@/types';
 
+export const dynamic = 'force-dynamic';
+
 export default async function QRPage() {
   const { rows: items } = await pool.query<QRCodeItem>(
     'SELECT * FROM qr_codes ORDER BY sort_order ASC'

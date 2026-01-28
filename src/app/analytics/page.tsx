@@ -1,5 +1,7 @@
 import pool from '@/db';
 
+export const dynamic = 'force-dynamic';
+
 export default async function AnalyticsPage() {
   // Fetch real analytics from DB
   const totalRes = await pool.query(

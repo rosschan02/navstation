@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation';
 import pool from '@/db';
 import type { ResourceItem } from '@/types';
 
+export const dynamic = 'force-dynamic';
+
 const PAGE_CONFIG: Record<string, { title: string; description: string }> = {
   dev:    { title: '开发工具', description: '精选的编程、运维与协作工具' },
   design: { title: '设计资源', description: '灵感、素材与设计系统' },

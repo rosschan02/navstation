@@ -1,6 +1,8 @@
 import pool from '@/db';
 import { AdminClient } from './AdminClient';
 
+export const dynamic = 'force-dynamic';
+
 export default async function AdminPage() {
   const { rows: sites } = await pool.query(`
     SELECT s.*, c.name as category_name, c.label as category_label, c.css_class as category_class
