@@ -73,8 +73,26 @@ CREATE TABLE IF NOT EXISTS click_events (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Software downloads (admin uploads for users to download)
+CREATE TABLE IF NOT EXISTS software (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(200) NOT NULL,
+    description TEXT DEFAULT '',
+    version VARCHAR(50) DEFAULT '',
+    file_name VARCHAR(500) NOT NULL,
+    file_path TEXT NOT NULL,
+    file_size BIGINT NOT NULL,
+    icon VARCHAR(100) DEFAULT 'download',
+    icon_bg VARCHAR(100) DEFAULT 'bg-blue-100',
+    icon_color VARCHAR(100) DEFAULT 'text-blue-600',
+    download_count INTEGER DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_click_events_created_at ON click_events(created_at);
 CREATE INDEX IF NOT EXISTS idx_click_events_target ON click_events(target_type, target_id);
 CREATE INDEX IF NOT EXISTS idx_resources_page ON resources(page);
 CREATE INDEX IF NOT EXISTS idx_sites_status ON sites(status);
+CREATE INDEX IF NOT EXISTS idx_software_created_at ON software(created_at);

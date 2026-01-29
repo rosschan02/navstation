@@ -28,5 +28,5 @@ export default async function ResourcePage({
     [page]
   );
 
-  return <ResourcesClient items={items} page={page} config={config} />;
+  return <ResourcesClient items={items} config={config} />;
 }

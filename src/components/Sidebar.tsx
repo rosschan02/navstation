@@ -22,11 +22,13 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/resources/read', icon: 'menu_book', label: '阅读' },
   { href: '/resources/fun', icon: 'sports_esports', label: '娱乐' },
   { href: '/resources/shop', icon: 'shopping_bag', label: '购物' },
+  { href: '/software', icon: 'download', label: '软件下载' },
 ];
 
 const ADMIN_ITEMS: NavItem[] = [
   { href: '/admin', icon: 'folder_shared', label: '站点管理', requiresAuth: true },
   { href: '/admin/categories', icon: 'category', label: '分类管理', requiresAuth: true },
+  { href: '/admin/software', icon: 'cloud_upload', label: '软件管理', requiresAuth: true },
   { href: '/analytics', icon: 'analytics', label: '数据分析', requiresAuth: true },
 ];
 

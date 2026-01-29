@@ -54,3 +54,19 @@ export interface User {
   username: string;
   role: string;
 }
+
+export interface SoftwareItem {
+  id: number;
+  name: string;
+  description: string;
+  version: string;
+  file_name: string;
+  file_path: string;
+  file_size: number;
+  icon: string;
+  icon_bg: string;
+  icon_color: string;
+  download_count: number;
+  created_at: string;
+  updated_at: string;
+}

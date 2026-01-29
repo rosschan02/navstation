@@ -1,6 +1,6 @@
 # NavStation 导航站
 
-综合导航门户与站点管理系统，提供分类链接导航、后台管理、二维码画廊和数据分析功能。
+综合导航门户与站点管理系统，提供分类链接导航、软件下载、后台管理、二维码画廊和数据分析功能。
 
 ## 技术栈
 
@@ -18,13 +18,16 @@ navstation/
 │   │   ├── page.tsx            # 首页（推荐/常用访问）
 │   │   ├── admin/              # 站点管理后台
 │   │   │   ├── page.tsx        # 站点管理页面
-│   │   │   └── categories/     # 分类管理页面
+│   │   │   ├── categories/     # 分类管理页面
+│   │   │   └── software/       # 软件管理页面
 │   │   ├── analytics/          # 数据分析
 │   │   ├── qr/                 # 公众号/小程序二维码
+│   │   ├── software/           # 软件下载页面
 │   │   ├── resources/[page]/   # 资源页（dev/design/read/fun/shop）
 │   │   └── api/                # RESTful API
 │   │       ├── sites/          # 站点 CRUD
 │   │       ├── resources/      # 资源 CRUD
+│   │       ├── software/       # 软件上传/下载
 │   │       ├── qrcodes/        # 二维码 CRUD
 │   │       ├── categories/     # 分类 CRUD
 │   │       ├── auth/           # 登录/登出/当前用户
@@ -46,6 +49,7 @@ navstation/
 │   │   └── migrations/         # 数据库迁移脚本
 │   └── types/
 │       └── index.ts            # TypeScript 类型定义
+├── uploads/                    # 软件上传目录（最大 4GB）
 ├── Dockerfile
 ├── docker-compose.yml
 ├── DEPLOY.md                   # 部署文档
@@ -114,6 +118,7 @@ docker-compose up -d
 | `categories` | 站点/资源分类 |
 | `sites` | 管理后台的导航站点 |
 | `resources` | 各资源页面的项目（dev/design/read/fun/shop） |
+| `software` | 软件下载资源（支持 4GB 文件） |
 | `qr_codes` | 公众号/小程序二维码 |
 | `users` | 管理员账号（默认 admin/admin） |
 | `click_events` | 点击事件统计 |
@@ -138,6 +143,10 @@ docker-compose up -d
 | `POST /api/categories` | POST | 新增分类 |
 | `PUT /api/categories/:id` | PUT | 更新分类 |
 | `DELETE /api/categories/:id` | DELETE | 删除分类 |
+| `GET /api/software` | GET | 软件列表 |
+| `POST /api/software` | POST | 上传软件（FormData，最大 4GB） |
+| `DELETE /api/software/:id` | DELETE | 删除软件 |
+| `GET /api/software/:id/download` | GET | 下载软件文件 |
 | `POST /api/auth/login` | POST | 管理员登录 |
 | `GET /api/auth/me` | GET | 获取当前用户 |
 | `POST /api/auth/logout` | POST | 退出登录 |
@@ -151,10 +160,17 @@ docker-compose up -d
 
 ## 主要功能
 
+### 用户功能
+
+- **导航浏览**: 浏览各类站点和资源
+- **软件下载**: 下载管理员上传的常用软件（支持大文件）
+- **二维码画廊**: 扫码关注公众号/小程序
+
 ### 工作区（管理员）
 
 - **站点管理**: 添加、编辑、删除导航站点
 - **分类管理**: 管理站点和资源的分类，支持图标选择器
+- **软件管理**: 上传、管理软件下载资源（单文件最大 4GB）
 - **数据分析**: 查看点击统计和访问趋势
 
 ### 图标选择器
@@ -165,14 +181,14 @@ docker-compose up -d
 - 9 种图标颜色
 - 搜索过滤功能
 
-### 资源提交
-
-登录后可在各资源页面（开发工具、设计资源等）直接提交新资源。
-
 ## 数据库迁移
 
 如果从旧版本升级，需要运行迁移脚本：
 
 ```bash
+# v1.1.0 - 分类图标字段
 psql -d your_database -f src/db/migrations/001_add_category_icons.sql
+
+# v1.2.0 - 软件下载表
+psql -d your_database -f src/db/migrations/002_add_software_table.sql
 ```

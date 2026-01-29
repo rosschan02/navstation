@@ -2,6 +2,72 @@
 
 本文件记录 NavStation 导航站的所有重要更新。
 
+## [1.2.0] - 2026-01-29
+
+### 新增
+
+#### 软件下载功能
+- 新增软件下载页面 `/software`，用户可浏览和下载管理员上传的软件
+- 新增软件管理页面 `/admin/software`，管理员可上传、删除软件
+- 支持单文件最大 4GB 上传
+- 支持上传进度显示
+- 支持下载次数统计
+- 支持自定义软件图标和颜色
+- 新增软件 API：
+  - `GET /api/software` - 获取软件列表
+  - `POST /api/software` - 上传软件（FormData）
+  - `DELETE /api/software/:id` - 删除软件
+  - `GET /api/software/:id/download` - 下载软件文件
+
+### 变更
+
+#### UI 优化
+- 移除资源页面的"提交新资源"按钮
+- 优化站点卡片布局：左侧 Logo，右侧名称和说明（水平排列）
+- 卡片标签最多显示 3 个，更加简洁
+
+#### 侧边栏更新
+- 新增"软件下载"导航入口
+- 工作区新增"软件管理"入口
+
+### 数据库变更
+
+#### 新增 software 表
+- `name` - 软件名称
+- `description` - 软件说明
+- `version` - 版本号
+- `file_name` - 原始文件名
+- `file_path` - 存储路径
+- `file_size` - 文件大小（字节）
+- `icon` - 图标名称
+- `icon_bg` - 图标背景色
+- `icon_color` - 图标颜色
+- `download_count` - 下载次数
+
+### 新增文件
+
+```
+src/app/software/page.tsx                    # 软件下载页面
+src/app/software/SoftwareClient.tsx          # 软件下载客户端组件
+src/app/admin/software/page.tsx              # 软件管理页面
+src/app/admin/software/SoftwareAdminClient.tsx # 软件管理客户端组件
+src/app/api/software/route.ts                # 软件列表/上传 API
+src/app/api/software/[id]/route.ts           # 软件删除 API
+src/app/api/software/[id]/download/route.ts  # 软件下载 API
+src/db/migrations/002_add_software_table.sql # 数据库迁移脚本
+uploads/.gitkeep                             # 上传目录占位文件
+```
+
+### 升级指南
+
+如果从 1.1.x 版本升级，需要运行数据库迁移：
+
+```bash
+psql -d your_database -f src/db/migrations/002_add_software_table.sql
+```
+
+---
+
 ## [1.1.0] - 2026-01-29
 
 ### 新增
