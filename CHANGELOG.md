@@ -2,6 +2,65 @@
 
 本文件记录 NavStation 导航站的所有重要更新。
 
+## [2.0.0] - 2026-01-29
+
+### 重大变更
+
+#### 数据库架构重构
+- 合并 `sites`、`resources`、`qr_codes` 表为统一的 `sites` 表
+- `categories` 表新增 `type` 字段，支持三种类型：
+  - `site` - 普通站点
+  - `qrcode` - 二维码（公众号/小程序）
+  - `software` - 软件下载
+- `categories` 表新增 `sort_order` 字段用于排序
+- `sites` 表新增字段：`logo`、`qr_image`、`tags`
+
+#### 首页改造
+- 移除硬编码数据，所有站点从数据库读取
+- 按分类分组显示所有站点
+- 支持分类过滤（点击分类标签筛选）
+- 支持全文搜索（名称、描述、标签）
+- 二维码类型以图片网格形式展示
+
+#### 后台管理改造
+- 统一站点管理：管理所有站点和二维码
+- 分类管理支持选择类型
+- 支持上传站点 Logo 图片
+- 支持上传二维码图片
+- 简化侧边栏导航
+
+### 新增
+
+#### 图片上传功能
+- 新增 `/api/upload` 接口，支持 Logo 和二维码图片上传
+- 新增 `/api/uploads/[...path]` 接口，用于图片服务
+- 图片存储在 `uploads/logos/` 和 `uploads/qr/` 目录
+
+### 删除
+
+#### 移除旧页面和组件
+- 删除 `/qr` 页面（功能合并到首页）
+- 删除 `/resources/[page]` 页面（功能合并到首页）
+- 删除 `AddResourceModal`、`AddSiteModal`、`ResourcesClient` 组件
+- 删除 `/api/qrcodes`、`/api/resources` API
+
+### 升级指南
+
+**重要：此版本有破坏性变更，需要数据库迁移**
+
+```bash
+# 运行迁移脚本（会自动迁移旧数据）
+psql -d your_database -f src/db/migrations/003_unified_sites.sql
+```
+
+或者对于全新部署：
+```bash
+psql -d your_database -f src/db/schema.sql
+psql -d your_database -f src/db/seed.sql
+```
+
+---
+
 ## [1.2.0] - 2026-01-29
 
 ### 新增
