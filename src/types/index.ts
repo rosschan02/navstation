@@ -45,6 +45,7 @@ export interface SoftwareItem {
   icon: string;
   icon_bg: string;
   icon_color: string;
+  sort_order: number;
   download_count: number;
   created_at: string;
   updated_at: string;

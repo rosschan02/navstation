@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import type { Category, SiteData } from '@/types';
 
 interface HomeClientProps {
@@ -9,8 +10,9 @@ interface HomeClientProps {
 }
 
 export function HomeClient({ categories, sites }: HomeClientProps) {
+  const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const selectedCategory = searchParams.get('category') || 'all';
 
   // Filter sites based on search and category
   const filteredSites = useMemo(() => {
@@ -64,10 +66,6 @@ export function HomeClient({ categories, sites }: HomeClientProps) {
     return Object.values(groups).sort((a, b) => a.category.sort_order - b.category.sort_order);
   }, [filteredSites, categories]);
 
-  // Get regular site categories and qrcode categories
-  const siteCategories = categories.filter(c => c.type === 'site');
-  const qrCategories = categories.filter(c => c.type === 'qrcode');
-
   return (
     <div className="flex-1 overflow-y-auto w-full bg-background-light">
       <div className="max-w-[1400px] mx-auto w-full px-6 py-8 flex flex-col gap-6">
@@ -98,52 +96,6 @@ export function HomeClient({ categories, sites }: HomeClientProps) {
               </div>
             </label>
           </div>
-        </section>
-
-        {/* Category Filter Tabs */}
-        <section className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
-          <button
-            onClick={() => setSelectedCategory('all')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
-              selectedCategory === 'all'
-                ? 'bg-primary text-white'
-                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-            }`}
-          >
-            全部
-          </button>
-          {siteCategories.map(category => (
-            <button
-              key={category.id}
-              onClick={() => setSelectedCategory(category.id.toString())}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
-                selectedCategory === category.id.toString()
-                  ? 'bg-primary text-white'
-                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-              }`}
-            >
-              <span className={`material-symbols-outlined text-[18px] ${
-                selectedCategory === category.id.toString() ? '' : category.icon_color
-              }`}>{category.icon}</span>
-              {category.label}
-            </button>
-          ))}
-          {qrCategories.map(category => (
-            <button
-              key={category.id}
-              onClick={() => setSelectedCategory(category.id.toString())}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
-                selectedCategory === category.id.toString()
-                  ? 'bg-primary text-white'
-                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-              }`}
-            >
-              <span className={`material-symbols-outlined text-[18px] ${
-                selectedCategory === category.id.toString() ? '' : category.icon_color
-              }`}>{category.icon}</span>
-              {category.label}
-            </button>
-          ))}
         </section>
 
         {/* Search Results Info */}

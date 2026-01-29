@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import pool from '@/db';
 import { HomeClient } from './HomeClient';
 import type { Category, SiteData } from '@/types';
@@ -24,5 +25,9 @@ export default async function HomePage() {
     ORDER BY c.sort_order ASC, s.sort_order ASC, s.created_at DESC
   `);
 
-  return <HomeClient categories={categories} sites={sites} />;
+  return (
+    <Suspense fallback={<div className="flex-1 bg-background-light" />}>
+      <HomeClient categories={categories} sites={sites} />
+    </Suspense>
+  );
 }

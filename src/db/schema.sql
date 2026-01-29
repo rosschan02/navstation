@@ -48,6 +48,7 @@ CREATE TABLE IF NOT EXISTS software (
     icon VARCHAR(100) DEFAULT 'download',
     icon_bg VARCHAR(100) DEFAULT 'bg-blue-100',
     icon_color VARCHAR(100) DEFAULT 'text-blue-600',
+    sort_order INTEGER DEFAULT 0,
     download_count INTEGER DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()

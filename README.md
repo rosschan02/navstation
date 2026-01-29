@@ -17,6 +17,7 @@ navstation/
 │   ├── app/                    # Next.js App Router
 │   │   ├── page.tsx            # 首页（所有站点按分类展示）
 │   │   ├── HomeClient.tsx      # 首页客户端组件（搜索/过滤）
+│   │   ├── legacy/             # IE10 兼容页面（纯 HTML）
 │   │   ├── admin/              # 后台管理
 │   │   │   ├── page.tsx        # 站点管理（统一管理站点+二维码）
 │   │   │   ├── categories/     # 分类管理
@@ -43,8 +44,9 @@ navstation/
 │   │   ├── schema.sql          # 建表语句
 │   │   ├── seed.sql            # 初始化数据
 │   │   └── migrations/         # 数据库迁移脚本
-│   └── types/
-│       └── index.ts            # TypeScript 类型定义
+│   ├── types/
+│   │   └── index.ts            # TypeScript 类型定义
+│   └── middleware.ts           # 中间件（IE 浏览器检测重定向）
 ├── uploads/                    # 上传文件目录
 │   ├── logos/                  # 站点 Logo
 │   ├── qr/                     # 二维码图片
@@ -182,9 +184,10 @@ docker-compose up -d
 
 ### 用户功能
 
-- **首页导航**: 所有站点按分类分组展示，支持分类过滤和全文搜索
-- **软件下载**: 下载管理员上传的常用软件（支持大文件）
+- **首页导航**: 所有站点按分类分组展示，左侧边栏分类筛选，支持全文搜索
+- **软件下载**: 下载管理员上传的常用软件（支持大文件，按排序显示）
 - **二维码展示**: 公众号/小程序二维码以图片网格形式展示
+- **IE10 兼容**: 自动检测 IE 浏览器并重定向到兼容页面（纯 HTML，无 JS）
 
 ### 工作区（管理员）
 
@@ -214,6 +217,9 @@ psql -d your_database -f src/db/migrations/002_add_software_table.sql
 
 # v2.0.0 - 统一站点架构（重要：会自动迁移旧数据）
 psql -d your_database -f src/db/migrations/003_unified_sites.sql
+
+# v2.1.0 - 软件排序字段
+psql -d your_database -f src/db/migrations/004_add_software_sort_order.sql
 ```
 
 对于全新部署，直接运行：

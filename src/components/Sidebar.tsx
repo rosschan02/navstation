@@ -1,9 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import type { Category } from '@/types';
 
 const AVATAR_URL = "https://lh3.googleusercontent.com/aida-public/AB6AXuC3104b5kXiw4PZePiO9fBovMiepftLrdVAtMSVBV8aUn1EI-W_F6OCUtrCdMAl0oEKjHg_WTszK1_2e4vOO3VLVe5J7oyGUBntqK2fCcO4gQ6zMLxgE6hSW5_Se69QiyotWXogd7-N_e2PjSXO1Kg_JClrFKPBTRiAeEPlwhe3lC1cS1pngM-Y4jPPoki36CSAvA7MWo_-7KrkYPyUNEPfTwAz0RSVw31BPvw5t7hWjlMuNT-9ZoKWv0NM-nKbirlPPNVsIp5s1wg";
 
@@ -14,10 +15,6 @@ interface NavItem {
   requiresAuth?: boolean;
 }
 
-const NAV_ITEMS: NavItem[] = [
-  { href: '/', icon: 'home', label: '首页' },
-  { href: '/software', icon: 'download', label: '软件下载' },
-];
 
 const ADMIN_ITEMS: NavItem[] = [
   { href: '/admin', icon: 'folder_shared', label: '站点管理', requiresAuth: true },
@@ -32,7 +29,21 @@ interface SidebarProps {
 
 export function Sidebar({ onLoginClick }: SidebarProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { isLoggedIn, logout } = useAuth();
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  const selectedCategory = searchParams.get('category') || 'all';
+
+  useEffect(() => {
+    fetch('/api/categories')
+      .then(res => res.json())
+      .then(data => {
+        const filtered = data.filter((c: Category) => c.type === 'site' || c.type === 'qrcode');
+        setCategories(filtered);
+      })
+      .catch(console.error);
+  }, []);
 
   const isActive = (href: string) => {
     if (href === '/') return pathname === '/';
@@ -71,12 +82,41 @@ export function Sidebar({ onLoginClick }: SidebarProps) {
 
         {/* Navigation */}
         <nav className="flex flex-col gap-1 flex-1 overflow-y-auto py-2 no-scrollbar">
-          {NAV_ITEMS.map((item) => (
-            <Link key={item.href} href={item.href} className={getLinkClass(item.href)}>
-              <span className={getIconClass(item.href)}>{item.icon}</span>
-              <span className="text-sm">{item.label}</span>
+          {/* 首页（全部） */}
+          <Link href="/" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors group cursor-pointer ${
+            pathname === '/' && selectedCategory === 'all'
+              ? 'bg-primary/10 text-primary font-semibold'
+              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium'
+          }`}>
+            <span className={`material-symbols-outlined text-[20px] ${
+              pathname === '/' && selectedCategory === 'all' ? 'filled text-primary' : 'group-hover:text-primary'
+            }`}>home</span>
+            <span className="text-sm">首页</span>
+          </Link>
+
+          {/* 分类列表 */}
+          {categories.map((category) => (
+            <Link
+              key={category.id}
+              href={`/?category=${category.id}`}
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors group cursor-pointer ${
+                pathname === '/' && selectedCategory === category.id.toString()
+                  ? 'bg-primary/10 text-primary font-semibold'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium'
+              }`}
+            >
+              <span className={`material-symbols-outlined text-[20px] ${
+                pathname === '/' && selectedCategory === category.id.toString() ? 'text-primary' : category.icon_color + ' group-hover:text-primary'
+              }`}>{category.icon}</span>
+              <span className="text-sm">{category.label}</span>
             </Link>
           ))}
+
+          {/* 软件下载 */}
+          <Link href="/software" className={getLinkClass('/software')}>
+            <span className={getIconClass('/software')}>download</span>
+            <span className="text-sm">软件下载</span>
+          </Link>
 
           <div className="my-2 border-t border-slate-200 mx-2" />
 

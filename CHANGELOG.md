@@ -2,6 +2,48 @@
 
 本文件记录 NavStation 导航站的所有重要更新。
 
+## [2.1.0] - 2026-01-29
+
+### 新增
+
+#### IE10/IE11 兼容支持
+- 新增 `/legacy` 页面，纯 HTML 服务端渲染，兼容 IE10/IE11
+- 新增中间件自动检测 User-Agent，IE 用户自动重定向到兼容页面
+- 兼容页面特点：
+  - 零客户端 JavaScript
+  - 使用 float 布局（避免 Flexbox/Grid）
+  - 内联 CSS（避免加载问题）
+  - 数据库实时数据，与主站同步
+
+#### 软件排序功能
+- `software` 表新增 `sort_order` 字段
+- 软件下载页面按 `sort_order` 排序显示
+
+### 变更
+
+#### 侧边栏布局优化
+- 分类筛选从右侧内容区移至左侧边栏
+- 首页作为"全部"选项，分类按数据库排序直接排列
+- 移除独立的"分类筛选"标题，界面更简洁
+
+### 新增文件
+
+```
+src/middleware.ts                           # IE 浏览器检测中间件
+src/app/legacy/page.tsx                     # IE 兼容页面
+src/db/migrations/004_add_software_sort_order.sql  # 软件排序迁移
+```
+
+### 升级指南
+
+如果从 2.0.x 版本升级，需要运行数据库迁移：
+
+```bash
+psql -d your_database -f src/db/migrations/004_add_software_sort_order.sql
+```
+
+---
+
 ## [2.0.0] - 2026-01-29
 
 ### 重大变更

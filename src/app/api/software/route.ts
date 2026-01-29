@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
       params.push(categoryId);
     }
 
-    query += ' ORDER BY s.created_at DESC';
+    query += ' ORDER BY s.sort_order ASC, s.created_at DESC';
 
     const { rows } = await pool.query(query, params);
     return NextResponse.json(rows);
@@ -49,6 +49,7 @@ export async function POST(request: NextRequest) {
     const icon = formData.get('icon') as string || 'download';
     const icon_bg = formData.get('icon_bg') as string || 'bg-blue-100';
     const icon_color = formData.get('icon_color') as string || 'text-blue-600';
+    const sort_order = parseInt(formData.get('sort_order') as string || '0', 10);
     const file = formData.get('file') as File | null;
 
     if (!name) {
@@ -93,10 +94,10 @@ export async function POST(request: NextRequest) {
 
     // Insert into database
     const { rows } = await pool.query(
-      `INSERT INTO software (name, description, version, category_id, file_name, file_path, file_size, icon, icon_bg, icon_color)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      `INSERT INTO software (name, description, version, category_id, file_name, file_path, file_size, icon, icon_bg, icon_color, sort_order)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        RETURNING *`,
-      [name, description, version, finalCategoryId, file.name, `software/${fileName}`, file.size, icon, icon_bg, icon_color]
+      [name, description, version, finalCategoryId, file.name, `software/${fileName}`, file.size, icon, icon_bg, icon_color, sort_order]
     );
 
     return NextResponse.json(rows[0], { status: 201 });
