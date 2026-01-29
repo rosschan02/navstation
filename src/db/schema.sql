@@ -7,6 +7,9 @@ CREATE TABLE IF NOT EXISTS categories (
     name VARCHAR(100) NOT NULL UNIQUE,
     label VARCHAR(100) NOT NULL,
     css_class VARCHAR(200) DEFAULT '',
+    icon VARCHAR(100) DEFAULT '',
+    icon_bg VARCHAR(100) DEFAULT '',
+    icon_color VARCHAR(100) DEFAULT '',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 

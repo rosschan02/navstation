@@ -4,14 +4,14 @@
 -- ============================================================
 -- Categories
 -- ============================================================
-INSERT INTO categories (name, label, css_class) VALUES
-  ('Search Engines',    '搜索引擎', 'bg-blue-100 text-blue-800'),
-  ('Developer Tools',   '开发工具', 'bg-purple-100 text-purple-800'),
-  ('Design Resources',  '设计资源', 'bg-pink-100 text-pink-800'),
-  ('Social Media',      '社交媒体', 'bg-indigo-100 text-indigo-800'),
-  ('Shopping',          '在线购物', 'bg-orange-100 text-orange-800'),
-  ('Entertainment',     '娱乐媒体', 'bg-red-100 text-red-800'),
-  ('Other',             '其他',     'bg-slate-100 text-slate-800')
+INSERT INTO categories (name, label, css_class, icon, icon_bg, icon_color) VALUES
+  ('Search Engines',    '搜索引擎', 'bg-blue-100 text-blue-800',   'search',          'bg-blue-100',   'text-blue-600'),
+  ('Developer Tools',   '开发工具', 'bg-purple-100 text-purple-800', 'terminal',      'bg-purple-100', 'text-purple-600'),
+  ('Design Resources',  '设计资源', 'bg-pink-100 text-pink-800',   'palette',         'bg-pink-100',   'text-pink-600'),
+  ('Social Media',      '社交媒体', 'bg-indigo-100 text-indigo-800', 'forum',         'bg-indigo-100', 'text-indigo-600'),
+  ('Shopping',          '在线购物', 'bg-orange-100 text-orange-800', 'shopping_bag',  'bg-orange-100', 'text-orange-600'),
+  ('Entertainment',     '娱乐媒体', 'bg-red-100 text-red-800',     'sports_esports',  'bg-red-100',    'text-red-600'),
+  ('Other',             '其他',     'bg-slate-100 text-slate-800', 'folder',          'bg-slate-100',  'text-slate-600')
 ON CONFLICT (name) DO NOTHING;
 
 -- ============================================================

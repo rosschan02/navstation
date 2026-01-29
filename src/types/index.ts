@@ -44,6 +44,9 @@ export interface Category {
   name: string;
   label: string;
   css_class: string;
+  icon?: string;
+  icon_bg?: string;
+  icon_color?: string;
 }
 
 export interface User {

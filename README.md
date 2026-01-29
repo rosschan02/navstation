@@ -17,6 +17,8 @@ navstation/
 │   ├── app/                    # Next.js App Router
 │   │   ├── page.tsx            # 首页（推荐/常用访问）
 │   │   ├── admin/              # 站点管理后台
+│   │   │   ├── page.tsx        # 站点管理页面
+│   │   │   └── categories/     # 分类管理页面
 │   │   ├── analytics/          # 数据分析
 │   │   ├── qr/                 # 公众号/小程序二维码
 │   │   ├── resources/[page]/   # 资源页（dev/design/read/fun/shop）
@@ -24,25 +26,30 @@ navstation/
 │   │       ├── sites/          # 站点 CRUD
 │   │       ├── resources/      # 资源 CRUD
 │   │       ├── qrcodes/        # 二维码 CRUD
-│   │       ├── categories/     # 分类列表
+│   │       ├── categories/     # 分类 CRUD
 │   │       ├── auth/           # 登录/登出/当前用户
 │   │       └── analytics/      # 统计查询 + 点击记录
 │   ├── components/             # 客户端组件
 │   │   ├── AppShell.tsx        # 布局壳（Sidebar + 模态框）
 │   │   ├── Sidebar.tsx         # 侧边栏导航
 │   │   ├── LoginModal.tsx      # 登录弹窗
-│   │   └── AddSiteModal.tsx    # 添加站点弹窗
+│   │   ├── AddSiteModal.tsx    # 添加站点弹窗
+│   │   ├── AddResourceModal.tsx # 添加资源弹窗
+│   │   ├── IconPicker.tsx      # 图标选择器组件
+│   │   └── ResourcesClient.tsx # 资源页客户端组件
 │   ├── contexts/
 │   │   └── AuthContext.tsx      # 认证状态管理
 │   ├── db/
 │   │   ├── index.ts            # PostgreSQL 连接池
 │   │   ├── schema.sql          # 建表语句
-│   │   └── seed.sql            # 初始化数据
+│   │   ├── seed.sql            # 初始化数据
+│   │   └── migrations/         # 数据库迁移脚本
 │   └── types/
 │       └── index.ts            # TypeScript 类型定义
 ├── Dockerfile
 ├── docker-compose.yml
-└── DEPLOY.md                   # 部署文档
+├── DEPLOY.md                   # 部署文档
+└── CHANGELOG.md                # 更新日志
 ```
 
 ## 快速开始
@@ -128,6 +135,9 @@ docker-compose up -d
 | `PUT /api/qrcodes/:id` | PUT | 更新二维码 |
 | `DELETE /api/qrcodes/:id` | DELETE | 删除二维码 |
 | `GET /api/categories` | GET | 分类列表 |
+| `POST /api/categories` | POST | 新增分类 |
+| `PUT /api/categories/:id` | PUT | 更新分类 |
+| `DELETE /api/categories/:id` | DELETE | 删除分类 |
 | `POST /api/auth/login` | POST | 管理员登录 |
 | `GET /api/auth/me` | GET | 获取当前用户 |
 | `POST /api/auth/logout` | POST | 退出登录 |
@@ -138,3 +148,31 @@ docker-compose up -d
 
 - 用户名: `admin`
 - 密码: `admin`
+
+## 主要功能
+
+### 工作区（管理员）
+
+- **站点管理**: 添加、编辑、删除导航站点
+- **分类管理**: 管理站点和资源的分类，支持图标选择器
+- **数据分析**: 查看点击统计和访问趋势
+
+### 图标选择器
+
+系统内置了基于 Google Material Symbols 的图标选择器，支持：
+- 60+ 常用图标可选
+- 9 种背景颜色
+- 9 种图标颜色
+- 搜索过滤功能
+
+### 资源提交
+
+登录后可在各资源页面（开发工具、设计资源等）直接提交新资源。
+
+## 数据库迁移
+
+如果从旧版本升级，需要运行迁移脚本：
+
+```bash
+psql -d your_database -f src/db/migrations/001_add_category_icons.sql
+```

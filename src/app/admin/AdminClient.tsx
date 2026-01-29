@@ -1,8 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { SiteData } from '@/types';
+import { AddSiteModal } from '@/components/AddSiteModal';
 
 // Category display mapping
 const CATEGORY_LABELS: Record<string, string> = {
@@ -16,9 +17,14 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 export function AdminClient({ initialSites }: { initialSites: SiteData[] }) {
   const router = useRouter();
+  const [isAddSiteModalOpen, setIsAddSiteModalOpen] = useState(false);
 
   const handleDelete = async (id: number) => {
     await fetch(`/api/sites/${id}`, { method: 'DELETE' });
+    router.refresh();
+  };
+
+  const handleSiteSaved = () => {
     router.refresh();
   };
 
@@ -49,6 +55,13 @@ export function AdminClient({ initialSites }: { initialSites: SiteData[] }) {
             <h1 className="text-3xl font-bold text-slate-900 tracking-tight">站点管理</h1>
             <p className="text-slate-500 mt-1">管理、编辑和组织常用导航链接。</p>
           </div>
+          <button
+            onClick={() => setIsAddSiteModalOpen(true)}
+            className="flex items-center justify-center gap-2 rounded-lg h-10 px-4 bg-primary hover:bg-blue-600 text-white text-sm font-bold shadow-md shadow-primary/20 transition-all active:scale-[0.98]"
+          >
+            <span className="material-symbols-outlined text-[20px]">add</span>
+            <span>添加站点</span>
+          </button>
         </div>
 
         {/* Stats */}
@@ -172,6 +185,12 @@ export function AdminClient({ initialSites }: { initialSites: SiteData[] }) {
           </div>
         </div>
       </div>
+
+      <AddSiteModal
+        isOpen={isAddSiteModalOpen}
+        onClose={() => setIsAddSiteModalOpen(false)}
+        onSaved={handleSiteSaved}
+      />
     </div>
   );
 }

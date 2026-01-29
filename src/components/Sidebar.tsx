@@ -26,15 +26,15 @@ const NAV_ITEMS: NavItem[] = [
 
 const ADMIN_ITEMS: NavItem[] = [
   { href: '/admin', icon: 'folder_shared', label: '站点管理', requiresAuth: true },
+  { href: '/admin/categories', icon: 'category', label: '分类管理', requiresAuth: true },
   { href: '/analytics', icon: 'analytics', label: '数据分析', requiresAuth: true },
 ];
 
 interface SidebarProps {
   onLoginClick: () => void;
-  onAddSite: () => void;
 }
 
-export function Sidebar({ onLoginClick, onAddSite }: SidebarProps) {
+export function Sidebar({ onLoginClick }: SidebarProps) {
   const pathname = usePathname();
   const { isLoggedIn, logout } = useAuth();
 
@@ -104,17 +104,7 @@ export function Sidebar({ onLoginClick, onAddSite }: SidebarProps) {
 
         {/* Footer */}
         <div className="mt-auto pt-4">
-          {isLoggedIn && (
-            <button
-              onClick={onAddSite}
-              className="w-full flex items-center justify-center gap-2 rounded-lg h-10 px-4 bg-primary hover:bg-blue-600 text-white text-sm font-bold shadow-md shadow-primary/20 transition-all active:scale-[0.98]"
-            >
-              <span className="material-symbols-outlined text-[20px]">add</span>
-              <span>添加站点</span>
-            </button>
-          )}
-
-          <div className="flex items-center gap-3 mt-4 px-2 py-2 cursor-pointer rounded-lg hover:bg-slate-100 transition-colors group relative">
+          <div className="flex items-center gap-3 px-2 py-2 cursor-pointer rounded-lg hover:bg-slate-100 transition-colors group relative">
             <div
               className="size-8 rounded-full bg-slate-200 bg-cover bg-center"
               style={{ backgroundImage: `url('${AVATAR_URL}')` }}
