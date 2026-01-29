@@ -26,7 +26,7 @@ export async function DELETE(
     // Delete from database
     await pool.query('DELETE FROM software WHERE id = $1', [id]);
 
-    // Delete file from disk
+    // Delete file from disk (file_path includes subdirectory like 'software/filename')
     const filePath = path.join(process.cwd(), 'uploads', existing[0].file_path);
     if (existsSync(filePath)) {
       await unlink(filePath);

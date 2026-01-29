@@ -24,6 +24,7 @@ export async function GET(
     }
 
     const software = rows[0];
+    // file_path now includes 'software/' prefix
     const filePath = path.join(process.cwd(), 'uploads', software.file_path);
 
     if (!existsSync(filePath)) {

@@ -15,13 +15,7 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { href: '/', icon: 'star', label: '推荐' },
-  { href: '/qr', icon: 'qr_code_2', label: '公众号/小程序' },
-  { href: '/resources/dev', icon: 'terminal', label: '开发工具' },
-  { href: '/resources/design', icon: 'palette', label: '设计资源' },
-  { href: '/resources/read', icon: 'menu_book', label: '阅读' },
-  { href: '/resources/fun', icon: 'sports_esports', label: '娱乐' },
-  { href: '/resources/shop', icon: 'shopping_bag', label: '购物' },
+  { href: '/', icon: 'home', label: '首页' },
   { href: '/software', icon: 'download', label: '软件下载' },
 ];
 
@@ -71,7 +65,7 @@ export function Sidebar({ onLoginClick }: SidebarProps) {
           </div>
           <div className="flex flex-col">
             <h1 className="text-slate-900 text-base font-bold leading-tight">导航站</h1>
-            <p className="text-slate-500 text-xs font-normal">v2.2 中文版</p>
+            <p className="text-slate-500 text-xs font-normal">v2.0 中文版</p>
           </div>
         </div>
 
