@@ -3,10 +3,11 @@
 import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { IconPicker } from '@/components/IconPicker';
-import type { SoftwareItem } from '@/types';
+import type { SoftwareItem, Category } from '@/types';
 
 interface SoftwareAdminClientProps {
   initialSoftware: SoftwareItem[];
+  categories: Category[];
 }
 
 function formatFileSize(bytes: number): string {
@@ -17,7 +18,7 @@ function formatFileSize(bytes: number): string {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
-export function SoftwareAdminClient({ initialSoftware }: SoftwareAdminClientProps) {
+export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdminClientProps) {
   const [software, setSoftware] = useState<SoftwareItem[]>(initialSoftware);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -27,6 +28,7 @@ export function SoftwareAdminClient({ initialSoftware }: SoftwareAdminClientProp
     name: '',
     description: '',
     version: '',
+    category_id: categories.length > 0 ? categories[0].id.toString() : '',
     icon: 'download',
     icon_bg: 'bg-blue-100',
     icon_color: 'text-blue-600',
@@ -71,6 +73,9 @@ export function SoftwareAdminClient({ initialSoftware }: SoftwareAdminClientProp
       data.append('name', formData.name);
       data.append('description', formData.description);
       data.append('version', formData.version);
+      if (formData.category_id) {
+        data.append('category_id', formData.category_id);
+      }
       data.append('icon', formData.icon);
       data.append('icon_bg', formData.icon_bg);
       data.append('icon_color', formData.icon_color);
@@ -136,6 +141,7 @@ export function SoftwareAdminClient({ initialSoftware }: SoftwareAdminClientProp
       name: '',
       description: '',
       version: '',
+      category_id: categories.length > 0 ? categories[0].id.toString() : '',
       icon: 'download',
       icon_bg: 'bg-blue-100',
       icon_color: 'text-blue-600',
@@ -359,6 +365,24 @@ export function SoftwareAdminClient({ initialSoftware }: SoftwareAdminClientProp
                   placeholder="例如：1.85.0"
                 />
               </div>
+
+              {/* Category */}
+              {categories.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">分类</label>
+                  <select
+                    value={formData.category_id}
+                    onChange={(e) => setFormData(prev => ({ ...prev, category_id: e.target.value }))}
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all bg-white"
+                  >
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               {/* Description */}
               <div>

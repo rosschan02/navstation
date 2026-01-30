@@ -2,6 +2,35 @@
 
 本文件记录 NavStation 导航站的所有重要更新。
 
+## [2.1.2] - 2026-01-29
+
+### 新增
+
+#### 软件分类支持
+- 后台上传软件时可选择分类
+- 软件下载页面按分类分组显示（与首页站点风格一致）
+- 每个分类显示图标、名称和软件数量
+
+### 变更
+
+#### IE10 兼容页面优化
+- 重构为 route handler，直接返回 HTML（解决布局嵌套问题）
+- 移除侧边栏，纯内容展示
+- 新增软件下载分类显示
+- 站点卡片 4 列、二维码 6 列、软件 3 列布局
+
+### 修改文件
+
+```
+src/app/admin/software/page.tsx              # 传入软件分类列表
+src/app/admin/software/SoftwareAdminClient.tsx  # 添加分类选择下拉框
+src/app/software/page.tsx                    # 传入软件分类列表
+src/app/software/SoftwareClient.tsx          # 按分类分组显示
+src/app/legacy/route.ts                      # 重构为 route handler（原 page.tsx）
+```
+
+---
+
 ## [2.1.1] - 2026-01-29
 
 ### 修复
