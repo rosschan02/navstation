@@ -2,6 +2,23 @@
 
 本文件记录 NavStation 导航站的所有重要更新。
 
+## [2.1.1] - 2026-01-29
+
+### 修复
+
+#### Docker 上传权限问题
+- Dockerfile 中创建 `/app/uploads/logos` 和 `/app/uploads/qr` 目录
+- 设置 `nextjs` 用户对 uploads 目录的写权限
+- docker-compose.yml 添加 `uploads` volume 持久化上传文件
+
+### 变更
+
+#### 站点卡片简化
+- 移除站点卡片中的标签显示，界面更简洁
+- 优化文字内容垂直居中对齐
+
+---
+
 ## [2.1.0] - 2026-01-29
 
 ### 新增

@@ -31,6 +31,10 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
+# 创建 uploads 目录并设置权限
+RUN mkdir -p /app/uploads/logos /app/uploads/qr && \
+    chown -R nextjs:nodejs /app/uploads
+
 # 复制数据库迁移脚本（供初始化使用）
 COPY --from=builder /app/src/db/schema.sql ./src/db/schema.sql
 COPY --from=builder /app/src/db/seed.sql ./src/db/seed.sql

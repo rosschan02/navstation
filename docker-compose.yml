@@ -30,9 +30,12 @@ services:
     environment:
       DATABASE_URL: postgresql://navstation:navstation123@db:5432/navstation
       JWT_SECRET: navstation-secret-change-me-in-production
+    volumes:
+      - uploads:/app/uploads
     depends_on:
       db:
         condition: service_healthy
 
 volumes:
   pgdata:
+  uploads:

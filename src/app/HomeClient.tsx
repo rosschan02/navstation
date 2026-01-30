@@ -171,21 +171,12 @@ export function HomeClient({ categories, sites }: HomeClientProps) {
                       </div>
 
                       {/* Info */}
-                      <div className="flex flex-col min-w-0 flex-1">
+                      <div className="flex flex-col justify-center min-w-0 flex-1">
                         <div className="flex items-center gap-2">
                           <h3 className="text-base font-semibold text-slate-900 group-hover:text-primary transition-colors truncate">{site.name}</h3>
                           <span className="material-symbols-outlined text-slate-300 group-hover:text-primary group-hover:translate-x-0.5 transition-all text-[18px] shrink-0">arrow_forward</span>
                         </div>
                         <p className="text-slate-500 text-sm line-clamp-1 mt-0.5">{site.description}</p>
-                        {site.tags && site.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {site.tags.slice(0, 3).map((tag) => (
-                              <span key={tag} className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-slate-50 text-slate-500 border border-slate-100">
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        )}
                       </div>
                     </a>
                   ))}
