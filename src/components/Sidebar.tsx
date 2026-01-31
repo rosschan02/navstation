@@ -6,7 +6,6 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Category, SiteSettings } from '@/types';
 
-const AVATAR_URL = "https://lh3.googleusercontent.com/aida-public/AB6AXuC3104b5kXiw4PZePiO9fBovMiepftLrdVAtMSVBV8aUn1EI-W_F6OCUtrCdMAl0oEKjHg_WTszK1_2e4vOO3VLVe5J7oyGUBntqK2fCcO4gQ6zMLxgE6hSW5_Se69QiyotWXogd7-N_e2PjSXO1Kg_JClrFKPBTRiAeEPlwhe3lC1cS1pngM-Y4jPPoki36CSAvA7MWo_-7KrkYPyUNEPfTwAz0RSVw31BPvw5t7hWjlMuNT-9ZoKWv0NM-nKbirlPPNVsIp5s1wg";
 
 interface NavItem {
   href: string;
@@ -20,8 +19,9 @@ const ADMIN_ITEMS: NavItem[] = [
   { href: '/admin', icon: 'folder_shared', label: '站点管理', requiresAuth: true },
   { href: '/admin/categories', icon: 'category', label: '分类管理', requiresAuth: true },
   { href: '/admin/software', icon: 'cloud_upload', label: '软件管理', requiresAuth: true },
-  { href: '/admin/settings', icon: 'settings', label: '站点设置', requiresAuth: true },
   { href: '/analytics', icon: 'analytics', label: '数据分析', requiresAuth: true },
+  { href: '/admin/profile', icon: 'person', label: '账号设置', requiresAuth: true },
+  { href: '/admin/settings', icon: 'tune', label: '站点设置', requiresAuth: true },
 ];
 
 interface SidebarProps {
@@ -39,7 +39,7 @@ const DEFAULT_SETTINGS: SiteSettings = {
 export function Sidebar({ onLoginClick }: SidebarProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { isLoggedIn, logout } = useAuth();
+  const { user, isLoggedIn, logout } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
   const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SETTINGS);
 
@@ -62,6 +62,7 @@ export function Sidebar({ onLoginClick }: SidebarProps) {
 
   const isActive = (href: string) => {
     if (href === '/') return pathname === '/';
+    if (href === '/admin') return pathname === '/admin';
     return pathname.startsWith(href);
   };
 
@@ -164,12 +165,15 @@ export function Sidebar({ onLoginClick }: SidebarProps) {
         {/* Footer */}
         <div className="mt-auto pt-4">
           <div className="flex items-center gap-3 px-2 py-2 cursor-pointer rounded-lg hover:bg-slate-100 transition-colors group relative">
-            <div
-              className="size-8 rounded-full bg-slate-200 bg-cover bg-center"
-              style={{ backgroundImage: `url('${AVATAR_URL}')` }}
-            />
+            <div className="size-8 rounded-full bg-slate-200 overflow-hidden flex items-center justify-center">
+              {user?.avatar ? (
+                <img src={user.avatar} alt="头像" className="size-8 object-cover" />
+              ) : (
+                <span className="material-symbols-outlined text-slate-400 text-[20px]">person</span>
+              )}
+            </div>
             <div className="flex flex-col overflow-hidden">
-              <span className="text-sm font-medium text-slate-900 truncate">{isLoggedIn ? '管理员' : '访客用户'}</span>
+              <span className="text-sm font-medium text-slate-900 truncate">{isLoggedIn ? (user?.username || '管理员') : '访客用户'}</span>
               <span className="text-xs text-slate-500 truncate">{isLoggedIn ? '已登录' : '只读模式'}</span>
             </div>
 

@@ -8,6 +8,7 @@ interface AuthContextType {
   isLoggedIn: boolean;
   login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
   loading: boolean;
 }
 
@@ -16,6 +17,7 @@ const AuthContext = createContext<AuthContextType>({
   isLoggedIn: false,
   login: async () => ({ success: false }),
   logout: async () => {},
+  refreshUser: async () => {},
   loading: true,
 });
 
@@ -53,8 +55,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    try {
+      const res = await fetch('/api/auth/me');
+      const data = await res.json();
+      if (data.user) setUser(data.user);
+    } catch {
+      // ignore errors
+    }
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, isLoggedIn: !!user, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, isLoggedIn: !!user, login, logout, refreshUser, loading }}>
       {children}
     </AuthContext.Provider>
   );

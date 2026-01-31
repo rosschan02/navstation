@@ -58,6 +58,7 @@ export interface User {
   id: number;
   username: string;
   role: string;
+  avatar?: string;
 }
 
 // Grouped sites by category for homepage display

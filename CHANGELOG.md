@@ -14,10 +14,22 @@
 - 设置实时同步到侧边栏、页面标题、页脚
 - IE10 兼容页面同步显示设置
 
+#### 账号设置功能
+- 新增账号设置页面 `/admin/profile`
+- 支持上传和修改管理员头像
+- 支持修改登录密码（需验证旧密码）
+- 侧边栏底部显示用户头像和用户名
+
 #### 数据库变更
 - 新增 `site_settings` 表存储全局配置
+- `users` 表新增 `avatar` 字段
 
 ### 变更
+
+#### 工作区菜单优化
+- 修复站点管理高亮问题（精确匹配 `/admin` 路径）
+- 调整菜单顺序：账号设置、站点设置移至最后
+- 侧边栏底部显示实际用户名和头像
 
 #### IE10 兼容页面优化
 - 头部背景改为与页面一致的灰色
@@ -27,22 +39,23 @@
 ### 新增文件
 
 ```
-src/app/api/settings/route.ts           # 设置 API (GET/PUT)
-src/app/admin/settings/page.tsx         # 设置页面
-src/app/admin/settings/SettingsClient.tsx  # 设置表单组件
-docs/plans/2026-01-31-site-settings-design.md  # 设计文档
+src/app/api/settings/route.ts           # 站点设置 API
+src/app/api/auth/profile/route.ts       # 头像更新 API
+src/app/api/auth/password/route.ts      # 密码修改 API
+src/app/admin/settings/page.tsx         # 站点设置页面
+src/app/admin/settings/SettingsClient.tsx
+src/app/admin/profile/page.tsx          # 账号设置页面
+src/app/admin/profile/ProfileClient.tsx
 ```
 
 ### 修改文件
 
 ```
-src/db/schema.sql                       # 新增 site_settings 表
-src/types/index.ts                      # 新增 SiteSettings 类型
-src/components/Sidebar.tsx              # 动态显示站点信息 + 新增菜单项
-src/app/layout.tsx                      # 动态 metadata
-src/app/page.tsx                        # 传递页脚文本
-src/app/HomeClient.tsx                  # 动态页脚
-src/app/legacy/route.ts                 # 同步站点设置
+src/db/schema.sql                       # 新增 site_settings 表，users 表增加 avatar
+src/types/index.ts                      # 新增 SiteSettings 类型，User 增加 avatar
+src/components/Sidebar.tsx              # 菜单修复 + 动态头像
+src/contexts/AuthContext.tsx            # 新增 refreshUser 方法
+src/app/api/auth/me/route.ts            # 返回用户头像
 ```
 
 ### 升级指南
@@ -50,6 +63,7 @@ src/app/legacy/route.ts                 # 同步站点设置
 如果从 2.1.x 版本升级，需要运行数据库迁移：
 
 ```sql
+-- 站点设置表
 CREATE TABLE IF NOT EXISTS site_settings (
     key VARCHAR(100) PRIMARY KEY,
     value TEXT NOT NULL,
@@ -63,6 +77,9 @@ INSERT INTO site_settings (key, value) VALUES
     ('footer_text', '© 2024 通用站点导航。保留所有权利。'),
     ('logo_url', '')
 ON CONFLICT (key) DO NOTHING;
+
+-- 用户头像字段
+ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar TEXT DEFAULT '';
 ```
 
 ---

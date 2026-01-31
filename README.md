@@ -169,8 +169,10 @@ docker-compose up -d
 | 路径 | 方法 | 说明 |
 |------|------|------|
 | `POST /api/auth/login` | POST | 管理员登录 |
-| `GET /api/auth/me` | GET | 获取当前用户 |
+| `GET /api/auth/me` | GET | 获取当前用户（含头像） |
 | `POST /api/auth/logout` | POST | 退出登录 |
+| `PUT /api/auth/profile` | PUT | 更新头像 |
+| `PUT /api/auth/password` | PUT | 修改密码 |
 
 ### 数据分析
 | 路径 | 方法 | 说明 |
