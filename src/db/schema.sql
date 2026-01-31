@@ -72,6 +72,22 @@ CREATE TABLE IF NOT EXISTS click_events (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Site settings (global configuration)
+CREATE TABLE IF NOT EXISTS site_settings (
+    key VARCHAR(100) PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Default settings
+INSERT INTO site_settings (key, value) VALUES
+    ('site_name', '导航站'),
+    ('site_description', '综合导航门户与站点管理仪表板'),
+    ('site_version', 'v2.0 中文版'),
+    ('footer_text', '© 2024 通用站点导航。保留所有权利。'),
+    ('logo_url', '')
+ON CONFLICT (key) DO NOTHING;
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_sites_category ON sites(category_id);
 CREATE INDEX IF NOT EXISTS idx_sites_status ON sites(status);

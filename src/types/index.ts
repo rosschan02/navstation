@@ -64,3 +64,12 @@ export interface User {
 export interface CategoryWithSites extends Category {
   sites: SiteData[];
 }
+
+// Global site settings
+export interface SiteSettings {
+  site_name: string;
+  site_description: string;
+  site_version: string;
+  footer_text: string;
+  logo_url: string;
+}

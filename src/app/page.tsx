@@ -5,6 +5,15 @@ import type { Category, SiteData } from '@/types';
 
 export const dynamic = 'force-dynamic';
 
+async function getFooterText(): Promise<string> {
+  try {
+    const { rows } = await pool.query('SELECT value FROM site_settings WHERE key = $1', ['footer_text']);
+    return rows[0]?.value || '© 2024 通用站点导航。保留所有权利。';
+  } catch {
+    return '© 2024 通用站点导航。保留所有权利。';
+  }
+}
+
 export default async function HomePage() {
   // Fetch categories (site type only, excluding software)
   const { rows: categories } = await pool.query<Category>(`
@@ -25,9 +34,11 @@ export default async function HomePage() {
     ORDER BY c.sort_order ASC, s.sort_order ASC, s.created_at DESC
   `);
 
+  const footerText = await getFooterText();
+
   return (
     <Suspense fallback={<div className="flex-1 bg-background-light" />}>
-      <HomeClient categories={categories} sites={sites} />
+      <HomeClient categories={categories} sites={sites} footerText={footerText} />
     </Suspense>
   );
 }

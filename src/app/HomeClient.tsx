@@ -7,9 +7,10 @@ import type { Category, SiteData } from '@/types';
 interface HomeClientProps {
   categories: Category[];
   sites: SiteData[];
+  footerText?: string;
 }
 
-export function HomeClient({ categories, sites }: HomeClientProps) {
+export function HomeClient({ categories, sites, footerText }: HomeClientProps) {
   const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const selectedCategory = searchParams.get('category') || 'all';
@@ -188,7 +189,7 @@ export function HomeClient({ categories, sites }: HomeClientProps) {
 
         {/* Footer */}
         <div className="w-full py-6 text-center text-slate-400 text-xs border-t border-slate-200 mt-8">
-          <p>&copy; 2024 通用站点导航。保留所有权利。</p>
+          <p>{footerText || '© 2024 通用站点导航。保留所有权利。'}</p>
         </div>
       </div>
     </div>

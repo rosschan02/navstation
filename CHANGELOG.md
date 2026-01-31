@@ -2,6 +2,71 @@
 
 本文件记录 NavStation 导航站的所有重要更新。
 
+## [2.2.0] - 2026-01-31
+
+### 新增
+
+#### 站点设置功能
+- 新增站点设置管理页面 `/admin/settings`
+- 支持自定义站点名称、描述、版本号
+- 支持上传自定义 Logo（替换默认火箭图标）
+- 支持自定义页脚版权信息
+- 设置实时同步到侧边栏、页面标题、页脚
+- IE10 兼容页面同步显示设置
+
+#### 数据库变更
+- 新增 `site_settings` 表存储全局配置
+
+### 变更
+
+#### IE10 兼容页面优化
+- 头部背景改为与页面一致的灰色
+- Logo 与标题并排显示
+- 移除描述文字和搜索提示
+
+### 新增文件
+
+```
+src/app/api/settings/route.ts           # 设置 API (GET/PUT)
+src/app/admin/settings/page.tsx         # 设置页面
+src/app/admin/settings/SettingsClient.tsx  # 设置表单组件
+docs/plans/2026-01-31-site-settings-design.md  # 设计文档
+```
+
+### 修改文件
+
+```
+src/db/schema.sql                       # 新增 site_settings 表
+src/types/index.ts                      # 新增 SiteSettings 类型
+src/components/Sidebar.tsx              # 动态显示站点信息 + 新增菜单项
+src/app/layout.tsx                      # 动态 metadata
+src/app/page.tsx                        # 传递页脚文本
+src/app/HomeClient.tsx                  # 动态页脚
+src/app/legacy/route.ts                 # 同步站点设置
+```
+
+### 升级指南
+
+如果从 2.1.x 版本升级，需要运行数据库迁移：
+
+```sql
+CREATE TABLE IF NOT EXISTS site_settings (
+    key VARCHAR(100) PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+INSERT INTO site_settings (key, value) VALUES
+    ('site_name', '导航站'),
+    ('site_description', '综合导航门户与站点管理仪表板'),
+    ('site_version', 'v2.0 中文版'),
+    ('footer_text', '© 2024 通用站点导航。保留所有权利。'),
+    ('logo_url', '')
+ON CONFLICT (key) DO NOTHING;
+```
+
+---
+
 ## [2.1.2] - 2026-01-29
 
 ### 新增

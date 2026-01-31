@@ -21,7 +21,8 @@ navstation/
 │   │   ├── admin/              # 后台管理
 │   │   │   ├── page.tsx        # 站点管理（统一管理站点+二维码）
 │   │   │   ├── categories/     # 分类管理
-│   │   │   └── software/       # 软件管理
+│   │   │   ├── software/       # 软件管理
+│   │   │   └── settings/       # 站点设置
 │   │   ├── analytics/          # 数据分析
 │   │   ├── software/           # 软件下载页面
 │   │   └── api/                # RESTful API
@@ -31,7 +32,8 @@ navstation/
 │   │       ├── upload/         # 图片上传
 │   │       ├── uploads/        # 图片服务
 │   │       ├── auth/           # 登录/登出/当前用户
-│   │       └── analytics/      # 统计查询 + 点击记录
+│   │       ├── analytics/      # 统计查询 + 点击记录
+│   │       └── settings/       # 站点设置 API
 │   ├── components/             # 客户端组件
 │   │   ├── AppShell.tsx        # 布局壳（Sidebar + 模态框）
 │   │   ├── Sidebar.tsx         # 侧边栏导航
@@ -121,6 +123,7 @@ docker-compose up -d
 | `software` | 软件下载资源（支持 4GB 文件） |
 | `users` | 管理员账号（默认 admin/admin） |
 | `click_events` | 点击事件统计 |
+| `site_settings` | 站点全局设置（名称、描述、Logo等） |
 
 ### 分类类型说明
 
@@ -175,6 +178,12 @@ docker-compose up -d
 | `GET /api/analytics?days=7` | GET | 统计数据 |
 | `POST /api/analytics/click` | POST | 记录点击事件 |
 
+### 站点设置
+| 路径 | 方法 | 说明 |
+|------|------|------|
+| `GET /api/settings` | GET | 获取站点设置 |
+| `PUT /api/settings` | PUT | 更新站点设置 |
+
 ## 默认账号
 
 - 用户名: `admin`
@@ -194,6 +203,7 @@ docker-compose up -d
 - **站点管理**: 统一管理所有站点和二维码，支持上传 Logo
 - **分类管理**: 管理分类，支持三种类型（站点/二维码/软件）
 - **软件管理**: 上传、管理软件下载资源（单文件最大 4GB）
+- **站点设置**: 自定义站点名称、描述、Logo、版本号、页脚版权
 - **数据分析**: 查看点击统计和访问趋势
 
 ### 图标选择器

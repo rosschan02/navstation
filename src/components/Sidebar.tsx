@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import type { Category } from '@/types';
+import type { Category, SiteSettings } from '@/types';
 
 const AVATAR_URL = "https://lh3.googleusercontent.com/aida-public/AB6AXuC3104b5kXiw4PZePiO9fBovMiepftLrdVAtMSVBV8aUn1EI-W_F6OCUtrCdMAl0oEKjHg_WTszK1_2e4vOO3VLVe5J7oyGUBntqK2fCcO4gQ6zMLxgE6hSW5_Se69QiyotWXogd7-N_e2PjSXO1Kg_JClrFKPBTRiAeEPlwhe3lC1cS1pngM-Y4jPPoki36CSAvA7MWo_-7KrkYPyUNEPfTwAz0RSVw31BPvw5t7hWjlMuNT-9ZoKWv0NM-nKbirlPPNVsIp5s1wg";
 
@@ -20,6 +20,7 @@ const ADMIN_ITEMS: NavItem[] = [
   { href: '/admin', icon: 'folder_shared', label: '站点管理', requiresAuth: true },
   { href: '/admin/categories', icon: 'category', label: '分类管理', requiresAuth: true },
   { href: '/admin/software', icon: 'cloud_upload', label: '软件管理', requiresAuth: true },
+  { href: '/admin/settings', icon: 'settings', label: '站点设置', requiresAuth: true },
   { href: '/analytics', icon: 'analytics', label: '数据分析', requiresAuth: true },
 ];
 
@@ -27,11 +28,20 @@ interface SidebarProps {
   onLoginClick: () => void;
 }
 
+const DEFAULT_SETTINGS: SiteSettings = {
+  site_name: '导航站',
+  site_description: '综合导航门户与站点管理仪表板',
+  site_version: 'v2.0 中文版',
+  footer_text: '© 2024 通用站点导航。保留所有权利。',
+  logo_url: '',
+};
+
 export function Sidebar({ onLoginClick }: SidebarProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { isLoggedIn, logout } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
+  const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SETTINGS);
 
   const selectedCategory = searchParams.get('category') || 'all';
 
@@ -42,6 +52,11 @@ export function Sidebar({ onLoginClick }: SidebarProps) {
         const filtered = data.filter((c: Category) => c.type === 'site' || c.type === 'qrcode');
         setCategories(filtered);
       })
+      .catch(console.error);
+
+    fetch('/api/settings')
+      .then(res => res.json())
+      .then(data => setSettings(data))
       .catch(console.error);
   }, []);
 
@@ -71,12 +86,20 @@ export function Sidebar({ onLoginClick }: SidebarProps) {
       <div className="flex flex-col h-full p-4">
         {/* Header */}
         <div className="flex items-center gap-3 px-2 py-4 mb-2">
-          <div className="flex items-center justify-center size-10 rounded-xl bg-gradient-to-br from-primary to-blue-600 text-white shadow-lg shadow-primary/20">
-            <span className="material-symbols-outlined" style={{ fontSize: 24 }}>rocket_launch</span>
+          <div className={`flex items-center justify-center size-10 rounded-xl overflow-hidden ${
+            settings.logo_url
+              ? ''
+              : 'bg-gradient-to-br from-primary to-blue-600 text-white shadow-lg shadow-primary/20'
+          }`}>
+            {settings.logo_url ? (
+              <img src={settings.logo_url} alt={settings.site_name} className="size-10 object-contain" />
+            ) : (
+              <span className="material-symbols-outlined" style={{ fontSize: 24 }}>rocket_launch</span>
+            )}
           </div>
           <div className="flex flex-col">
-            <h1 className="text-slate-900 text-base font-bold leading-tight">导航站</h1>
-            <p className="text-slate-500 text-xs font-normal">v2.0 中文版</p>
+            <h1 className="text-slate-900 text-base font-bold leading-tight">{settings.site_name}</h1>
+            <p className="text-slate-500 text-xs font-normal">{settings.site_version}</p>
           </div>
         </div>
 
