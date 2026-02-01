@@ -8,9 +8,10 @@ interface HomeClientProps {
   categories: Category[];
   sites: SiteData[];
   footerText?: string;
+  localIP?: string;
 }
 
-export function HomeClient({ categories, sites, footerText }: HomeClientProps) {
+export function HomeClient({ categories, sites, footerText, localIP }: HomeClientProps) {
   const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const selectedCategory = searchParams.get('category') || 'all';
@@ -72,7 +73,14 @@ export function HomeClient({ categories, sites, footerText }: HomeClientProps) {
       <div className="max-w-[1400px] mx-auto w-full px-6 py-8 flex flex-col gap-6">
 
         {/* Search Bar */}
-        <section className="flex justify-center w-full">
+        <section className="flex items-center gap-4 w-full">
+          {/* Local IP Badge */}
+          {localIP && (
+            <div className="hidden sm:flex items-center shrink-0">
+              <span className="text-lg font-bold text-slate-900">本机IP地址：</span>
+              <span className="text-lg font-mono text-slate-600">{localIP}</span>
+            </div>
+          )}
           <div className="w-full max-w-2xl relative">
             <label className="flex flex-col w-full group relative z-10">
               <div className="flex w-full items-center rounded-xl bg-white shadow-sm ring-1 ring-slate-200 h-14 overflow-hidden focus-within:ring-2 focus-within:ring-primary transition-shadow">

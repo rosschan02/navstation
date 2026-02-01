@@ -1,7 +1,20 @@
 import { Suspense } from 'react';
+import os from 'os';
 import pool from '@/db';
 import { HomeClient } from './HomeClient';
 import type { Category, SiteData } from '@/types';
+
+function getLocalIP(): string {
+  const interfaces = os.networkInterfaces();
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name] || []) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        return iface.address;
+      }
+    }
+  }
+  return '127.0.0.1';
+}
 
 export const dynamic = 'force-dynamic';
 
@@ -35,10 +48,11 @@ export default async function HomePage() {
   `);
 
   const footerText = await getFooterText();
+  const localIP = getLocalIP();
 
   return (
     <Suspense fallback={<div className="flex-1 bg-background-light" />}>
-      <HomeClient categories={categories} sites={sites} footerText={footerText} />
+      <HomeClient categories={categories} sites={sites} footerText={footerText} localIP={localIP} />
     </Suspense>
   );
 }

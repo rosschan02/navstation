@@ -1,6 +1,19 @@
 import { NextResponse } from 'next/server';
+import os from 'os';
 import pool from '@/db';
 import type { Category, SiteData, SoftwareItem, SiteSettings } from '@/types';
+
+function getLocalIP(): string {
+  const interfaces = os.networkInterfaces();
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name] || []) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        return iface.address;
+      }
+    }
+  }
+  return '127.0.0.1';
+}
 
 export const dynamic = 'force-dynamic';
 
@@ -394,11 +407,28 @@ export async function GET() {
       margin-top: 8px;
     }
 
+    /* 搜索栏容器 */
+    .search-bar {
+      max-width: 800px;
+      margin: 16px auto 0;
+      padding: 0 20px;
+    }
+    .search-bar:after { content: ""; display: table; clear: both; }
+    .local-ip {
+      float: left;
+      font-size: 16px;
+      font-weight: 600;
+      color: #262626;
+      line-height: 42px;
+      margin-right: 16px;
+    }
+    .local-ip span {
+      font-family: Consolas, "Courier New", monospace;
+      color: #595959;
+    }
     /* 搜索框样式 */
     .search-box {
-      max-width: 480px;
-      margin: 16px auto 0;
-      position: relative;
+      overflow: hidden;
     }
     .search-box input {
       width: 100%;
@@ -444,8 +474,11 @@ export async function GET() {
       ${settings.logo_url ? `<img src="${escapeHtml(settings.logo_url)}" alt="${escapeHtml(settings.site_name)}" class="header-logo">` : ''}
       <h1>${escapeHtml(settings.site_name)}</h1>
     </div>
-    <div class="search-box">
-      <input type="text" id="searchInput" placeholder="搜索站点或软件..." autocomplete="off">
+    <div class="search-bar clearfix">
+      <div class="local-ip">本机IP地址：<span>${getLocalIP()}</span></div>
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="搜索站点或软件..." autocomplete="off">
+      </div>
     </div>
   </div>
 
