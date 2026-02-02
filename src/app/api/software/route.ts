@@ -46,6 +46,7 @@ export async function POST(request: NextRequest) {
     const description = formData.get('description') as string || '';
     const version = formData.get('version') as string || '';
     const category_id = formData.get('category_id') as string || null;
+    const logo = formData.get('logo') as string || '';
     const icon = formData.get('icon') as string || 'download';
     const icon_bg = formData.get('icon_bg') as string || 'bg-blue-100';
     const icon_color = formData.get('icon_color') as string || 'text-blue-600';
@@ -94,10 +95,10 @@ export async function POST(request: NextRequest) {
 
     // Insert into database
     const { rows } = await pool.query(
-      `INSERT INTO software (name, description, version, category_id, file_name, file_path, file_size, icon, icon_bg, icon_color, sort_order)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      `INSERT INTO software (name, description, version, category_id, file_name, file_path, file_size, logo, icon, icon_bg, icon_color, sort_order)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        RETURNING *`,
-      [name, description, version, finalCategoryId, file.name, `software/${fileName}`, file.size, icon, icon_bg, icon_color, sort_order]
+      [name, description, version, finalCategoryId, file.name, `software/${fileName}`, file.size, logo, icon, icon_bg, icon_color, sort_order]
     );
 
     return NextResponse.json(rows[0], { status: 201 });

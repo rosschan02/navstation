@@ -21,7 +21,10 @@ function formatFileSize(bytes: number): string {
 export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdminClientProps) {
   const [software, setSoftware] = useState<SoftwareItem[]>(initialSoftware);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<SoftwareItem | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [formData, setFormData] = useState({
@@ -29,12 +32,56 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
     description: '',
     version: '',
     category_id: categories.length > 0 ? categories[0].id.toString() : '',
+    logo: '',
     icon: 'download',
     icon_bg: 'bg-blue-100',
     icon_color: 'text-blue-600',
   });
+  const [editFormData, setEditFormData] = useState({
+    name: '',
+    description: '',
+    version: '',
+    category_id: '',
+    logo: '',
+    icon: 'download',
+    icon_bg: 'bg-blue-100',
+    icon_color: 'text-blue-600',
+  });
+  const [logoPreview, setLogoPreview] = useState('');
+  const [editLogoPreview, setEditLogoPreview] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const editLogoInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+
+  const handleLogoUpload = async (file: File, isEdit: boolean = false) => {
+    const uploadData = new FormData();
+    uploadData.append('file', file);
+
+    try {
+      const res = await fetch('/api/uploads/logos', {
+        method: 'POST',
+        body: uploadData,
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const path = `/api/uploads/logos/${data.filename}`;
+        if (isEdit) {
+          setEditLogoPreview(path);
+          setEditFormData(prev => ({ ...prev, logo: path }));
+        } else {
+          setLogoPreview(path);
+          setFormData(prev => ({ ...prev, logo: path }));
+        }
+      } else {
+        alert('Logo 上传失败');
+      }
+    } catch (error) {
+      console.error('Logo upload failed:', error);
+      alert('Logo 上传失败');
+    }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -76,6 +123,7 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
       if (formData.category_id) {
         data.append('category_id', formData.category_id);
       }
+      data.append('logo', formData.logo);
       data.append('icon', formData.icon);
       data.append('icon_bg', formData.icon_bg);
       data.append('icon_color', formData.icon_color);
@@ -136,20 +184,74 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
     }
   };
 
+  const handleEdit = (item: SoftwareItem) => {
+    setEditingItem(item);
+    setEditFormData({
+      name: item.name,
+      description: item.description || '',
+      version: item.version || '',
+      category_id: item.category_id?.toString() || '',
+      logo: item.logo || '',
+      icon: item.icon || 'download',
+      icon_bg: item.icon_bg || 'bg-blue-100',
+      icon_color: item.icon_color || 'text-blue-600',
+    });
+    setEditLogoPreview(item.logo || '');
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingItem) return;
+    if (!editFormData.name.trim()) {
+      alert('请输入软件名称');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const res = await fetch(`/api/software/${editingItem.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editFormData),
+      });
+
+      if (res.ok) {
+        const updated = await res.json();
+        setSoftware(prev => prev.map(s => s.id === updated.id ? updated : s));
+        setIsEditModalOpen(false);
+        setEditingItem(null);
+        router.refresh();
+      } else {
+        alert('保存失败');
+      }
+    } catch (error) {
+      console.error('Edit failed:', error);
+      alert('保存失败');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       name: '',
       description: '',
       version: '',
       category_id: categories.length > 0 ? categories[0].id.toString() : '',
+      logo: '',
       icon: 'download',
       icon_bg: 'bg-blue-100',
       icon_color: 'text-blue-600',
     });
     setSelectedFile(null);
     setUploadProgress(0);
+    setLogoPreview('');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
+    }
+    if (logoInputRef.current) {
+      logoInputRef.current.value = '';
     }
   };
 
@@ -248,8 +350,12 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
                   <tr key={item.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <div className={`size-10 rounded-lg ${item.icon_bg} flex items-center justify-center shrink-0`}>
-                          <span className={`material-symbols-outlined ${item.icon_color} text-[20px]`}>{item.icon}</span>
+                        <div className={`size-10 rounded-lg ${item.logo ? 'bg-white border border-slate-200' : item.icon_bg} flex items-center justify-center shrink-0`}>
+                          {item.logo ? (
+                            <img src={item.logo} alt={item.name} className="size-8 object-contain" />
+                          ) : (
+                            <span className={`material-symbols-outlined ${item.icon_color} text-[20px]`}>{item.icon}</span>
+                          )}
                         </div>
                         <div className="min-w-0">
                           <p className="font-medium text-slate-900 truncate">{item.name}</p>
@@ -268,6 +374,13 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => handleEdit(item)}
+                          className="p-2 text-slate-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                          title="编辑"
+                        >
+                          <span className="material-symbols-outlined text-[20px]">edit</span>
+                        </button>
                         <a
                           href={`/api/software/${item.id}/download`}
                           className="p-2 text-slate-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
@@ -396,18 +509,65 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
                 />
               </div>
 
-              {/* Icon Picker */}
+              {/* Logo Upload */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">图标</label>
-                <IconPicker
-                  selectedIcon={formData.icon}
-                  selectedBg={formData.icon_bg}
-                  selectedColor={formData.icon_color}
-                  onIconChange={handleIconChange}
-                  onBgChange={handleBgChange}
-                  onColorChange={handleColorChange}
-                />
+                <label className="block text-sm font-medium text-slate-700 mb-2">Logo</label>
+                <div className="flex items-center gap-4">
+                  <div
+                    onClick={() => logoInputRef.current?.click()}
+                    className={`size-16 rounded-lg border-2 border-dashed flex items-center justify-center cursor-pointer transition-colors ${
+                      logoPreview ? 'border-primary bg-primary/5' : 'border-slate-200 hover:border-primary/50'
+                    }`}
+                  >
+                    {logoPreview ? (
+                      <img src={logoPreview} alt="Logo" className="size-12 object-contain" />
+                    ) : (
+                      <span className="material-symbols-outlined text-slate-400">add_photo_alternate</span>
+                    )}
+                  </div>
+                  <input
+                    ref={logoInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleLogoUpload(file, false);
+                    }}
+                  />
+                  <div className="text-sm text-slate-500">
+                    <p>点击上传 Logo</p>
+                    <p className="text-xs">支持 PNG, JPG, SVG</p>
+                  </div>
+                  {logoPreview && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLogoPreview('');
+                        setFormData(prev => ({ ...prev, logo: '' }));
+                      }}
+                      className="text-red-500 hover:text-red-700 text-sm"
+                    >
+                      移除
+                    </button>
+                  )}
+                </div>
               </div>
+
+              {/* Icon Picker (if no logo) */}
+              {!logoPreview && (
+                <div className="border-t border-slate-200 pt-4">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">或选择图标</label>
+                  <IconPicker
+                    selectedIcon={formData.icon}
+                    selectedBg={formData.icon_bg}
+                    selectedColor={formData.icon_color}
+                    onIconChange={handleIconChange}
+                    onBgChange={handleBgChange}
+                    onColorChange={handleColorChange}
+                  />
+                </div>
+              )}
 
               {/* Upload Progress */}
               {isUploading && (
@@ -449,6 +609,182 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
                     <>
                       <span className="material-symbols-outlined text-[20px]">cloud_upload</span>
                       上传
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {isEditModalOpen && editingItem && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-slate-200">
+              <h3 className="text-xl font-bold text-slate-900">编辑软件</h3>
+              <button
+                onClick={() => { setIsEditModalOpen(false); setEditingItem(null); }}
+                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            <form onSubmit={handleEditSubmit} className="p-6 flex flex-col gap-5">
+              {/* File Info (read-only) */}
+              <div className="bg-slate-50 rounded-xl p-4">
+                <div className="flex items-center gap-3">
+                  <span className="material-symbols-outlined text-slate-400">description</span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-slate-700 truncate">{editingItem.file_name}</p>
+                    <p className="text-xs text-slate-500">{formatFileSize(editingItem.file_size)}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Name */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  软件名称 <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={editFormData.name}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, name: e.target.value }))}
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                  placeholder="例如：Visual Studio Code"
+                />
+              </div>
+
+              {/* Version */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">版本号</label>
+                <input
+                  type="text"
+                  value={editFormData.version}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, version: e.target.value }))}
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                  placeholder="例如：1.85.0"
+                />
+              </div>
+
+              {/* Category */}
+              {categories.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">分类</label>
+                  <select
+                    value={editFormData.category_id}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, category_id: e.target.value }))}
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all bg-white"
+                  >
+                    <option value="">未分类</option>
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Description */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">软件说明</label>
+                <textarea
+                  value={editFormData.description}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, description: e.target.value }))}
+                  rows={2}
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none"
+                  placeholder="简要描述软件用途..."
+                />
+              </div>
+
+              {/* Logo Upload */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Logo</label>
+                <div className="flex items-center gap-4">
+                  <div
+                    onClick={() => editLogoInputRef.current?.click()}
+                    className={`size-16 rounded-lg border-2 border-dashed flex items-center justify-center cursor-pointer transition-colors ${
+                      editLogoPreview ? 'border-primary bg-primary/5' : 'border-slate-200 hover:border-primary/50'
+                    }`}
+                  >
+                    {editLogoPreview ? (
+                      <img src={editLogoPreview} alt="Logo" className="size-12 object-contain" />
+                    ) : (
+                      <span className="material-symbols-outlined text-slate-400">add_photo_alternate</span>
+                    )}
+                  </div>
+                  <input
+                    ref={editLogoInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleLogoUpload(file, true);
+                    }}
+                  />
+                  <div className="text-sm text-slate-500">
+                    <p>点击上传 Logo</p>
+                    <p className="text-xs">支持 PNG, JPG, SVG</p>
+                  </div>
+                  {editLogoPreview && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditLogoPreview('');
+                        setEditFormData(prev => ({ ...prev, logo: '' }));
+                      }}
+                      className="text-red-500 hover:text-red-700 text-sm"
+                    >
+                      移除
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Icon Picker (if no logo) */}
+              {!editLogoPreview && (
+                <div className="border-t border-slate-200 pt-4">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">或选择图标</label>
+                  <IconPicker
+                    selectedIcon={editFormData.icon}
+                    selectedBg={editFormData.icon_bg}
+                    selectedColor={editFormData.icon_color}
+                    onIconChange={(icon) => setEditFormData(prev => ({ ...prev, icon }))}
+                    onBgChange={(icon_bg) => setEditFormData(prev => ({ ...prev, icon_bg }))}
+                    onColorChange={(icon_color) => setEditFormData(prev => ({ ...prev, icon_color }))}
+                  />
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => { setIsEditModalOpen(false); setEditingItem(null); }}
+                  disabled={isSaving}
+                  className="px-4 py-2.5 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-50"
+                >
+                  取消
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  className="px-4 py-2.5 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {isSaving ? (
+                    <>
+                      <span className="material-symbols-outlined animate-spin text-[20px]">progress_activity</span>
+                      保存中
+                    </>
+                  ) : (
+                    <>
+                      <span className="material-symbols-outlined text-[20px]">check</span>
+                      保存
                     </>
                   )}
                 </button>

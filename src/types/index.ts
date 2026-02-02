@@ -42,6 +42,7 @@ export interface SoftwareItem {
   file_name: string;
   file_path: string;
   file_size: number;
+  logo: string;
   icon: string;
   icon_bg: string;
   icon_color: string;

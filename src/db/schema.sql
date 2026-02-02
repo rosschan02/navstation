@@ -45,6 +45,7 @@ CREATE TABLE IF NOT EXISTS software (
     file_name VARCHAR(500) NOT NULL,
     file_path TEXT NOT NULL,
     file_size BIGINT NOT NULL,
+    logo TEXT DEFAULT '',
     icon VARCHAR(100) DEFAULT 'download',
     icon_bg VARCHAR(100) DEFAULT 'bg-blue-100',
     icon_color VARCHAR(100) DEFAULT 'text-blue-600',

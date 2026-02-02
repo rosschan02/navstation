@@ -2,6 +2,49 @@
 
 本文件记录 NavStation 导航站的所有重要更新。
 
+## [2.2.2] - 2026-02-02
+
+### 新增
+
+#### 软件管理增强
+- 软件管理新增编辑功能，支持修改已上传软件的名称、版本号、分类、说明和图标
+- 软件支持上传自定义 Logo 图片（与站点管理一致）
+- 上传 Logo 后自动隐藏图标选择器，移除 Logo 后恢复图标选择
+- 列表显示优先使用 Logo，无 Logo 时显示图标
+
+#### 侧边栏响应式优化
+- 侧边栏支持收起/展开功能
+- 屏幕宽度小于 1024px（iPad、手机等）时自动收起
+- 收起状态只显示图标，悬停显示文字提示
+- 底部新增收起/展开切换按钮
+- 收起/展开有平滑过渡动画
+
+### 数据库变更
+
+- `software` 表新增 `logo` 字段
+
+### 修改文件
+
+```
+src/app/api/software/route.ts              # POST 支持 logo 字段
+src/app/api/software/[id]/route.ts         # 新增 PUT 方法支持编辑
+src/app/admin/software/SoftwareAdminClient.tsx  # 编辑功能 + Logo 上传
+src/components/Sidebar.tsx                 # 响应式收起功能
+src/types/index.ts                         # SoftwareItem 新增 logo 字段
+src/db/schema.sql                          # software 表新增 logo 字段
+```
+
+### 升级指南
+
+如果从 2.2.x 版本升级，需要运行数据库迁移：
+
+```sql
+-- 软件 Logo 字段
+ALTER TABLE software ADD COLUMN IF NOT EXISTS logo TEXT DEFAULT '';
+```
+
+---
+
 ## [2.2.1] - 2026-02-01
 
 ### 新增
