@@ -7,7 +7,7 @@
 - **前端**: Next.js 16 (App Router) + React 19 + Tailwind CSS 4 + TypeScript
 - **后端**: Next.js API Routes + node-postgres
 - **数据库**: PostgreSQL 14+
-- **认证**: bcryptjs + HttpOnly Cookie
+- **认证**: bcryptjs + HttpOnly Cookie + API Key
 
 ## 项目结构
 
@@ -22,6 +22,7 @@ navstation/
 │   │   │   ├── page.tsx        # 站点管理（统一管理站点+二维码）
 │   │   │   ├── categories/     # 分类管理
 │   │   │   ├── software/       # 软件管理
+│   │   │   ├── keys/           # API 密钥管理
 │   │   │   └── settings/       # 站点设置
 │   │   ├── analytics/          # 数据分析
 │   │   ├── software/           # 软件下载页面
@@ -33,6 +34,7 @@ navstation/
 │   │       ├── uploads/        # 图片服务
 │   │       ├── auth/           # 登录/登出/当前用户
 │   │       ├── analytics/      # 统计查询 + 点击记录
+│   │       ├── keys/           # API 密钥管理
 │   │       └── settings/       # 站点设置 API
 │   ├── components/             # 客户端组件
 │   │   ├── AppShell.tsx        # 布局壳（Sidebar + 模态框）
@@ -41,6 +43,8 @@ navstation/
 │   │   └── IconPicker.tsx      # 图标选择器组件
 │   ├── contexts/
 │   │   └── AuthContext.tsx      # 认证状态管理
+│   ├── lib/
+│   │   └── apiAuth.ts          # API Key 认证工具
 │   ├── db/
 │   │   ├── index.ts            # PostgreSQL 连接池
 │   │   ├── schema.sql          # 建表语句
@@ -124,6 +128,7 @@ docker-compose up -d
 | `users` | 管理员账号（默认 admin/admin） |
 | `click_events` | 点击事件统计 |
 | `site_settings` | 站点全局设置（名称、描述、Logo等） |
+| `api_keys` | API 密钥（外部系统对接认证） |
 
 ### 分类类型说明
 
@@ -187,6 +192,14 @@ docker-compose up -d
 | `GET /api/settings` | GET | 获取站点设置 |
 | `PUT /api/settings` | PUT | 更新站点设置 |
 
+### API 密钥管理（需管理员登录）
+| 路径 | 方法 | 说明 |
+|------|------|------|
+| `GET /api/keys` | GET | 获取 API 密钥列表 |
+| `POST /api/keys` | POST | 创建新 API 密钥（仅此一次返回完整密钥） |
+| `PUT /api/keys/:id` | PUT | 更新密钥信息（名称、权限、启用状态） |
+| `DELETE /api/keys/:id` | DELETE | 删除密钥 |
+
 ## 默认账号
 
 - 用户名: `admin`
@@ -219,6 +232,65 @@ docker-compose up -d
 - 9 种图标颜色
 - 搜索过滤功能
 
+## API 对接（外部系统）
+
+NavStation 支持通过 API Key 允许外部系统访问 API。
+
+### 创建 API 密钥
+
+1. 登录管理后台
+2. 进入「API 管理」页面
+3. 点击「创建密钥」
+4. 设置名称和权限（只读/读写）
+5. **立即保存显示的密钥**（密钥只显示一次）
+
+### 权限说明
+
+| 权限 | 说明 |
+|------|------|
+| `read` | 只读权限：读取站点、分类、软件、统计数据 |
+| `write` | 读写权限：包含只读 + 增删改站点、分类、软件 |
+
+### 认证方式
+
+支持两种 Header 认证方式：
+
+```bash
+# 方式一：X-API-Key Header
+curl -H "X-API-Key: nav_sk_xxxx" https://your-domain/api/sites
+
+# 方式二：Authorization Bearer
+curl -H "Authorization: Bearer nav_sk_xxxx" https://your-domain/api/sites
+```
+
+### 调用示例
+
+```bash
+# 获取站点列表
+curl -H "X-API-Key: nav_sk_xxxx" https://your-domain/api/sites
+
+# 创建站点（需要 write 权限）
+curl -X POST \
+  -H "X-API-Key: nav_sk_xxxx" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"新站点","url":"https://example.com","category_id":1}' \
+  https://your-domain/api/sites
+
+# 获取分类列表
+curl -H "X-API-Key: nav_sk_xxxx" https://your-domain/api/categories
+
+# 获取统计数据
+curl -H "X-API-Key: nav_sk_xxxx" https://your-domain/api/analytics?days=7
+```
+
+### 错误响应
+
+| HTTP 状态码 | 错误码 | 说明 |
+|------------|--------|------|
+| 401 | `UNAUTHORIZED` | 未提供认证信息 |
+| 401 | `INVALID_API_KEY` | API Key 无效或已禁用 |
+| 403 | `PERMISSION_DENIED` | 权限不足 |
+
 ## 数据库迁移
 
 如果从旧版本升级，需要按顺序运行迁移脚本：
@@ -235,6 +307,9 @@ psql -d your_database -f src/db/migrations/003_unified_sites.sql
 
 # v2.1.0 - 软件排序字段
 psql -d your_database -f src/db/migrations/004_add_software_sort_order.sql
+
+# v2.3.0 - API 密钥表
+psql -d your_database -f src/db/migrations/005_add_api_keys.sql
 ```
 
 对于全新部署，直接运行：

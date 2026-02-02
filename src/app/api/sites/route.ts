@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/db';
+import { authenticate, hasPermission, createAuthErrorResponse, extractApiKey } from '@/lib/apiAuth';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,7 +9,15 @@ export const dynamic = 'force-dynamic';
 //   - type: filter by category type ('site' | 'qrcode')
 //   - category: filter by category name
 //   - search: search by name or description
+// Auth: Public access, or API Key (read permission)
 export async function GET(request: NextRequest) {
+  // If API Key is provided, validate it
+  if (extractApiKey(request)) {
+    const auth = await authenticate(request);
+    if (!auth.authenticated) {
+      return createAuthErrorResponse(auth);
+    }
+  }
   const searchParams = request.nextUrl.searchParams;
   const type = searchParams.get('type');
   const category = searchParams.get('category');
@@ -52,7 +61,19 @@ export async function GET(request: NextRequest) {
 }
 
 // POST /api/sites - create a new site
+// Auth: API Key (write permission) or Cookie auth required
 export async function POST(request: NextRequest) {
+  const auth = await authenticate(request);
+  if (!auth.authenticated) {
+    return createAuthErrorResponse(auth);
+  }
+  if (!hasPermission(auth, 'write')) {
+    return NextResponse.json(
+      { error: '权限不足，需要写入权限', code: 'PERMISSION_DENIED' },
+      { status: 403 }
+    );
+  }
+
   try {
     const body = await request.json();
     const {

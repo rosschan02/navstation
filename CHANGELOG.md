@@ -2,6 +2,71 @@
 
 本文件记录 NavStation 导航站的所有重要更新。
 
+## [2.3.0] - 2026-02-03
+
+### 新增
+
+#### API 密钥功能
+- 新增 API 密钥管理，允许外部系统通过 API Key 调用接口
+- 支持创建、编辑、删除、启用/禁用 API 密钥
+- 密钥权限分为「只读」和「读写」两级
+- 密钥使用 SHA256 哈希存储，安全可靠
+- 记录密钥最后使用时间
+- 密钥仅在创建时显示一次，之后只显示前缀
+
+#### API 认证支持
+- 站点、分类、软件、统计等 API 支持 API Key 认证
+- 支持两种认证方式：
+  - `X-API-Key: nav_sk_xxxx`
+  - `Authorization: Bearer nav_sk_xxxx`
+- 读操作允许公开访问或 API Key（read 权限）
+- 写操作需要 API Key（write 权限）或管理员登录
+
+#### 管理界面
+- 新增 API 管理页面 `/admin/keys`
+- 侧边栏工作区新增「API 管理」入口
+- 创建密钥后显示完整密钥，支持一键复制
+
+### 数据库变更
+
+- 新增 `api_keys` 表存储 API 密钥
+
+### 新增文件
+
+```
+src/lib/apiAuth.ts                    # API Key 认证工具函数
+src/app/api/keys/route.ts             # API 密钥列表/创建 API
+src/app/api/keys/[id]/route.ts        # API 密钥更新/删除 API
+src/app/admin/keys/page.tsx           # API 管理页面
+src/app/admin/keys/KeysClient.tsx     # API 管理客户端组件
+src/db/migrations/005_add_api_keys.sql # 数据库迁移脚本
+```
+
+### 修改文件
+
+```
+src/app/api/sites/route.ts            # 添加 API Key 认证
+src/app/api/sites/[id]/route.ts       # 添加 API Key 认证
+src/app/api/categories/route.ts       # 添加 API Key 认证
+src/app/api/categories/[id]/route.ts  # 添加 API Key 认证
+src/app/api/software/route.ts         # 添加 API Key 认证
+src/app/api/software/[id]/route.ts    # 添加 API Key 认证
+src/app/api/analytics/route.ts        # 添加 API Key 认证
+src/components/Sidebar.tsx            # 新增 API 管理菜单
+src/types/index.ts                    # 新增 ApiKey 类型
+src/db/schema.sql                     # 新增 api_keys 表
+```
+
+### 升级指南
+
+如果从 2.2.x 版本升级，需要运行数据库迁移：
+
+```bash
+psql -d your_database -f src/db/migrations/005_add_api_keys.sql
+```
+
+---
+
 ## [2.2.2] - 2026-02-02
 
 ### 新增

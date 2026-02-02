@@ -3,13 +3,27 @@ import pool from '@/db';
 import { unlink } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
+import { authenticate, hasPermission, createAuthErrorResponse } from '@/lib/apiAuth';
 
 export const dynamic = 'force-dynamic';
 
+// PUT /api/software/:id
+// Auth: API Key (write permission) or Cookie auth required
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await authenticate(request);
+  if (!auth.authenticated) {
+    return createAuthErrorResponse(auth);
+  }
+  if (!hasPermission(auth, 'write')) {
+    return NextResponse.json(
+      { error: '权限不足，需要写入权限', code: 'PERMISSION_DENIED' },
+      { status: 403 }
+    );
+  }
+
   try {
     const { id } = await params;
     const body = await request.json();
@@ -49,10 +63,23 @@ export async function PUT(
   }
 }
 
+// DELETE /api/software/:id
+// Auth: API Key (write permission) or Cookie auth required
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await authenticate(request);
+  if (!auth.authenticated) {
+    return createAuthErrorResponse(auth);
+  }
+  if (!hasPermission(auth, 'write')) {
+    return NextResponse.json(
+      { error: '权限不足，需要写入权限', code: 'PERMISSION_DENIED' },
+      { status: 403 }
+    );
+  }
+
   try {
     const { id } = await params;
 

@@ -1,13 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/db';
+import { authenticate, hasPermission, createAuthErrorResponse, extractApiKey } from '@/lib/apiAuth';
 
 export const dynamic = 'force-dynamic';
 
 // GET /api/categories/:id
+// Auth: Public access, or API Key (read permission)
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // If API Key is provided, validate it
+  if (extractApiKey(request)) {
+    const auth = await authenticate(request);
+    if (!auth.authenticated) {
+      return createAuthErrorResponse(auth);
+    }
+  }
+
   const { id } = await params;
 
   const { rows } = await pool.query('SELECT * FROM categories WHERE id = $1', [id]);
@@ -20,10 +30,22 @@ export async function GET(
 }
 
 // PUT /api/categories/:id
+// Auth: API Key (write permission) or Cookie auth required
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await authenticate(request);
+  if (!auth.authenticated) {
+    return createAuthErrorResponse(auth);
+  }
+  if (!hasPermission(auth, 'write')) {
+    return NextResponse.json(
+      { error: '权限不足，需要写入权限', code: 'PERMISSION_DENIED' },
+      { status: 403 }
+    );
+  }
+
   const { id } = await params;
   const body = await request.json();
   const { name, label, type, css_class, icon, icon_bg, icon_color, sort_order } = body;
@@ -56,10 +78,22 @@ export async function PUT(
 }
 
 // DELETE /api/categories/:id
+// Auth: API Key (write permission) or Cookie auth required
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await authenticate(request);
+  if (!auth.authenticated) {
+    return createAuthErrorResponse(auth);
+  }
+  if (!hasPermission(auth, 'write')) {
+    return NextResponse.json(
+      { error: '权限不足，需要写入权限', code: 'PERMISSION_DENIED' },
+      { status: 403 }
+    );
+  }
+
   const { id } = await params;
 
   // Check if category is in use by sites

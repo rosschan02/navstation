@@ -3,13 +3,24 @@ import pool from '@/db';
 import { writeFile, mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
+import { authenticate, hasPermission, createAuthErrorResponse, extractApiKey } from '@/lib/apiAuth';
 
 export const dynamic = 'force-dynamic';
 
 // Max file size: 4GB
 const MAX_FILE_SIZE = 4 * 1024 * 1024 * 1024;
 
+// GET /api/software
+// Auth: Public access, or API Key (read permission)
 export async function GET(request: NextRequest) {
+  // If API Key is provided, validate it
+  if (extractApiKey(request)) {
+    const auth = await authenticate(request);
+    if (!auth.authenticated) {
+      return createAuthErrorResponse(auth);
+    }
+  }
+
   try {
     const searchParams = request.nextUrl.searchParams;
     const categoryId = searchParams.get('category_id');
@@ -38,7 +49,20 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// POST /api/software
+// Auth: API Key (write permission) or Cookie auth required
 export async function POST(request: NextRequest) {
+  const auth = await authenticate(request);
+  if (!auth.authenticated) {
+    return createAuthErrorResponse(auth);
+  }
+  if (!hasPermission(auth, 'write')) {
+    return NextResponse.json(
+      { error: '权限不足，需要写入权限', code: 'PERMISSION_DENIED' },
+      { status: 403 }
+    );
+  }
+
   try {
     const formData = await request.formData();
 

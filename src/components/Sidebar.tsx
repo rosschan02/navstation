@@ -20,6 +20,7 @@ const ADMIN_ITEMS: NavItem[] = [
   { href: '/admin/categories', icon: 'category', label: '分类管理', requiresAuth: true },
   { href: '/admin/software', icon: 'cloud_upload', label: '软件管理', requiresAuth: true },
   { href: '/analytics', icon: 'analytics', label: '数据分析', requiresAuth: true },
+  { href: '/admin/keys', icon: 'key', label: 'API 管理', requiresAuth: true },
   { href: '/admin/profile', icon: 'person', label: '账号设置', requiresAuth: true },
   { href: '/admin/settings', icon: 'tune', label: '站点设置', requiresAuth: true },
 ];

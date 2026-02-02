@@ -75,3 +75,15 @@ export interface SiteSettings {
   footer_text: string;
   logo_url: string;
 }
+
+// API Key for external system authentication
+export interface ApiKey {
+  id: number;
+  name: string;
+  key_prefix: string;
+  permissions: 'read' | 'write';
+  description: string;
+  is_active: boolean;
+  last_used_at: string | null;
+  created_at: string;
+}

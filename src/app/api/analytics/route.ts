@@ -1,8 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/db';
+import { authenticate, createAuthErrorResponse, extractApiKey } from '@/lib/apiAuth';
+
+export const dynamic = 'force-dynamic';
 
 // GET /api/analytics?days=7
+// Auth: Public access, or API Key (read permission)
 export async function GET(request: NextRequest) {
+  // If API Key is provided, validate it
+  if (extractApiKey(request)) {
+    const auth = await authenticate(request);
+    if (!auth.authenticated) {
+      return createAuthErrorResponse(auth);
+    }
+  }
   const days = parseInt(request.nextUrl.searchParams.get('days') || '7', 10);
 
   // Total clicks in period

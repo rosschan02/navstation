@@ -1,13 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/db';
+import { authenticate, hasPermission, createAuthErrorResponse, extractApiKey } from '@/lib/apiAuth';
 
 export const dynamic = 'force-dynamic';
 
 // GET /api/sites/:id
+// Auth: Public access, or API Key (read permission)
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // If API Key is provided, validate it
+  if (extractApiKey(request)) {
+    const auth = await authenticate(request);
+    if (!auth.authenticated) {
+      return createAuthErrorResponse(auth);
+    }
+  }
   const { id } = await params;
   const { rows } = await pool.query(
     `SELECT s.*,
@@ -27,10 +36,22 @@ export async function GET(
 }
 
 // PUT /api/sites/:id
+// Auth: API Key (write permission) or Cookie auth required
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await authenticate(request);
+  if (!auth.authenticated) {
+    return createAuthErrorResponse(auth);
+  }
+  if (!hasPermission(auth, 'write')) {
+    return NextResponse.json(
+      { error: '权限不足，需要写入权限', code: 'PERMISSION_DENIED' },
+      { status: 403 }
+    );
+  }
+
   const { id } = await params;
   const body = await request.json();
   const {
@@ -74,10 +95,22 @@ export async function PUT(
 }
 
 // DELETE /api/sites/:id
+// Auth: API Key (write permission) or Cookie auth required
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await authenticate(request);
+  if (!auth.authenticated) {
+    return createAuthErrorResponse(auth);
+  }
+  if (!hasPermission(auth, 'write')) {
+    return NextResponse.json(
+      { error: '权限不足，需要写入权限', code: 'PERMISSION_DENIED' },
+      { status: 403 }
+    );
+  }
+
   const { id } = await params;
   const { rowCount } = await pool.query('DELETE FROM sites WHERE id = $1', [id]);
   if (rowCount === 0) {
