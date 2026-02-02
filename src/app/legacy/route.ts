@@ -1,18 +1,23 @@
-import { NextResponse } from 'next/server';
-import os from 'os';
+import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/db';
 import type { Category, SiteData, SoftwareItem, SiteSettings } from '@/types';
 
-function getLocalIP(): string {
-  const interfaces = os.networkInterfaces();
-  for (const name of Object.keys(interfaces)) {
-    for (const iface of interfaces[name] || []) {
-      if (iface.family === 'IPv4' && !iface.internal) {
-        return iface.address;
-      }
+function getClientIP(request: NextRequest): string {
+  // 优先从代理头获取真实客户端 IP
+  const forwardedFor = request.headers.get('x-forwarded-for');
+  if (forwardedFor) {
+    const ip = forwardedFor.split(',')[0].trim();
+    if (ip && !ip.includes(':')) {
+      return ip;
     }
   }
-  return '127.0.0.1';
+
+  const realIP = request.headers.get('x-real-ip');
+  if (realIP && !realIP.includes(':')) {
+    return realIP;
+  }
+
+  return '';
 }
 
 export const dynamic = 'force-dynamic';
@@ -41,7 +46,10 @@ async function getSettings(): Promise<SiteSettings> {
   }
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  // 获取客户端 IP
+  const clientIP = getClientIP(request);
+
   // 获取站点设置
   const settings = await getSettings();
 
@@ -475,7 +483,7 @@ export async function GET() {
       <h1>${escapeHtml(settings.site_name)}</h1>
     </div>
     <div class="search-bar clearfix">
-      <div class="local-ip">本机IP地址：<span>${getLocalIP()}</span></div>
+      ${clientIP ? `<div class="local-ip">您的IP：<span>${clientIP}</span></div>` : ''}
       <div class="search-box">
         <input type="text" id="searchInput" placeholder="搜索站点或软件..." autocomplete="off">
       </div>

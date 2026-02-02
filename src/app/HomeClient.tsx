@@ -8,10 +8,10 @@ interface HomeClientProps {
   categories: Category[];
   sites: SiteData[];
   footerText?: string;
-  localIP?: string;
+  clientIP?: string;
 }
 
-export function HomeClient({ categories, sites, footerText, localIP }: HomeClientProps) {
+export function HomeClient({ categories, sites, footerText, clientIP }: HomeClientProps) {
   const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const selectedCategory = searchParams.get('category') || 'all';
@@ -74,11 +74,11 @@ export function HomeClient({ categories, sites, footerText, localIP }: HomeClien
 
         {/* Search Bar */}
         <section className="flex items-center gap-4 w-full">
-          {/* Local IP Badge */}
-          {localIP && (
+          {/* Client IP Badge */}
+          {clientIP && (
             <div className="hidden sm:flex items-center shrink-0">
-              <span className="text-lg font-bold text-slate-900">本机IP地址：</span>
-              <span className="text-lg font-mono text-slate-600">{localIP}</span>
+              <span className="text-lg font-bold text-slate-900">您的IP：</span>
+              <span className="text-lg font-mono text-slate-600">{clientIP}</span>
             </div>
           )}
           <div className="w-full max-w-2xl relative">

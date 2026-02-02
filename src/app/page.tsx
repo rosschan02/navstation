@@ -1,19 +1,30 @@
 import { Suspense } from 'react';
-import os from 'os';
+import { headers } from 'next/headers';
 import pool from '@/db';
 import { HomeClient } from './HomeClient';
 import type { Category, SiteData } from '@/types';
 
-function getLocalIP(): string {
-  const interfaces = os.networkInterfaces();
-  for (const name of Object.keys(interfaces)) {
-    for (const iface of interfaces[name] || []) {
-      if (iface.family === 'IPv4' && !iface.internal) {
-        return iface.address;
-      }
+async function getClientIP(): Promise<string> {
+  const headersList = await headers();
+
+  // 优先从代理头获取真实客户端 IP
+  const forwardedFor = headersList.get('x-forwarded-for');
+  if (forwardedFor) {
+    // x-forwarded-for 可能包含多个 IP，取第一个（原始客户端）
+    const ip = forwardedFor.split(',')[0].trim();
+    // 过滤 IPv6，只返回 IPv4
+    if (ip && !ip.includes(':')) {
+      return ip;
     }
   }
-  return '127.0.0.1';
+
+  // Nginx 等反向代理设置的头
+  const realIP = headersList.get('x-real-ip');
+  if (realIP && !realIP.includes(':')) {
+    return realIP;
+  }
+
+  return '';
 }
 
 export const dynamic = 'force-dynamic';
@@ -48,11 +59,11 @@ export default async function HomePage() {
   `);
 
   const footerText = await getFooterText();
-  const localIP = getLocalIP();
+  const clientIP = await getClientIP();
 
   return (
     <Suspense fallback={<div className="flex-1 bg-background-light" />}>
-      <HomeClient categories={categories} sites={sites} footerText={footerText} localIP={localIP} />
+      <HomeClient categories={categories} sites={sites} footerText={footerText} clientIP={clientIP} />
     </Suspense>
   );
 }
