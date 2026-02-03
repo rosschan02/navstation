@@ -49,12 +49,14 @@ export async function GET(request: NextRequest) {
     [days]
   );
 
-  // Top clicked targets
+  // Top clicked sites (with site details)
   const topRes = await pool.query(
-    `SELECT target_type, target_id, count(*) as clicks
-     FROM click_events
-     WHERE created_at >= NOW() - $1::int * INTERVAL '1 day'
-     GROUP BY target_type, target_id
+    `SELECT ce.target_id, count(*) as clicks,
+            s.name, s.url, s.logo, s.icon, s.icon_bg, s.icon_color
+     FROM click_events ce
+     LEFT JOIN sites s ON ce.target_id = s.id AND ce.target_type = 'site'
+     WHERE ce.created_at >= NOW() - $1::int * INTERVAL '1 day'
+     GROUP BY ce.target_id, ce.target_type, s.name, s.url, s.logo, s.icon, s.icon_bg, s.icon_color
      ORDER BY clicks DESC LIMIT 10`,
     [days]
   );

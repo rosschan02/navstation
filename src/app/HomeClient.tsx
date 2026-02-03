@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import type { Category, SiteData } from '@/types';
 
@@ -9,6 +9,15 @@ interface HomeClientProps {
   sites: SiteData[];
   footerText?: string;
   clientIP?: string;
+}
+
+function trackClick(siteId: number) {
+  const body = JSON.stringify({ target_type: 'site', target_id: siteId, source: 'direct' });
+  if (navigator.sendBeacon) {
+    navigator.sendBeacon('/api/analytics/click', new Blob([body], { type: 'application/json' }));
+  } else {
+    fetch('/api/analytics/click', { method: 'POST', body, headers: { 'Content-Type': 'application/json' }, keepalive: true });
+  }
 }
 
 export function HomeClient({ categories, sites, footerText, clientIP }: HomeClientProps) {
@@ -168,6 +177,7 @@ export function HomeClient({ categories, sites, footerText, clientIP }: HomeClie
                       href={site.url}
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={() => trackClick(site.id)}
                       className="group flex items-center gap-4 bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-primary/30 transition-all duration-200 p-4"
                     >
                       {/* Icon/Logo */}
