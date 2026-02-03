@@ -57,22 +57,24 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
   const handleLogoUpload = async (file: File, isEdit: boolean = false) => {
     const uploadData = new FormData();
     uploadData.append('file', file);
+    uploadData.append('type', 'logo');
 
     try {
-      const res = await fetch('/api/uploads/logos', {
+      const res = await fetch('/api/upload', {
         method: 'POST',
         body: uploadData,
       });
 
       if (res.ok) {
         const data = await res.json();
-        const path = `/api/uploads/logos/${data.filename}`;
+        // Use the path returned by the upload API which points to /api/uploads/logos/
+        const logoPath = `/api/uploads/logos/${data.filename}`;
         if (isEdit) {
-          setEditLogoPreview(path);
-          setEditFormData(prev => ({ ...prev, logo: path }));
+          setEditLogoPreview(logoPath);
+          setEditFormData(prev => ({ ...prev, logo: logoPath }));
         } else {
-          setLogoPreview(path);
-          setFormData(prev => ({ ...prev, logo: path }));
+          setLogoPreview(logoPath);
+          setFormData(prev => ({ ...prev, logo: logoPath }));
         }
       } else {
         alert('Logo 上传失败');
