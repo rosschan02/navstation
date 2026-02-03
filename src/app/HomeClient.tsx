@@ -183,7 +183,6 @@ export function HomeClient({ categories, sites, footerText, clientIP }: HomeClie
                       <div className="flex flex-col justify-center min-w-0 flex-1">
                         <div className="flex items-center gap-2">
                           <h3 className="text-base font-semibold text-slate-900 group-hover:text-primary transition-colors truncate">{site.name}</h3>
-                          <span className="material-symbols-outlined text-slate-300 group-hover:text-primary group-hover:translate-x-0.5 transition-all text-[18px] shrink-0">arrow_forward</span>
                         </div>
                         <p className="text-slate-500 text-sm line-clamp-1 mt-0.5">{site.description}</p>
                       </div>
