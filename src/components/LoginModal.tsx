@@ -90,8 +90,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
               登录
             </button>
 
-            <div className="flex items-center justify-between text-xs text-slate-400 mt-2">
-              <span>默认账号: admin / 默认密码: admin</span>
+            <div className="flex items-center justify-end text-xs text-slate-400 mt-2">
               <button type="button" onClick={onClose} className="hover:text-slate-600">取消</button>
             </div>
           </form>
