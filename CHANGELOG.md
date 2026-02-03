@@ -2,6 +2,23 @@
 
 本文件记录 NavStation 导航站的所有重要更新。
 
+## [2.3.1] - 2026-02-03
+
+### 修复
+
+#### 软件 Logo 功能修复
+- 修复软件管理后台 Logo 上传失败问题（API 端点错误）
+- 修复软件下载页面不显示自定义 Logo 的问题
+
+### 修改文件
+
+```
+src/app/admin/software/SoftwareAdminClient.tsx  # 修正 Logo 上传 API 端点
+src/app/software/SoftwareClient.tsx             # 添加 Logo 图片显示逻辑
+```
+
+---
+
 ## [2.3.0] - 2026-02-03
 
 ### 新增

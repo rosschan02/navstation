@@ -120,10 +120,16 @@ export function SoftwareClient({ items, categories }: SoftwareClientProps) {
                       key={item.id}
                       className="group flex items-center gap-4 bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-primary/30 transition-all duration-200 p-4"
                     >
-                      {/* Left: Icon */}
-                      <div className={`size-14 rounded-lg ${item.icon_bg || 'bg-blue-100'} flex items-center justify-center shrink-0`}>
-                        <span className={`material-symbols-outlined ${item.icon_color || 'text-blue-600'} text-[28px]`}>{item.icon || 'download'}</span>
-                      </div>
+                      {/* Left: Icon or Logo */}
+                      {item.logo ? (
+                        <div className="size-14 rounded-lg overflow-hidden shrink-0 bg-white border border-slate-100">
+                          <img src={item.logo} alt={item.name} className="w-full h-full object-contain" />
+                        </div>
+                      ) : (
+                        <div className={`size-14 rounded-lg ${item.icon_bg || 'bg-blue-100'} flex items-center justify-center shrink-0`}>
+                          <span className={`material-symbols-outlined ${item.icon_color || 'text-blue-600'} text-[28px]`}>{item.icon || 'download'}</span>
+                        </div>
+                      )}
 
                       {/* Middle: Info */}
                       <div className="flex flex-col min-w-0 flex-1">
