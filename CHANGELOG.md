@@ -2,6 +2,25 @@
 
 本文件记录 NavStation 导航站的所有重要更新。
 
+## [2.3.2] - 2026-02-03
+
+### 优化
+
+#### 字体本地化
+- 将 Google Fonts CDN 字体（Inter、Material Symbols Outlined）下载到本地
+- 移除对 `fonts.googleapis.com` 的外部依赖
+- 断网环境下仍可正常显示图标和文字
+
+### 修改文件
+
+```
+public/fonts/                  # 新增本地字体文件（Inter + Material Symbols）
+src/app/globals.css            # 添加 @font-face 规则引用本地字体
+src/app/layout.tsx             # 移除 Google Fonts CDN <link> 标签
+```
+
+---
+
 ## [2.3.1] - 2026-02-03
 
 ### 修复

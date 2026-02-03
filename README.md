@@ -4,7 +4,7 @@
 
 ## 技术栈
 
-- **前端**: Next.js 16 (App Router) + React 19 + Tailwind CSS 4 + TypeScript
+- **前端**: Next.js 16 (App Router) + React 19 + Tailwind CSS 4 + TypeScript（字体本地托管，无外部 CDN 依赖）
 - **后端**: Next.js API Routes + node-postgres
 - **数据库**: PostgreSQL 14+
 - **认证**: bcryptjs + HttpOnly Cookie + API Key
