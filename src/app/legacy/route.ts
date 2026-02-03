@@ -635,7 +635,8 @@ export async function GET(request: NextRequest) {
     // 绑定搜索事件
     if (searchInput) {
       addEvent(searchInput, 'input', filterSites);
-      addEvent(searchInput, 'keyup', filterSites);  // IE10 fallback
+      addEvent(searchInput, 'keyup', filterSites);  // IE9 fallback
+      addEvent(searchInput, 'propertychange', filterSites);  // IE8 fallback
       addEvent(searchInput, 'change', filterSites);
     }
   })();
