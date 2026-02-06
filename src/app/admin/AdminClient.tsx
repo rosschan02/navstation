@@ -42,6 +42,9 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
   const [softwareList, setSoftwareList] = useState<SoftwareItem[]>([]);
   const [selectedSoftware, setSelectedSoftware] = useState('');
   const [generatingQr, setGeneratingQr] = useState(false);
+  const [softwareSearch, setSoftwareSearch] = useState('');
+  const [softwareDropdownOpen, setSoftwareDropdownOpen] = useState(false);
+  const softwareDropdownRef = useRef<HTMLDivElement>(null);
 
   // Get site categories only (not software)
   const siteCategories = categories.filter(c => c.type === 'site' || c.type === 'qrcode');
@@ -65,6 +68,8 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
     setQrPreview('');
     setTagInput('');
     setSelectedSoftware('');
+    setSoftwareSearch('');
+    setSoftwareDropdownOpen(false);
     setEditingSite(null);
   };
 
@@ -200,6 +205,25 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
         .catch(() => {});
     }
   }, [isQrCategory, softwareList.length]);
+
+  // Close software dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (softwareDropdownRef.current && !softwareDropdownRef.current.contains(e.target as Node)) {
+        setSoftwareDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const filteredSoftwareList = softwareList.filter(sw => {
+    if (!softwareSearch) return true;
+    const q = softwareSearch.toLowerCase();
+    return sw.name.toLowerCase().includes(q) || (sw.version && sw.version.toLowerCase().includes(q));
+  });
+
+  const selectedSoftwareItem = softwareList.find(s => s.id.toString() === selectedSoftware);
 
   const handleGenerateQrFromSoftware = async () => {
     if (!selectedSoftware) return;
@@ -508,18 +532,60 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
                       <div className="border border-slate-200 rounded-lg p-3 mb-3">
                         <p className="text-sm font-medium text-slate-600 mb-2">从已上传软件生成</p>
                         <div className="flex gap-2">
-                          <select
-                            value={selectedSoftware}
-                            onChange={(e) => setSelectedSoftware(e.target.value)}
-                            className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                          >
-                            <option value="">选择软件...</option>
-                            {softwareList.map(sw => (
-                              <option key={sw.id} value={sw.id.toString()}>
-                                {sw.name} {sw.version ? `v${sw.version}` : ''}
-                              </option>
-                            ))}
-                          </select>
+                          <div className="flex-1 relative" ref={softwareDropdownRef}>
+                            <div
+                              onClick={() => setSoftwareDropdownOpen(!softwareDropdownOpen)}
+                              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm cursor-pointer flex items-center justify-between focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary"
+                            >
+                              <span className={selectedSoftwareItem ? 'text-slate-900' : 'text-slate-400'}>
+                                {selectedSoftwareItem
+                                  ? `${selectedSoftwareItem.name} ${selectedSoftwareItem.version ? `v${selectedSoftwareItem.version}` : ''}`
+                                  : '选择软件...'}
+                              </span>
+                              <span className="material-symbols-outlined text-slate-400 text-[18px]">
+                                {softwareDropdownOpen ? 'expand_less' : 'expand_more'}
+                              </span>
+                            </div>
+                            {softwareDropdownOpen && (
+                              <div className="absolute z-10 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-lg max-h-60 overflow-hidden">
+                                <div className="p-2 border-b border-slate-100">
+                                  <div className="relative">
+                                    <span className="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-[16px]">search</span>
+                                    <input
+                                      type="text"
+                                      value={softwareSearch}
+                                      onChange={(e) => setSoftwareSearch(e.target.value)}
+                                      placeholder="搜索软件名称..."
+                                      className="w-full pl-7 pr-3 py-1.5 border border-slate-200 rounded text-sm focus:ring-1 focus:ring-primary/20 focus:border-primary focus:outline-none"
+                                      autoFocus
+                                      onClick={(e) => e.stopPropagation()}
+                                    />
+                                  </div>
+                                </div>
+                                <div className="overflow-y-auto max-h-44">
+                                  {filteredSoftwareList.length === 0 ? (
+                                    <div className="px-3 py-2 text-sm text-slate-400 text-center">无匹配结果</div>
+                                  ) : (
+                                    filteredSoftwareList.map(sw => (
+                                      <div
+                                        key={sw.id}
+                                        onClick={() => {
+                                          setSelectedSoftware(sw.id.toString());
+                                          setSoftwareDropdownOpen(false);
+                                          setSoftwareSearch('');
+                                        }}
+                                        className={`px-3 py-2 text-sm cursor-pointer hover:bg-primary/5 ${
+                                          selectedSoftware === sw.id.toString() ? 'bg-primary/10 text-primary font-medium' : 'text-slate-700'
+                                        }`}
+                                      >
+                                        {sw.name} {sw.version ? `v${sw.version}` : ''}
+                                      </div>
+                                    ))
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
                           <button
                             type="button"
                             onClick={handleGenerateQrFromSoftware}
