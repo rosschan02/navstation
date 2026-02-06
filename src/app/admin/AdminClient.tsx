@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import type { SiteData, Category } from '@/types';
+import type { SiteData, Category, SoftwareItem } from '@/types';
 import { IconPicker } from '@/components/IconPicker';
 
 interface AdminClientProps {
@@ -39,6 +39,9 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
   });
 
   const [tagInput, setTagInput] = useState('');
+  const [softwareList, setSoftwareList] = useState<SoftwareItem[]>([]);
+  const [selectedSoftware, setSelectedSoftware] = useState('');
+  const [generatingQr, setGeneratingQr] = useState(false);
 
   // Get site categories only (not software)
   const siteCategories = categories.filter(c => c.type === 'site' || c.type === 'qrcode');
@@ -61,6 +64,7 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
     setLogoPreview('');
     setQrPreview('');
     setTagInput('');
+    setSelectedSoftware('');
     setEditingSite(null);
   };
 
@@ -186,6 +190,52 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
   // Get selected category info for form
   const selectedCategory = categories.find(c => c.id.toString() === formData.category_id);
   const isQrCategory = selectedCategory?.type === 'qrcode';
+
+  // Fetch software list when QR category is selected
+  useEffect(() => {
+    if (isQrCategory && softwareList.length === 0) {
+      fetch('/api/software')
+        .then(r => r.json())
+        .then(data => setSoftwareList(Array.isArray(data) ? data : []))
+        .catch(() => {});
+    }
+  }, [isQrCategory, softwareList.length]);
+
+  const handleGenerateQrFromSoftware = async () => {
+    if (!selectedSoftware) return;
+
+    const software = softwareList.find(s => s.id.toString() === selectedSoftware);
+    if (!software) return;
+
+    setGeneratingQr(true);
+    try {
+      const downloadUrl = `${window.location.origin}/api/software/${software.id}/download`;
+
+      const res = await fetch('/api/qrcode/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: downloadUrl }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setQrPreview(data.path);
+        setFormData(prev => ({
+          ...prev,
+          qr_image: data.path,
+          name: prev.name || software.name,
+          description: prev.description || software.description || '',
+          url: downloadUrl,
+        }));
+      } else {
+        alert('二维码生成失败');
+      }
+    } catch {
+      alert('二维码生成失败');
+    } finally {
+      setGeneratingQr(false);
+    }
+  };
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden relative bg-background-light">
@@ -447,12 +497,42 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
                     </div>
                   </div>
 
-                  {/* QR Image Upload (for QR category) */}
+                  {/* QR Image (for QR category) */}
                   {isQrCategory && (
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1">
                         二维码图片 <span className="text-red-500">*</span>
                       </label>
+
+                      {/* Generate from software */}
+                      <div className="border border-slate-200 rounded-lg p-3 mb-3">
+                        <p className="text-sm font-medium text-slate-600 mb-2">从已上传软件生成</p>
+                        <div className="flex gap-2">
+                          <select
+                            value={selectedSoftware}
+                            onChange={(e) => setSelectedSoftware(e.target.value)}
+                            className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                          >
+                            <option value="">选择软件...</option>
+                            {softwareList.map(sw => (
+                              <option key={sw.id} value={sw.id.toString()}>
+                                {sw.name} {sw.version ? `v${sw.version}` : ''}
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            type="button"
+                            onClick={handleGenerateQrFromSoftware}
+                            disabled={!selectedSoftware || generatingQr}
+                            className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                          >
+                            {generatingQr ? '生成中...' : '生成二维码'}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Manual upload */}
+                      <p className="text-xs text-slate-400 mb-2">或手动上传二维码图片</p>
                       <div className="flex items-center gap-4">
                         <div
                           onClick={() => qrInputRef.current?.click()}
