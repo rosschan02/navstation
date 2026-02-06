@@ -2,6 +2,50 @@
 
 本文件记录 NavStation 导航站的所有重要更新。
 
+## [2.6.0] - 2026-02-06
+
+### 新增
+
+#### 数据分析仪表盘增强
+- 分析页面升级为多模块仪表盘，新增 KPI 卡片、点击趋势、24 小时分布、热门分类、来源页面、最近活动流
+- 新增热门软件 Top 10 排行，与原有热门站点 Top 10 并列展示
+- 新增搜索上下文点击率、独立访客（匿名设备维度）等核心指标
+
+#### 埋点能力增强
+- 首页站点点击埋点新增上下文信息：来源页面、匿名访客 ID、分类、是否处于搜索态
+- 软件下载链路新增埋点：下载接口服务端写入 `click_events`，避免前端异常导致漏记
+- 新增 `analyticsSource` 工具统一构建和解析埋点来源字段，兼容历史旧埋点格式
+- 新增 `visitorId` 工具，基于浏览器本地存储生成稳定匿名 ID
+
+### 变更
+
+#### Analytics API 重构
+- `GET /api/analytics` 从基础点击统计扩展为聚合接口，返回：
+  - `summary`：总点击、UV、站点/软件下载点击、日环比、周期环比
+  - `daily`：按天趋势（含站点/软件下载拆分）
+  - `hourly`：24 小时点击热度
+  - `source_pages`：来源页面分布
+  - `categories`：分类点击排行
+  - `top_sites` / `top_software`：热门目标排行
+  - `recent`：最近行为流
+- `POST /api/analytics/click` 新增参数校验并支持 `software` 目标类型
+
+### 修改文件
+
+```
+src/lib/analyticsSource.ts            # 新增埋点来源协议工具
+src/lib/visitorId.ts                  # 新增匿名访客 ID 工具
+src/app/HomeClient.tsx                # 首页点击埋点补充上下文
+src/app/software/SoftwareClient.tsx   # 下载链接携带埋点上下文参数
+src/app/api/software/[id]/download/route.ts # 下载时服务端记录 analytics 事件
+src/app/api/analytics/click/route.ts  # 点击接口参数校验与标准化
+src/app/api/analytics/route.ts        # 统计聚合逻辑重构
+src/app/analytics/page.tsx            # 分析页 UI 重构
+README.md                             # 文档更新
+```
+
+---
+
 ## [2.5.0] - 2026-02-06
 
 ### 新增

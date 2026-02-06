@@ -1,8 +1,10 @@
 'use client';
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import type { Category, SiteData } from '@/types';
+import { buildAnalyticsSource } from '@/lib/analyticsSource';
+import { getOrCreateVisitorId } from '@/lib/visitorId';
 
 interface HomeClientProps {
   categories: Category[];
@@ -11,19 +13,15 @@ interface HomeClientProps {
   clientIP?: string;
 }
 
-function trackClick(siteId: number) {
-  const body = JSON.stringify({ target_type: 'site', target_id: siteId, source: 'direct' });
-  if (navigator.sendBeacon) {
-    navigator.sendBeacon('/api/analytics/click', new Blob([body], { type: 'application/json' }));
-  } else {
-    fetch('/api/analytics/click', { method: 'POST', body, headers: { 'Content-Type': 'application/json' }, keepalive: true });
-  }
-}
-
 export function HomeClient({ categories, sites, footerText, clientIP }: HomeClientProps) {
   const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
+  const [visitorId, setVisitorId] = useState('anon');
   const selectedCategory = searchParams.get('category') || 'all';
+
+  useEffect(() => {
+    setVisitorId(getOrCreateVisitorId());
+  }, []);
 
   // Filter sites based on search and category
   const filteredSites = useMemo(() => {
@@ -76,6 +74,30 @@ export function HomeClient({ categories, sites, footerText, clientIP }: HomeClie
     // Sort by category sort_order
     return Object.values(groups).sort((a, b) => a.category.sort_order - b.category.sort_order);
   }, [filteredSites, categories]);
+
+  const trackClick = useCallback((siteId: number) => {
+    const body = JSON.stringify({
+      target_type: 'site',
+      target_id: siteId,
+      source: buildAnalyticsSource({
+        page: 'home',
+        visitorId,
+        category: selectedCategory,
+        hasSearch: !!searchQuery.trim(),
+      }),
+    });
+
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon('/api/analytics/click', new Blob([body], { type: 'application/json' }));
+    } else {
+      fetch('/api/analytics/click', {
+        method: 'POST',
+        body,
+        headers: { 'Content-Type': 'application/json' },
+        keepalive: true,
+      });
+    }
+  }, [searchQuery, selectedCategory, visitorId]);
 
   return (
     <div className="flex-1 overflow-y-auto w-full bg-background-light">

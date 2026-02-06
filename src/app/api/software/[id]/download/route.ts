@@ -3,6 +3,7 @@ import pool from '@/db';
 import { readFile } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
+import { buildAnalyticsSource } from '@/lib/analyticsSource';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,6 +37,20 @@ export async function GET(
       'UPDATE software SET download_count = download_count + 1 WHERE id = $1',
       [id]
     );
+
+    const sid = request.nextUrl.searchParams.get('sid') || 'anon';
+    const category = request.nextUrl.searchParams.get('cat') || 'none';
+    const hasSearch = request.nextUrl.searchParams.get('q') === '1';
+
+    // Keep download analytics in sync with click analytics for the dashboard.
+    try {
+      await pool.query(
+        'INSERT INTO click_events (target_type, target_id, source) VALUES ($1, $2, $3)',
+        ['software', id, buildAnalyticsSource({ page: 'software', visitorId: sid, category, hasSearch })]
+      );
+    } catch (analyticsError) {
+      console.error('Failed to track software download analytics:', analyticsError);
+    }
 
     // Read and serve the file
     const fileBuffer = await readFile(filePath);

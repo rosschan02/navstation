@@ -45,7 +45,9 @@ navstation/
 │   ├── contexts/
 │   │   └── AuthContext.tsx      # 认证状态管理
 │   ├── lib/
-│   │   └── apiAuth.ts          # API Key 认证工具
+│   │   ├── apiAuth.ts          # API Key 认证工具
+│   │   ├── analyticsSource.ts  # 分析埋点 source 构建/解析工具
+│   │   └── visitorId.ts        # 匿名访客 ID 生成与读取
 │   ├── db/
 │   │   ├── index.ts            # PostgreSQL 连接池
 │   │   ├── schema.sql          # 建表语句
@@ -189,8 +191,8 @@ docker-compose up -d
 ### 数据分析
 | 路径 | 方法 | 说明 |
 |------|------|------|
-| `GET /api/analytics?days=7` | GET | 统计数据 |
-| `POST /api/analytics/click` | POST | 记录点击事件 |
+| `GET /api/analytics?days=7` | GET | 返回统计仪表盘数据（KPI、趋势、来源、分类、Top、最近活动） |
+| `POST /api/analytics/click` | POST | 记录点击事件（支持 `site` / `software`） |
 
 ### 站点设置
 | 路径 | 方法 | 说明 |
@@ -229,6 +231,9 @@ docker-compose up -d
 - **站点设置**: 自定义站点名称、描述、Logo、版本号、页脚版权
 - **账号设置**: 修改管理员头像和密码
 - **数据分析**: 查看点击统计、访问趋势和热门站点 Top 10 排行榜（支持 7 天/30 天切换）
+  - 支持总点击、独立访客、站点/软件下载点击、搜索上下文点击率
+  - 支持 24 小时分布、来源页面分布、热门分类
+  - 支持热门站点 Top 10、热门软件 Top 10、最近活动流（最近 20 条）
 
 ### 图标选择器
 

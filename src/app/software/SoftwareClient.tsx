@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import type { SoftwareItem, Category } from '@/types';
+import { getOrCreateVisitorId } from '@/lib/visitorId';
 
 interface SoftwareClientProps {
   items: SoftwareItem[];
@@ -18,6 +19,11 @@ function formatFileSize(bytes: number): string {
 
 export function SoftwareClient({ items, categories }: SoftwareClientProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [visitorId, setVisitorId] = useState('anon');
+
+  useEffect(() => {
+    setVisitorId(getOrCreateVisitorId());
+  }, []);
 
   // Filter items based on search
   const filteredItems = useMemo(() => {
@@ -59,6 +65,15 @@ export function SoftwareClient({ items, categories }: SoftwareClientProps) {
     // Sort by category sort_order
     return Object.values(groups).sort((a, b) => a.category.sort_order - b.category.sort_order);
   }, [filteredItems, categories]);
+
+  const buildDownloadUrl = useCallback((item: SoftwareItem) => {
+    const params = new URLSearchParams({
+      sid: visitorId,
+      cat: item.category_id?.toString() || 'none',
+      q: searchQuery.trim() ? '1' : '0',
+    });
+    return `/api/software/${item.id}/download?${params.toString()}`;
+  }, [searchQuery, visitorId]);
 
   return (
     <div className="flex-1 overflow-y-auto p-6 md:p-8 lg:px-12 bg-background-light">
@@ -154,7 +169,7 @@ export function SoftwareClient({ items, categories }: SoftwareClientProps) {
 
                       {/* Right: Download Button */}
                       <a
-                        href={`/api/software/${item.id}/download`}
+                        href={buildDownloadUrl(item)}
                         className="shrink-0 flex items-center justify-center size-10 rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-white transition-colors"
                         title="下载"
                       >
