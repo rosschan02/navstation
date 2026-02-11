@@ -22,6 +22,7 @@ navstation/
 │   │   │   ├── page.tsx        # 站点管理（统一管理站点+二维码）
 │   │   │   ├── categories/     # 分类管理
 │   │   │   ├── software/       # 软件管理
+│   │   │   ├── phonebook/      # 电话本管理
 │   │   │   ├── keys/           # API 密钥管理
 │   │   │   └── settings/       # 站点设置
 │   │   ├── analytics/          # 数据分析
@@ -35,12 +36,14 @@ navstation/
 │   │       ├── uploads/        # 图片服务
 │   │       ├── auth/           # 登录/登出/当前用户
 │   │       ├── analytics/      # 统计查询 + 点击记录
+│   │       ├── phonebook/      # 电话本查询与管理
 │   │       ├── keys/           # API 密钥管理
 │   │       └── settings/       # 站点设置 API
 │   ├── components/             # 客户端组件
 │   │   ├── AppShell.tsx        # 布局壳（Sidebar + 模态框）
 │   │   ├── Sidebar.tsx         # 侧边栏导航
 │   │   ├── LoginModal.tsx      # 登录弹窗
+│   │   ├── PhonebookQuickSearchModal.tsx # 电话本速查弹窗
 │   │   └── IconPicker.tsx      # 图标选择器组件
 │   ├── contexts/
 │   │   └── AuthContext.tsx      # 认证状态管理
@@ -132,6 +135,7 @@ docker-compose up -d
 | `click_events` | 点击事件统计 |
 | `site_settings` | 站点全局设置（名称、描述、Logo等） |
 | `api_keys` | API 密钥（外部系统对接认证） |
+| `phonebook_entries` | 电话本条目（科室名、长码、短码） |
 
 ### 分类类型说明
 
@@ -200,6 +204,15 @@ docker-compose up -d
 | `GET /api/settings` | GET | 获取站点设置 |
 | `PUT /api/settings` | PUT | 更新站点设置 |
 
+### 电话本管理
+| 路径 | 方法 | 说明 |
+|------|------|------|
+| `GET /api/phonebook` | GET | 电话本列表（支持 `search`，默认只返回启用条目） |
+| `POST /api/phonebook` | POST | 新增电话本条目（需 write 权限） |
+| `GET /api/phonebook/:id` | GET | 获取单个电话本条目 |
+| `PUT /api/phonebook/:id` | PUT | 更新电话本条目（需 write 权限） |
+| `DELETE /api/phonebook/:id` | DELETE | 删除电话本条目（需 write 权限） |
+
 ### API 密钥管理（需管理员登录）
 | 路径 | 方法 | 说明 |
 |------|------|------|
@@ -218,6 +231,7 @@ docker-compose up -d
 ### 用户功能
 
 - **首页导航**: 所有站点按分类分组展示，左侧边栏分类筛选，支持全文搜索，显示服务器局域网 IP 地址
+- **电话本速查**: 首页搜索框旁提供「电话本速查」按钮，支持按科室名/短码/长码快速查询，支持一键复制号码
 - **软件下载**: 下载管理员上传的常用软件（支持大文件，按排序显示）
 - **二维码展示**: 公众号/小程序二维码以图片网格形式展示
 - **IE8+ 兼容**: 自动检测 IE8/9/10/11 并重定向到兼容页面（float 布局，无 Flexbox/Grid）
@@ -228,6 +242,7 @@ docker-compose up -d
 - **站点管理**: 统一管理所有站点和二维码，支持上传 Logo，支持从已上传软件自动生成下载二维码
 - **分类管理**: 管理分类，支持三种类型（站点/二维码/软件）
 - **软件管理**: 上传、编辑、删除软件下载资源（单文件最大 4GB），支持自定义 Logo 或图标
+- **电话本管理**: 管理科室电话本，支持短码（固定 4 位）和长码（1-13 位）维护、启用/停用与排序
 - **站点设置**: 自定义站点名称、描述、Logo、版本号、页脚版权
 - **账号设置**: 修改管理员头像和密码
 - **数据分析**: 查看点击统计、访问趋势和热门站点 Top 10 排行榜（支持 7 天/30 天切换）
@@ -321,6 +336,9 @@ psql -d your_database -f src/db/migrations/004_add_software_sort_order.sql
 
 # v2.3.0 - API 密钥表
 psql -d your_database -f src/db/migrations/005_add_api_keys.sql
+
+# v2.7.0 - 电话本条目表
+psql -d your_database -f src/db/migrations/006_add_phonebook_entries.sql
 ```
 
 对于全新部署，直接运行：

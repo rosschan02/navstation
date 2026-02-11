@@ -2,6 +2,63 @@
 
 本文件记录 NavStation 导航站的所有重要更新。
 
+## [2.7.0] - 2026-02-11
+
+### 新增
+
+#### 电话本速查（首页）
+- 首页搜索框右侧新增「电话本速查」快捷按钮
+- 新增电话本弹窗，支持按科室名称、短码、长码快速搜索
+- 支持一键复制短码/长码，支持点击长码直接拨号
+
+#### 电话本管理（后台）
+- 工作区新增「电话本管理」菜单入口
+- 新增 `/admin/phonebook` 页面，支持电话本条目的增删改查
+- 支持状态筛选、关键词搜索、排序维护
+
+#### 电话本 API
+- 新增 `GET /api/phonebook`（公开读，默认仅返回启用条目）
+- 新增 `POST /api/phonebook`、`PUT /api/phonebook/:id`、`DELETE /api/phonebook/:id`（需 write 权限）
+- 新增 `GET /api/phonebook/:id` 获取单条数据
+
+### 变更
+
+#### 数据库与类型
+- 新增 `phonebook_entries` 表，包含 `department_name`、`short_code`、`long_code`、`status`、`sort_order` 等字段
+- 增加短码/长码唯一约束与格式校验（短码固定 4 位，长码 1-13 位数字）
+- 新增 `PhonebookEntry` TypeScript 类型
+
+### 新增文件
+
+```
+src/app/admin/phonebook/page.tsx
+src/app/admin/phonebook/PhonebookClient.tsx
+src/app/api/phonebook/route.ts
+src/app/api/phonebook/[id]/route.ts
+src/components/PhonebookQuickSearchModal.tsx
+src/db/migrations/006_add_phonebook_entries.sql
+```
+
+### 修改文件
+
+```
+src/app/HomeClient.tsx
+src/components/Sidebar.tsx
+src/db/schema.sql
+src/types/index.ts
+README.md
+```
+
+### 升级指南
+
+如果从旧版本升级，需要运行数据库迁移：
+
+```bash
+psql -d your_database -f src/db/migrations/006_add_phonebook_entries.sql
+```
+
+---
+
 ## [2.6.0] - 2026-02-06
 
 ### 新增
