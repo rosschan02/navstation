@@ -103,6 +103,19 @@ CREATE TABLE IF NOT EXISTS api_keys (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Phonebook entries for quick department/phone lookup
+CREATE TABLE IF NOT EXISTS phonebook_entries (
+    id SERIAL PRIMARY KEY,
+    department_name VARCHAR(100) NOT NULL,
+    short_code CHAR(4) NOT NULL UNIQUE CHECK (short_code ~ '^[0-9]{4}$'),
+    long_code VARCHAR(13) NOT NULL UNIQUE CHECK (long_code ~ '^[0-9]{1,13}$'),
+    remark TEXT DEFAULT '',
+    sort_order INTEGER DEFAULT 0,
+    status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'inactive')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_sites_category ON sites(category_id);
 CREATE INDEX IF NOT EXISTS idx_sites_status ON sites(status);
@@ -114,3 +127,5 @@ CREATE INDEX IF NOT EXISTS idx_click_events_created_at ON click_events(created_a
 CREATE INDEX IF NOT EXISTS idx_click_events_target ON click_events(target_type, target_id);
 CREATE INDEX IF NOT EXISTS idx_api_keys_prefix ON api_keys(key_prefix);
 CREATE INDEX IF NOT EXISTS idx_api_keys_active ON api_keys(is_active);
+CREATE INDEX IF NOT EXISTS idx_phonebook_department ON phonebook_entries(department_name);
+CREATE INDEX IF NOT EXISTS idx_phonebook_status ON phonebook_entries(status);

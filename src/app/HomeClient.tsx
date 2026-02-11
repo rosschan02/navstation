@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import type { Category, SiteData } from '@/types';
 import { buildAnalyticsSource } from '@/lib/analyticsSource';
 import { getOrCreateVisitorId } from '@/lib/visitorId';
+import { PhonebookQuickSearchModal } from '@/components/PhonebookQuickSearchModal';
 
 interface HomeClientProps {
   categories: Category[];
@@ -17,6 +18,7 @@ export function HomeClient({ categories, sites, footerText, clientIP }: HomeClie
   const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const [visitorId, setVisitorId] = useState('anon');
+  const [isPhonebookModalOpen, setIsPhonebookModalOpen] = useState(false);
   const selectedCategory = searchParams.get('category') || 'all';
 
   useEffect(() => {
@@ -136,6 +138,14 @@ export function HomeClient({ categories, sites, footerText, clientIP }: HomeClie
               </div>
             </label>
           </div>
+          <button
+            type="button"
+            onClick={() => setIsPhonebookModalOpen(true)}
+            className="shrink-0 h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-700 hover:text-primary hover:border-primary/30 hover:bg-primary/5 shadow-sm transition-colors flex items-center gap-2"
+          >
+            <span className="material-symbols-outlined text-[20px]">dialpad</span>
+            <span className="hidden md:inline text-sm font-medium">电话本速查</span>
+          </button>
         </section>
 
         {/* Search Results Info */}
@@ -231,6 +241,11 @@ export function HomeClient({ categories, sites, footerText, clientIP }: HomeClie
           <p>{footerText || '© 2024 通用站点导航。保留所有权利。'}</p>
         </div>
       </div>
+
+      <PhonebookQuickSearchModal
+        isOpen={isPhonebookModalOpen}
+        onClose={() => setIsPhonebookModalOpen(false)}
+      />
     </div>
   );
 }

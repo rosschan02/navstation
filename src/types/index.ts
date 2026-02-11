@@ -87,3 +87,15 @@ export interface ApiKey {
   last_used_at: string | null;
   created_at: string;
 }
+
+export interface PhonebookEntry {
+  id: number;
+  department_name: string;
+  short_code: string;
+  long_code: string;
+  remark: string;
+  sort_order: number;
+  status: 'active' | 'inactive';
+  created_at: string;
+  updated_at: string;
+}
