@@ -19,7 +19,7 @@ interface EntryFormData {
   status: EntryStatus;
 }
 
-const SHORT_CODE_REGEX = /^\d{4}$/;
+const SHORT_CODE_REGEX = /^\d{3,4}$/;
 const LONG_CODE_REGEX = /^\d{1,13}$/;
 
 const DEFAULT_FORM: EntryFormData = {
@@ -107,8 +107,8 @@ export function PhonebookClient({ initialEntries }: PhonebookClientProps) {
 
     if (!name) return '科室名称不能为空';
     if (name.length > 100) return '科室名称长度不能超过 100 个字符';
-    if (!SHORT_CODE_REGEX.test(shortCode)) return '短码必须是 4 位数字';
-    if (!LONG_CODE_REGEX.test(longCode)) return '长码必须是 1-13 位数字';
+    if (shortCode && !SHORT_CODE_REGEX.test(shortCode)) return '短码必须是 3-4 位数字';
+    if (longCode && !LONG_CODE_REGEX.test(longCode)) return '长码必须是 1-13 位数字';
     return '';
   };
 
@@ -259,8 +259,8 @@ export function PhonebookClient({ initialEntries }: PhonebookClientProps) {
                 {filteredEntries.map((entry) => (
                   <tr key={entry.id} className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50/70">
                     <td className="px-4 py-3 text-sm font-medium text-slate-900">{entry.department_name}</td>
-                    <td className="px-4 py-3 text-sm text-slate-600 font-mono">{entry.short_code}</td>
-                    <td className="px-4 py-3 text-sm text-slate-600 font-mono">{entry.long_code}</td>
+                    <td className="px-4 py-3 text-sm text-slate-600 font-mono">{entry.short_code || '-'}</td>
+                    <td className="px-4 py-3 text-sm text-slate-600 font-mono">{entry.long_code || '-'}</td>
                     <td className="px-4 py-3 text-sm text-slate-500 max-w-[260px] truncate">{entry.remark || '-'}</td>
                     <td className="px-4 py-3 text-sm text-slate-500">{entry.sort_order}</td>
                     <td className="px-4 py-3 text-sm">
@@ -329,33 +329,31 @@ export function PhonebookClient({ initialEntries }: PhonebookClientProps) {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <label className="block text-sm font-medium text-slate-700 mb-1">
-                          短码（4位）<span className="text-red-500">*</span>
+                          短码（3-4位）
                         </label>
                         <input
                           type="text"
                           inputMode="numeric"
                           value={formData.short_code}
                           onChange={(e) => setFormData(prev => ({ ...prev, short_code: normalizeDigits(e.target.value, 4) }))}
-                          placeholder="1234"
+                          placeholder="可留空"
                           maxLength={4}
                           className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                          required
                         />
                       </div>
 
                       <div>
                         <label className="block text-sm font-medium text-slate-700 mb-1">
-                          长码（1-13位）<span className="text-red-500">*</span>
+                          长码（1-13位）
                         </label>
                         <input
                           type="text"
                           inputMode="numeric"
                           value={formData.long_code}
                           onChange={(e) => setFormData(prev => ({ ...prev, long_code: normalizeDigits(e.target.value, 13) }))}
-                          placeholder="02012345678"
+                          placeholder="可留空"
                           maxLength={13}
                           className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                          required
                         />
                       </div>
                     </div>

@@ -43,7 +43,7 @@ navstation/
 │   │   ├── AppShell.tsx        # 布局壳（Sidebar + 模态框）
 │   │   ├── Sidebar.tsx         # 侧边栏导航
 │   │   ├── LoginModal.tsx      # 登录弹窗
-│   │   ├── PhonebookQuickSearchModal.tsx # 电话本速查弹窗
+│   │   ├── PhonebookQuickSearchModal.tsx # 院内电话速查弹窗
 │   │   └── IconPicker.tsx      # 图标选择器组件
 │   ├── contexts/
 │   │   └── AuthContext.tsx      # 认证状态管理
@@ -231,7 +231,7 @@ docker-compose up -d
 ### 用户功能
 
 - **首页导航**: 所有站点按分类分组展示，左侧边栏分类筛选，支持全文搜索，显示服务器局域网 IP 地址
-- **电话本速查**: 首页搜索框旁提供「电话本速查」按钮，支持按科室名/短码/长码快速查询，支持一键复制号码
+- **院内电话速查**: 首页搜索框旁提供「院内电话速查」按钮，输入关键词后按科室名/短码/长码搜索，支持一键复制号码
 - **软件下载**: 下载管理员上传的常用软件（支持大文件，按排序显示）
 - **二维码展示**: 公众号/小程序二维码以图片网格形式展示
 - **IE8+ 兼容**: 自动检测 IE8/9/10/11 并重定向到兼容页面（float 布局，无 Flexbox/Grid）
@@ -242,7 +242,7 @@ docker-compose up -d
 - **站点管理**: 统一管理所有站点和二维码，支持上传 Logo，支持从已上传软件自动生成下载二维码
 - **分类管理**: 管理分类，支持三种类型（站点/二维码/软件）
 - **软件管理**: 上传、编辑、删除软件下载资源（单文件最大 4GB），支持自定义 Logo 或图标
-- **电话本管理**: 管理科室电话本，支持短码（固定 4 位）和长码（1-13 位）维护、启用/停用与排序
+- **电话本管理**: 管理科室电话本，支持短码（3-4 位，可留空）和长码（1-13 位，可留空）维护、启用/停用与排序
 - **站点设置**: 自定义站点名称、描述、Logo、版本号、页脚版权
 - **账号设置**: 修改管理员头像和密码
 - **数据分析**: 查看点击统计、访问趋势和热门站点 Top 10 排行榜（支持 7 天/30 天切换）
@@ -339,6 +339,9 @@ psql -d your_database -f src/db/migrations/005_add_api_keys.sql
 
 # v2.7.0 - 电话本条目表
 psql -d your_database -f src/db/migrations/006_add_phonebook_entries.sql
+
+# v2.7.1 - 放宽电话本短码/长码约束
+psql -d your_database -f src/db/migrations/007_relax_phonebook_constraints.sql
 ```
 
 对于全新部署，直接运行：

@@ -144,7 +144,7 @@ export function HomeClient({ categories, sites, footerText, clientIP }: HomeClie
             className="shrink-0 h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-700 hover:text-primary hover:border-primary/30 hover:bg-primary/5 shadow-sm transition-colors flex items-center gap-2"
           >
             <span className="material-symbols-outlined text-[20px]">dialpad</span>
-            <span className="hidden md:inline text-sm font-medium">电话本速查</span>
+            <span className="hidden md:inline text-sm font-medium">院内电话速查</span>
           </button>
         </section>
 

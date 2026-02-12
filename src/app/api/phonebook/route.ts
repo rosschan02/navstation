@@ -4,7 +4,7 @@ import { authenticate, hasPermission, createAuthErrorResponse, extractApiKey } f
 
 export const dynamic = 'force-dynamic';
 
-const SHORT_CODE_REGEX = /^\d{4}$/;
+const SHORT_CODE_REGEX = /^\d{3,4}$/;
 const LONG_CODE_REGEX = /^\d{1,13}$/;
 const STATUS_VALUES = new Set(['active', 'inactive']);
 
@@ -127,13 +127,13 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    if (!SHORT_CODE_REGEX.test(shortCode)) {
+    if (shortCode && !SHORT_CODE_REGEX.test(shortCode)) {
       return NextResponse.json(
-        { error: '短码必须是 4 位数字', code: 'INVALID_SHORT_CODE' },
+        { error: '短码必须是 3-4 位数字', code: 'INVALID_SHORT_CODE' },
         { status: 400 }
       );
     }
-    if (!LONG_CODE_REGEX.test(longCode)) {
+    if (longCode && !LONG_CODE_REGEX.test(longCode)) {
       return NextResponse.json(
         { error: '长码必须是 1-13 位数字', code: 'INVALID_LONG_CODE' },
         { status: 400 }
@@ -155,17 +155,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(rows[0], { status: 201 });
   } catch (error) {
-    const pgError = error as { code?: string; message?: string };
-    if (pgError.code === '23505') {
-      const isShortCode = pgError.message?.includes('short_code');
-      return NextResponse.json(
-        {
-          error: isShortCode ? '短码已存在' : '长码已存在',
-          code: isShortCode ? 'DUPLICATE_SHORT_CODE' : 'DUPLICATE_LONG_CODE',
-        },
-        { status: 409 }
-      );
-    }
     console.error('Failed to create phonebook entry:', error);
     return NextResponse.json({ error: '新增电话本条目失败' }, { status: 500 });
   }

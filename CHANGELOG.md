@@ -2,6 +2,50 @@
 
 本文件记录 NavStation 导航站的所有重要更新。
 
+## [2.7.1] - 2026-02-12
+
+### 变更
+
+#### 电话本约束放宽
+- 短码支持 3-4 位数字，允许留空，允许重复（移除 UNIQUE 约束）
+- 长码允许留空，允许重复（移除 UNIQUE 约束）
+- 后台表单短码/长码不再为必填项
+
+#### 院内电话速查优化
+- 首页按钮名称从「电话本速查」改为「院内电话速查」
+- 打开弹窗时不再加载全部数据，输入关键词后才开始搜索
+- 搜索结果改为表格式单行布局（科室 | 短码 | 长码），更紧凑高效
+- 移除拨号按钮，短码/长码点击可复制
+
+### 新增文件
+
+```
+src/db/migrations/007_relax_phonebook_constraints.sql
+```
+
+### 修改文件
+
+```
+src/db/schema.sql
+src/db/migrations/006_add_phonebook_entries.sql
+src/app/api/phonebook/route.ts
+src/app/api/phonebook/[id]/route.ts
+src/app/admin/phonebook/PhonebookClient.tsx
+src/components/PhonebookQuickSearchModal.tsx
+src/app/HomeClient.tsx
+README.md
+```
+
+### 升级指南
+
+如果从 2.7.0 升级，需要运行数据库迁移：
+
+```bash
+psql -d your_database -f src/db/migrations/007_relax_phonebook_constraints.sql
+```
+
+---
+
 ## [2.7.0] - 2026-02-11
 
 ### 新增

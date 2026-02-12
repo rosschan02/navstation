@@ -107,8 +107,8 @@ CREATE TABLE IF NOT EXISTS api_keys (
 CREATE TABLE IF NOT EXISTS phonebook_entries (
     id SERIAL PRIMARY KEY,
     department_name VARCHAR(100) NOT NULL,
-    short_code CHAR(4) NOT NULL UNIQUE CHECK (short_code ~ '^[0-9]{4}$'),
-    long_code VARCHAR(13) NOT NULL UNIQUE CHECK (long_code ~ '^[0-9]{1,13}$'),
+    short_code VARCHAR(4) DEFAULT '' CHECK (short_code IS NULL OR short_code = '' OR short_code ~ '^[0-9]{3,4}$'),
+    long_code VARCHAR(13) DEFAULT '' CHECK (long_code IS NULL OR long_code = '' OR long_code ~ '^[0-9]{1,13}$'),
     remark TEXT DEFAULT '',
     sort_order INTEGER DEFAULT 0,
     status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'inactive')),
