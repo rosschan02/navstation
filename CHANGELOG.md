@@ -2,6 +2,68 @@
 
 本文件记录 NavStation 导航站的所有重要更新。
 
+## [2.8.0] - 2026-02-12
+
+### 新增
+
+#### DNS 管理 MVP（BIND9）
+- 工作区新增「DNS 管理」菜单与页面（`/admin/dns`）
+- 支持 Zone 管理：新增、编辑、启停、删除（删除前校验是否存在记录）
+- 支持记录管理：新增、启停、删除，覆盖 `A` / `AAAA` / `CNAME` / `TXT` / `MX`
+- 支持 DNS 变更日志列表（最近 100 条，支持按 Zone 过滤）
+
+#### DNS API
+- 新增 `GET/POST /api/dns/zones`
+- 新增 `PUT/DELETE /api/dns/zones/:id`
+- 新增 `GET/POST /api/dns/records`
+- 新增 `GET/PUT/DELETE /api/dns/records/:id`
+- 新增 `GET /api/dns/logs`
+
+### 变更
+
+#### BIND9 同步能力
+- 新增 `src/lib/dns/bind9.ts`，封装 `nsupdate` 动态更新
+- 记录新增/更新/删除时可同步到 BIND9，并回写同步状态与消息
+- 支持 `BIND9_DRY_RUN=1` 模式，便于联调
+
+#### 数据库与类型
+- 新增 `dns_zones`、`dns_records`、`dns_change_logs` 表
+- 新增 DNS 相关 TypeScript 类型
+
+### 新增文件
+
+```
+src/db/migrations/008_add_dns_management.sql
+src/lib/dns/bind9.ts
+src/app/api/dns/shared.ts
+src/app/api/dns/zones/route.ts
+src/app/api/dns/zones/[id]/route.ts
+src/app/api/dns/records/route.ts
+src/app/api/dns/records/[id]/route.ts
+src/app/api/dns/logs/route.ts
+src/app/admin/dns/page.tsx
+src/app/admin/dns/DnsClient.tsx
+```
+
+### 修改文件
+
+```
+src/components/Sidebar.tsx
+src/db/schema.sql
+src/types/index.ts
+README.md
+```
+
+### 升级指南
+
+如果从 2.7.1 升级，需要运行数据库迁移：
+
+```bash
+psql -d your_database -f src/db/migrations/008_add_dns_management.sql
+```
+
+---
+
 ## [2.7.1] - 2026-02-12
 
 ### 变更

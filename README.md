@@ -1,6 +1,6 @@
 # NavStation 导航站
 
-综合导航门户与站点管理系统，提供统一的站点导航、软件下载、二维码展示和数据分析功能。
+综合导航门户与站点管理系统，提供统一的站点导航、软件下载、二维码展示、数据分析与 BIND9 DNS 管理功能。
 
 ## 技术栈
 
@@ -23,6 +23,7 @@ navstation/
 │   │   │   ├── categories/     # 分类管理
 │   │   │   ├── software/       # 软件管理
 │   │   │   ├── phonebook/      # 电话本管理
+│   │   │   ├── dns/            # DNS 管理（BIND9）
 │   │   │   ├── keys/           # API 密钥管理
 │   │   │   └── settings/       # 站点设置
 │   │   ├── analytics/          # 数据分析
@@ -37,6 +38,7 @@ navstation/
 │   │       ├── auth/           # 登录/登出/当前用户
 │   │       ├── analytics/      # 统计查询 + 点击记录
 │   │       ├── phonebook/      # 电话本查询与管理
+│   │       ├── dns/            # DNS Zone/记录/日志管理
 │   │       ├── keys/           # API 密钥管理
 │   │       └── settings/       # 站点设置 API
 │   ├── components/             # 客户端组件
@@ -50,6 +52,7 @@ navstation/
 │   ├── lib/
 │   │   ├── apiAuth.ts          # API Key 认证工具
 │   │   ├── analyticsSource.ts  # 分析埋点 source 构建/解析工具
+│   │   ├── dns/bind9.ts        # BIND9 nsupdate 封装
 │   │   └── visitorId.ts        # 匿名访客 ID 生成与读取
 │   ├── db/
 │   │   ├── index.ts            # PostgreSQL 连接池
@@ -89,6 +92,9 @@ npm install
 ```env
 DATABASE_URL=postgresql://用户名:密码@localhost:5432/数据库名
 JWT_SECRET=你的密钥
+# 可选：DNS/BIND9 联调配置
+# BIND9_DRY_RUN=1
+# BIND9_NSUPDATE_BIN=nsupdate
 ```
 
 ### 3. 初始化数据库
@@ -136,6 +142,9 @@ docker-compose up -d
 | `site_settings` | 站点全局设置（名称、描述、Logo等） |
 | `api_keys` | API 密钥（外部系统对接认证） |
 | `phonebook_entries` | 电话本条目（科室名、长码、短码） |
+| `dns_zones` | DNS Zone 配置（服务器、TSIG、启停状态） |
+| `dns_records` | DNS 记录（A/AAAA/CNAME/TXT/MX）与同步状态 |
+| `dns_change_logs` | DNS 变更审计日志（动作、结果、操作人） |
 
 ### 分类类型说明
 
@@ -221,6 +230,20 @@ docker-compose up -d
 | `PUT /api/keys/:id` | PUT | 更新密钥信息（名称、权限、启用状态） |
 | `DELETE /api/keys/:id` | DELETE | 删除密钥 |
 
+### DNS 管理
+| 路径 | 方法 | 说明 |
+|------|------|------|
+| `GET /api/dns/zones` | GET | 获取 Zone 列表（需 read 权限） |
+| `POST /api/dns/zones` | POST | 新增 Zone（需 write 权限） |
+| `PUT /api/dns/zones/:id` | PUT | 更新 Zone（需 write 权限） |
+| `DELETE /api/dns/zones/:id` | DELETE | 删除 Zone（需 write 权限） |
+| `GET /api/dns/records` | GET | 获取 DNS 记录列表（支持 `zone_id` / `include_inactive`） |
+| `POST /api/dns/records` | POST | 新增记录并可同步到 BIND9（需 write 权限） |
+| `GET /api/dns/records/:id` | GET | 获取单条 DNS 记录（需 read 权限） |
+| `PUT /api/dns/records/:id` | PUT | 更新记录并同步到 BIND9（需 write 权限） |
+| `DELETE /api/dns/records/:id` | DELETE | 删除记录并尝试同步删除（需 write 权限） |
+| `GET /api/dns/logs` | GET | 获取 DNS 变更日志（支持 `zone_id` / `record_id` / `limit`） |
+
 ## 默认账号
 
 - 用户名: `admin`
@@ -243,6 +266,7 @@ docker-compose up -d
 - **分类管理**: 管理分类，支持三种类型（站点/二维码/软件）
 - **软件管理**: 上传、编辑、删除软件下载资源（单文件最大 4GB），支持自定义 Logo 或图标
 - **电话本管理**: 管理科室电话本，支持短码（3-4 位，可留空）和长码（1-13 位，可留空）维护、启用/停用与排序
+- **DNS 管理**: 管理 BIND9 的 Zone 与记录，支持 A/AAAA/CNAME/TXT/MX，支持同步状态追踪与变更日志审计
 - **站点设置**: 自定义站点名称、描述、Logo、版本号、页脚版权
 - **账号设置**: 修改管理员头像和密码
 - **数据分析**: 查看点击统计、访问趋势和热门站点 Top 10 排行榜（支持 7 天/30 天切换）

@@ -99,3 +99,53 @@ export interface PhonebookEntry {
   created_at: string;
   updated_at: string;
 }
+
+export type DnsRecordType = 'A' | 'AAAA' | 'CNAME' | 'TXT' | 'MX';
+export type DnsSyncStatus = 'pending' | 'success' | 'failed' | 'skipped';
+
+export interface DnsZone {
+  id: number;
+  name: string;
+  server: string;
+  port: number;
+  tsig_key_name: string;
+  tsig_algorithm: string;
+  tsig_secret: string;
+  description: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DnsRecord {
+  id: number;
+  zone_id: number;
+  name: string;
+  type: DnsRecordType;
+  ttl: number;
+  value: string;
+  priority: number | null;
+  status: 'active' | 'inactive';
+  last_sync_status: DnsSyncStatus;
+  last_sync_message: string;
+  last_synced_at: string | null;
+  created_at: string;
+  updated_at: string;
+  zone_name?: string;
+}
+
+export interface DnsChangeLog {
+  id: number;
+  zone_id: number | null;
+  record_id: number | null;
+  action: 'create' | 'update' | 'delete' | 'sync';
+  status: 'success' | 'failed' | 'skipped';
+  request_payload: Record<string, unknown>;
+  response_message: string;
+  operator_type: 'cookie' | 'apikey' | 'system';
+  operator_name: string;
+  created_at: string;
+  zone_name?: string;
+  record_name?: string;
+  record_type?: DnsRecordType;
+}
