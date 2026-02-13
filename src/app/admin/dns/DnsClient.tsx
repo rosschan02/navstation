@@ -2,12 +2,13 @@
 
 import React, { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import type { DnsChangeLog, DnsRecord, DnsRecordType, DnsZone } from '@/types';
+import type { DnsChangeLog, DnsForwardZone, DnsRecord, DnsRecordType, DnsZone } from '@/types';
 
 interface DnsClientProps {
   initialZones: DnsZone[];
   initialRecords: DnsRecord[];
   initialLogs: DnsChangeLog[];
+  initialForwardZones: DnsForwardZone[];
 }
 
 type RecordStatus = 'active' | 'inactive';
@@ -38,6 +39,20 @@ interface RecordFormData {
   status: RecordStatus;
   sync_now: boolean;
 }
+
+interface ForwardZoneFormData {
+  name: string;
+  forwarders: string;
+  forward_policy: 'only' | 'first';
+  description: string;
+}
+
+const DEFAULT_FORWARD_ZONE_FORM: ForwardZoneFormData = {
+  name: '',
+  forwarders: '',
+  forward_policy: 'only',
+  description: '',
+};
 
 const DEFAULT_ZONE_FORM: ZoneFormData = {
   name: '',
@@ -95,25 +110,30 @@ function buildLogsUrl(zoneFilter: string): string {
   return `/api/dns/logs?${params.toString()}`;
 }
 
-export function DnsClient({ initialZones, initialRecords, initialLogs }: DnsClientProps) {
+export function DnsClient({ initialZones, initialRecords, initialLogs, initialForwardZones }: DnsClientProps) {
   const router = useRouter();
 
   const [zones, setZones] = useState<DnsZone[]>(initialZones);
   const [records, setRecords] = useState<DnsRecord[]>(initialRecords);
   const [logs, setLogs] = useState<DnsChangeLog[]>(initialLogs);
+  const [forwardZones, setForwardZones] = useState<DnsForwardZone[]>(initialForwardZones);
 
   const [zoneForm, setZoneForm] = useState<ZoneFormData>(DEFAULT_ZONE_FORM);
   const [recordForm, setRecordForm] = useState<RecordFormData>(
     buildRecordForm(initialZones[0]?.id || 0)
   );
+  const [forwardZoneForm, setForwardZoneForm] = useState<ForwardZoneFormData>(DEFAULT_FORWARD_ZONE_FORM);
 
   const [editingZone, setEditingZone] = useState<ZoneEditFormData | null>(null);
+  const [editingForwardZone, setEditingForwardZone] = useState<(ForwardZoneFormData & { id: number; is_active: boolean }) | null>(null);
   const [logZoneFilter, setLogZoneFilter] = useState<string>('all');
 
   const [isSavingZone, setIsSavingZone] = useState(false);
   const [isUpdatingZone, setIsUpdatingZone] = useState(false);
   const [isSavingRecord, setIsSavingRecord] = useState(false);
   const [isLoadingLogs, setIsLoadingLogs] = useState(false);
+  const [isSavingForwardZone, setIsSavingForwardZone] = useState(false);
+  const [isUpdatingForwardZone, setIsUpdatingForwardZone] = useState(false);
 
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -136,9 +156,10 @@ export function DnsClient({ initialZones, initialRecords, initialLogs }: DnsClie
   const activeRecords = records.filter((record) => record.status === 'active').length;
 
   const loadData = async (zoneFilter = logZoneFilter) => {
-    const [zoneRes, recordRes] = await Promise.all([
+    const [zoneRes, recordRes, fwdRes] = await Promise.all([
       fetch('/api/dns/zones'),
       fetch('/api/dns/records?include_inactive=1'),
+      fetch('/api/dns/forward-zones'),
     ]);
 
     if (!zoneRes.ok || !recordRes.ok) {
@@ -147,6 +168,7 @@ export function DnsClient({ initialZones, initialRecords, initialLogs }: DnsClie
 
     const zoneData: DnsZone[] = await zoneRes.json();
     const recordData: DnsRecord[] = await recordRes.json();
+    const fwdData: DnsForwardZone[] = fwdRes.ok ? await fwdRes.json() : [];
 
     let effectiveFilter = zoneFilter;
     if (effectiveFilter !== 'all' && !zoneData.some((item) => item.id === Number(effectiveFilter))) {
@@ -163,6 +185,7 @@ export function DnsClient({ initialZones, initialRecords, initialLogs }: DnsClie
     setZones(Array.isArray(zoneData) ? zoneData : []);
     setRecords(Array.isArray(recordData) ? recordData : []);
     setLogs(Array.isArray(logData) ? logData : []);
+    setForwardZones(Array.isArray(fwdData) ? fwdData : []);
 
     if (!zoneData.some((item) => item.id === recordForm.zone_id)) {
       setRecordForm((prev) => ({ ...prev, zone_id: zoneData[0]?.id || 0 }));
@@ -392,6 +415,133 @@ export function DnsClient({ initialZones, initialRecords, initialLogs }: DnsClie
     }
   };
 
+  // --- Forward Zone handlers ---
+
+  const handleCreateForwardZone = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setMessage(null);
+    setIsSavingForwardZone(true);
+
+    try {
+      const res = await fetch('/api/dns/forward-zones', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(forwardZoneForm),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setMessage({ type: 'error', text: data.error || '创建转发区域失败' });
+        return;
+      }
+
+      await loadData();
+      setForwardZoneForm(DEFAULT_FORWARD_ZONE_FORM);
+      setMessage({ type: 'success', text: `转发区域 ${data.name || ''} 创建成功` });
+      router.refresh();
+    } catch (error) {
+      console.error('Failed to create forward zone:', error);
+      setMessage({ type: 'error', text: '创建转发区域失败' });
+    } finally {
+      setIsSavingForwardZone(false);
+    }
+  };
+
+  const openEditForwardZone = (zone: DnsForwardZone) => {
+    setEditingForwardZone({
+      id: zone.id,
+      name: zone.name,
+      forwarders: zone.forwarders,
+      forward_policy: zone.forward_policy,
+      description: zone.description || '',
+      is_active: zone.is_active,
+    });
+  };
+
+  const handleUpdateForwardZone = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingForwardZone) return;
+
+    setMessage(null);
+    setIsUpdatingForwardZone(true);
+
+    try {
+      const res = await fetch(`/api/dns/forward-zones/${editingForwardZone.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editingForwardZone.name,
+          forwarders: editingForwardZone.forwarders,
+          forward_policy: editingForwardZone.forward_policy,
+          description: editingForwardZone.description,
+          is_active: editingForwardZone.is_active,
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setMessage({ type: 'error', text: data.error || '更新转发区域失败' });
+        return;
+      }
+
+      await loadData();
+      setEditingForwardZone(null);
+      setMessage({ type: 'success', text: `转发区域 ${data.name || ''} 更新成功` });
+      router.refresh();
+    } catch (error) {
+      console.error('Failed to update forward zone:', error);
+      setMessage({ type: 'error', text: '更新转发区域失败' });
+    } finally {
+      setIsUpdatingForwardZone(false);
+    }
+  };
+
+  const handleToggleForwardZoneStatus = async (zone: DnsForwardZone) => {
+    try {
+      const res = await fetch(`/api/dns/forward-zones/${zone.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_active: !zone.is_active }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setMessage({ type: 'error', text: data.error || '更新状态失败' });
+        return;
+      }
+
+      await loadData();
+      setMessage({ type: 'success', text: `转发区域 ${zone.name} 已${zone.is_active ? '停用' : '启用'}` });
+      router.refresh();
+    } catch (error) {
+      console.error('Failed to toggle forward zone status:', error);
+      setMessage({ type: 'error', text: '更新状态失败' });
+    }
+  };
+
+  const handleDeleteForwardZone = async (zone: DnsForwardZone) => {
+    if (!confirm(`确定删除转发区域 ${zone.name} 吗？`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/dns/forward-zones/${zone.id}`, { method: 'DELETE' });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setMessage({ type: 'error', text: data.error || '删除转发区域失败' });
+        return;
+      }
+
+      await loadData();
+      setMessage({ type: 'success', text: `转发区域 ${zone.name} 已删除` });
+      router.refresh();
+    } catch (error) {
+      console.error('Failed to delete forward zone:', error);
+      setMessage({ type: 'error', text: '删除转发区域失败' });
+    }
+  };
+
   const handleRefreshLogs = async (zoneFilter = logZoneFilter) => {
     setIsLoadingLogs(true);
     try {
@@ -429,7 +579,7 @@ export function DnsClient({ initialZones, initialRecords, initialLogs }: DnsClie
           </div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="bg-white rounded-xl border border-slate-200 p-4">
             <p className="text-sm text-slate-500">Zone 数量</p>
             <p className="text-2xl font-bold text-slate-900 mt-1">{zones.length}</p>
@@ -441,6 +591,10 @@ export function DnsClient({ initialZones, initialRecords, initialLogs }: DnsClie
           <div className="bg-white rounded-xl border border-slate-200 p-4">
             <p className="text-sm text-slate-500">启用记录</p>
             <p className="text-2xl font-bold text-green-600 mt-1">{activeRecords}</p>
+          </div>
+          <div className="bg-white rounded-xl border border-slate-200 p-4">
+            <p className="text-sm text-slate-500">转发区域</p>
+            <p className="text-2xl font-bold text-blue-600 mt-1">{forwardZones.length}</p>
           </div>
         </div>
 
@@ -770,6 +924,144 @@ export function DnsClient({ initialZones, initialRecords, initialLogs }: DnsClie
           </table>
         </div>
 
+        {/* Forward Zones Section */}
+        <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto">
+          <div className="p-5 border-b border-slate-100">
+            <h2 className="text-lg font-semibold text-slate-900">转发区域</h2>
+            <p className="text-sm text-slate-500 mt-1">条件转发（Conditional Forwarding）— 将指定域名的 DNS 查询转发到目标 DNS 服务器</p>
+          </div>
+
+          <table className="w-full min-w-[980px]">
+            <thead className="bg-slate-50 border-b border-slate-200">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">域名</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">转发 DNS</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">策略</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">状态</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">同步状态</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">备注</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">操作</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {forwardZones.length === 0 ? (
+                <tr>
+                  <td className="px-4 py-10 text-center text-slate-500" colSpan={7}>暂无转发区域</td>
+                </tr>
+              ) : (
+                forwardZones.map((fz) => (
+                  <tr key={fz.id} className="hover:bg-slate-50">
+                    <td className="px-4 py-3 text-sm font-medium text-slate-900">{fz.name}</td>
+                    <td className="px-4 py-3 text-sm text-slate-700">{fz.forwarders.split(',').join(', ')}</td>
+                    <td className="px-4 py-3 text-sm text-slate-700">
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
+                        {fz.forward_policy}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm">
+                      <button
+                        onClick={() => handleToggleForwardZoneStatus(fz)}
+                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                          fz.is_active
+                            ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        }`}
+                      >
+                        {fz.is_active ? 'active' : 'inactive'}
+                      </button>
+                    </td>
+                    <td className="px-4 py-3 text-sm">
+                      <div className="flex flex-col gap-1">
+                        <span className={`inline-flex items-center w-fit px-2.5 py-1 rounded-full text-xs font-medium ${syncBadgeClass(fz.last_sync_status)}`}>
+                          {fz.last_sync_status}
+                        </span>
+                        {fz.last_sync_message && (
+                          <span className="text-xs text-slate-500 truncate max-w-[260px]" title={fz.last_sync_message}>
+                            {fz.last_sync_message}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-slate-700 max-w-[200px] truncate" title={fz.description || '-'}>
+                      {fz.description || '-'}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="inline-flex items-center gap-1">
+                        <button
+                          onClick={() => openEditForwardZone(fz)}
+                          className="inline-flex items-center justify-center size-8 rounded-lg text-slate-400 hover:text-primary hover:bg-slate-100 transition-colors"
+                          title="编辑"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">edit</span>
+                        </button>
+                        <button
+                          onClick={() => handleDeleteForwardZone(fz)}
+                          className="inline-flex items-center justify-center size-8 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                          title="删除"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">delete</span>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Add Forward Zone Form */}
+        <form onSubmit={handleCreateForwardZone} className="bg-white rounded-xl border border-slate-200 p-5 flex flex-col gap-4">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">新增转发区域</h2>
+            <p className="text-sm text-slate-500 mt-1">添加后将自动同步到 BIND9 配置并重启服务</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <input
+              type="text"
+              value={forwardZoneForm.name}
+              onChange={(e) => setForwardZoneForm((prev) => ({ ...prev, name: e.target.value }))}
+              placeholder="域名（如 yibao.example.com）"
+              className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
+              required
+            />
+            <select
+              value={forwardZoneForm.forward_policy}
+              onChange={(e) => setForwardZoneForm((prev) => ({ ...prev, forward_policy: e.target.value as 'only' | 'first' }))}
+              className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
+            >
+              <option value="only">forward only（仅转发）</option>
+              <option value="first">forward first（优先转发，失败回退）</option>
+            </select>
+          </div>
+
+          <textarea
+            value={forwardZoneForm.forwarders}
+            onChange={(e) => setForwardZoneForm((prev) => ({ ...prev, forwarders: e.target.value }))}
+            placeholder="转发 DNS 地址（每行一个或逗号分隔，如 10.1.1.1,10.1.1.2）"
+            rows={2}
+            className="px-3 py-2 border border-slate-200 rounded-lg text-sm resize-none"
+            required
+          />
+
+          <textarea
+            value={forwardZoneForm.description}
+            onChange={(e) => setForwardZoneForm((prev) => ({ ...prev, description: e.target.value }))}
+            placeholder="备注（可选）"
+            rows={1}
+            className="px-3 py-2 border border-slate-200 rounded-lg text-sm resize-none"
+          />
+
+          <button
+            type="submit"
+            disabled={isSavingForwardZone}
+            className="h-10 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-blue-600 disabled:opacity-60"
+          >
+            {isSavingForwardZone ? '创建中...' : '创建转发区域'}
+          </button>
+        </form>
+
         <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto">
           <div className="p-5 border-b border-slate-100 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
@@ -844,6 +1136,82 @@ export function DnsClient({ initialZones, initialRecords, initialLogs }: DnsClie
           </table>
         </div>
       </div>
+
+      {editingForwardZone && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/50" onClick={() => setEditingForwardZone(null)} />
+          <form
+            onSubmit={handleUpdateForwardZone}
+            className="relative w-full max-w-2xl bg-white rounded-xl border border-slate-200 shadow-2xl p-5 flex flex-col gap-4"
+          >
+            <div>
+              <h3 className="text-lg font-semibold text-slate-900">编辑转发区域</h3>
+              <p className="text-sm text-slate-500 mt-1">{editingForwardZone.name}</p>
+            </div>
+
+            <input
+              type="text"
+              value={editingForwardZone.name}
+              onChange={(e) => setEditingForwardZone((prev) => prev ? { ...prev, name: e.target.value } : prev)}
+              placeholder="域名"
+              className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
+              required
+            />
+
+            <textarea
+              value={editingForwardZone.forwarders}
+              onChange={(e) => setEditingForwardZone((prev) => prev ? { ...prev, forwarders: e.target.value } : prev)}
+              placeholder="转发 DNS 地址（逗号分隔）"
+              rows={2}
+              className="px-3 py-2 border border-slate-200 rounded-lg text-sm resize-none"
+              required
+            />
+
+            <select
+              value={editingForwardZone.forward_policy}
+              onChange={(e) => setEditingForwardZone((prev) => prev ? { ...prev, forward_policy: e.target.value as 'only' | 'first' } : prev)}
+              className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
+            >
+              <option value="only">forward only（仅转发）</option>
+              <option value="first">forward first（优先转发，失败回退）</option>
+            </select>
+
+            <textarea
+              value={editingForwardZone.description}
+              onChange={(e) => setEditingForwardZone((prev) => prev ? { ...prev, description: e.target.value } : prev)}
+              rows={2}
+              className="px-3 py-2 border border-slate-200 rounded-lg text-sm resize-none"
+              placeholder="备注"
+            />
+
+            <label className="flex items-center gap-2 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                checked={editingForwardZone.is_active}
+                onChange={(e) => setEditingForwardZone((prev) => prev ? { ...prev, is_active: e.target.checked } : prev)}
+              />
+              启用
+            </label>
+
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setEditingForwardZone(null)}
+                className="px-4 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-100"
+              >
+                取消
+              </button>
+              <button
+                type="submit"
+                disabled={isUpdatingForwardZone}
+                className="px-4 py-2 rounded-lg text-sm font-semibold bg-primary text-white hover:bg-blue-600 disabled:opacity-60"
+              >
+                {isUpdatingForwardZone ? '保存中...' : '保存'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {editingZone && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

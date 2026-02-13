@@ -53,6 +53,7 @@ navstation/
 │   │   ├── apiAuth.ts          # API Key 认证工具
 │   │   ├── analyticsSource.ts  # 分析埋点 source 构建/解析工具
 │   │   ├── dns/bind9.ts        # BIND9 nsupdate 封装
+│   │   ├── dns/bind9-forward.ts # BIND9 转发区域配置生成与同步
 │   │   └── visitorId.ts        # 匿名访客 ID 生成与读取
 │   ├── db/
 │   │   ├── index.ts            # PostgreSQL 连接池
@@ -95,6 +96,8 @@ JWT_SECRET=你的密钥
 # 可选：DNS/BIND9 联调配置
 # BIND9_DRY_RUN=1
 # BIND9_NSUPDATE_BIN=nsupdate
+# BIND9_FORWARD_CONF=/etc/bind/named.conf.forward
+# BIND9_RESTART_CMD=systemctl restart named
 ```
 
 ### 3. 初始化数据库
@@ -144,6 +147,7 @@ docker-compose up -d
 | `phonebook_entries` | 电话本条目（科室名、长码、短码） |
 | `dns_zones` | DNS Zone 配置（服务器、TSIG、启停状态） |
 | `dns_records` | DNS 记录（A/AAAA/CNAME/TXT/MX）与同步状态 |
+| `dns_forward_zones` | DNS 转发区域（条件转发到指定 DNS 服务器） |
 | `dns_change_logs` | DNS 变更审计日志（动作、结果、操作人） |
 
 ### 分类类型说明
@@ -243,6 +247,10 @@ docker-compose up -d
 | `PUT /api/dns/records/:id` | PUT | 更新记录并同步到 BIND9（需 write 权限） |
 | `DELETE /api/dns/records/:id` | DELETE | 删除记录并尝试同步删除（需 write 权限） |
 | `GET /api/dns/logs` | GET | 获取 DNS 变更日志（支持 `zone_id` / `record_id` / `limit`） |
+| `GET /api/dns/forward-zones` | GET | 获取转发区域列表（需 read 权限） |
+| `POST /api/dns/forward-zones` | POST | 新增转发区域并同步到 BIND9（需 write 权限） |
+| `PUT /api/dns/forward-zones/:id` | PUT | 更新转发区域并同步到 BIND9（需 write 权限） |
+| `DELETE /api/dns/forward-zones/:id` | DELETE | 删除转发区域并同步到 BIND9（需 write 权限） |
 
 ## 默认账号
 
@@ -266,7 +274,7 @@ docker-compose up -d
 - **分类管理**: 管理分类，支持三种类型（站点/二维码/软件）
 - **软件管理**: 上传、编辑、删除软件下载资源（单文件最大 4GB），支持自定义 Logo 或图标
 - **电话本管理**: 管理科室电话本，支持短码（3-4 位，可留空）和长码（1-13 位，可留空）维护、启用/停用与排序
-- **DNS 管理**: 管理 BIND9 的 Zone 与记录，支持 A/AAAA/CNAME/TXT/MX，支持同步状态追踪与变更日志审计
+- **DNS 管理**: 管理 BIND9 的 Zone 与记录，支持 A/AAAA/CNAME/TXT/MX，支持条件转发区域（Forward Zone），同步状态追踪与变更日志审计
 - **站点设置**: 自定义站点名称、描述、Logo、版本号、页脚版权
 - **账号设置**: 修改管理员头像和密码
 - **数据分析**: 查看点击统计、访问趋势和热门站点 Top 10 排行榜（支持 7 天/30 天切换）
@@ -366,6 +374,12 @@ psql -d your_database -f src/db/migrations/006_add_phonebook_entries.sql
 
 # v2.7.1 - 放宽电话本短码/长码约束
 psql -d your_database -f src/db/migrations/007_relax_phonebook_constraints.sql
+
+# v2.8.0 - DNS 管理（BIND9 权威区域）
+psql -d your_database -f src/db/migrations/008_add_dns_management.sql
+
+# v2.9.0 - DNS 转发区域
+psql -d your_database -f src/db/migrations/009_add_dns_forward_zones.sql
 ```
 
 对于全新部署，直接运行：

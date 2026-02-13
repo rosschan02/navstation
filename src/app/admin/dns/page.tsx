@@ -1,5 +1,5 @@
 import pool from '@/db';
-import type { DnsChangeLog, DnsRecord, DnsZone } from '@/types';
+import type { DnsChangeLog, DnsForwardZone, DnsRecord, DnsZone } from '@/types';
 import { DnsClient } from './DnsClient';
 
 export const dynamic = 'force-dynamic';
@@ -8,9 +8,10 @@ export default async function DnsPage() {
   let zones: DnsZone[] = [];
   let records: DnsRecord[] = [];
   let logs: DnsChangeLog[] = [];
+  let forwardZones: DnsForwardZone[] = [];
 
   try {
-    const [zonesResult, recordsResult, logsResult] = await Promise.all([
+    const [zonesResult, recordsResult, logsResult, forwardResult] = await Promise.all([
       pool.query<DnsZone>(
         `SELECT
            id, name, server, port, tsig_key_name, tsig_algorithm,
@@ -36,11 +37,19 @@ export default async function DnsPage() {
          ORDER BY l.created_at DESC
          LIMIT 100`
       ),
+      pool.query<DnsForwardZone>(
+        `SELECT * FROM dns_forward_zones ORDER BY is_active DESC, name ASC`
+      ).catch((error) => {
+        const pgError = error as { code?: string };
+        if (pgError.code !== '42P01') throw error;
+        return { rows: [] as DnsForwardZone[] };
+      }),
     ]);
 
     zones = zonesResult.rows;
     records = recordsResult.rows;
     logs = logsResult.rows;
+    forwardZones = forwardResult.rows;
   } catch (error) {
     const pgError = error as { code?: string };
     if (pgError.code !== '42P01') {
@@ -48,5 +57,5 @@ export default async function DnsPage() {
     }
   }
 
-  return <DnsClient initialZones={zones} initialRecords={records} initialLogs={logs} />;
+  return <DnsClient initialZones={zones} initialRecords={records} initialLogs={logs} initialForwardZones={forwardZones} />;
 }

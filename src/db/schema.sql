@@ -151,6 +151,23 @@ CREATE TABLE IF NOT EXISTS dns_records (
     )
 );
 
+-- DNS forward zones for BIND9 conditional forwarding
+CREATE TABLE IF NOT EXISTS dns_forward_zones (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL UNIQUE,
+    forwarders TEXT NOT NULL,
+    forward_policy VARCHAR(10) NOT NULL DEFAULT 'only'
+        CHECK (forward_policy IN ('only', 'first')),
+    description TEXT DEFAULT '',
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    last_sync_status VARCHAR(20) NOT NULL DEFAULT 'pending'
+        CHECK (last_sync_status IN ('pending', 'success', 'failed', 'skipped')),
+    last_sync_message TEXT DEFAULT '',
+    last_synced_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- DNS operation audit logs
 CREATE TABLE IF NOT EXISTS dns_change_logs (
     id SERIAL PRIMARY KEY,
@@ -184,3 +201,4 @@ CREATE INDEX IF NOT EXISTS idx_dns_records_status ON dns_records(status);
 CREATE INDEX IF NOT EXISTS idx_dns_records_type ON dns_records(type);
 CREATE INDEX IF NOT EXISTS idx_dns_change_logs_zone_created ON dns_change_logs(zone_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_dns_change_logs_record_created ON dns_change_logs(record_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_dns_forward_zones_active ON dns_forward_zones(is_active);

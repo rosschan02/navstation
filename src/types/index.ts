@@ -134,6 +134,20 @@ export interface DnsRecord {
   zone_name?: string;
 }
 
+export interface DnsForwardZone {
+  id: number;
+  name: string;
+  forwarders: string;
+  forward_policy: 'only' | 'first';
+  description: string;
+  is_active: boolean;
+  last_sync_status: DnsSyncStatus;
+  last_sync_message: string;
+  last_synced_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface DnsChangeLog {
   id: number;
   zone_id: number | null;

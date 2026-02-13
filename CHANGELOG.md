@@ -2,6 +2,71 @@
 
 本文件记录 NavStation 导航站的所有重要更新。
 
+## [2.9.0] - 2026-02-13
+
+### 新增
+
+#### DNS 转发区域（Forward Zone）
+- DNS 管理页面新增「转发区域」板块，支持 BIND9 条件转发（Conditional Forwarding）
+- 支持转发区域的增删改查，每次操作自动生成配置并重启 BIND9
+- 支持 `forward only`（仅转发）和 `forward first`（优先转发，失败回退）两种策略
+- 转发 DNS 地址支持多个 IP（逗号或换行分隔）
+- 每条转发区域显示同步状态（pending/success/failed/skipped）
+- 统计卡片新增「转发区域」计数
+
+#### DNS 转发区域 API
+- 新增 `GET /api/dns/forward-zones` — 获取转发区域列表
+- 新增 `POST /api/dns/forward-zones` — 新增转发区域
+- 新增 `PUT /api/dns/forward-zones/:id` — 更新转发区域
+- 新增 `DELETE /api/dns/forward-zones/:id` — 删除转发区域
+
+### 变更
+
+#### BIND9 转发配置同步
+- 新增 `src/lib/dns/bind9-forward.ts`，负责生成 `named.conf.forward` 配置文件并重启 BIND9
+- 增删改转发区域后自动全量重新生成配置并重启服务
+- 支持 `BIND9_DRY_RUN=1` 模式跳过文件写入和服务重启
+- 配置文件路径通过 `BIND9_FORWARD_CONF` 环境变量指定（默认 `/etc/bind/named.conf.forward`）
+- 重启命令通过 `BIND9_RESTART_CMD` 环境变量覆盖（默认 `systemctl restart named`）
+
+#### 数据库与类型
+- 新增 `dns_forward_zones` 表
+- 新增 `DnsForwardZone` TypeScript 类型
+
+### 新增文件
+
+```
+src/db/migrations/009_add_dns_forward_zones.sql
+src/lib/dns/bind9-forward.ts
+src/app/api/dns/forward-zones/route.ts
+src/app/api/dns/forward-zones/[id]/route.ts
+```
+
+### 修改文件
+
+```
+src/db/schema.sql
+src/types/index.ts
+src/app/admin/dns/page.tsx
+src/app/admin/dns/DnsClient.tsx
+README.md
+```
+
+### 升级指南
+
+如果从 2.8.0 升级，需要运行数据库迁移：
+
+```bash
+psql -d your_database -f src/db/migrations/009_add_dns_forward_zones.sql
+```
+
+用户还需要在 BIND9 的 `named.conf` 中添加：
+```
+include "/etc/bind/named.conf.forward";
+```
+
+---
+
 ## [2.8.0] - 2026-02-12
 
 ### 新增
