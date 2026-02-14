@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import type { SiteData, Category, SoftwareItem } from '@/types';
 import { IconPicker } from '@/components/IconPicker';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { useMessage } from '@/contexts/MessageContext';
 
 interface AdminClientProps {
@@ -20,6 +21,8 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [pendingDeleteSite, setPendingDeleteSite] = useState<SiteData | null>(null);
   const [logoPreview, setLogoPreview] = useState<string>('');
   const [qrPreview, setQrPreview] = useState<string>('');
   const logoInputRef = useRef<HTMLInputElement>(null);
@@ -161,12 +164,10 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('确定要删除这个站点吗？')) return;
-
+  const executeDelete = async (id: number) => {
     const res = await fetch(`/api/sites/${id}`, { method: 'DELETE' });
     if (res.ok) {
-      setSites(sites.filter(s => s.id !== id));
+      setSites((prev) => prev.filter(s => s.id !== id));
       router.refresh();
       message.success('站点删除成功');
       return;
@@ -174,6 +175,21 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
 
     const data = await res.json().catch(() => ({}));
     message.error(data.error || '删除失败');
+  };
+
+  const handleDelete = (site: SiteData) => {
+    setPendingDeleteSite(site);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDeleteSite) return;
+    setIsDeleting(true);
+    try {
+      await executeDelete(pendingDeleteSite.id);
+      setPendingDeleteSite(null);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const addTag = () => {
@@ -381,7 +397,7 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
                     <span className="material-symbols-outlined text-[18px]">edit</span>
                   </button>
                   <button
-                    onClick={() => handleDelete(site.id)}
+                    onClick={() => handleDelete(site)}
                     className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                   >
                     <span className="material-symbols-outlined text-[18px]">delete</span>
@@ -420,6 +436,16 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={Boolean(pendingDeleteSite)}
+        title="删除站点"
+        description={pendingDeleteSite ? `确定删除站点「${pendingDeleteSite.name}」吗？` : ''}
+        confirmText="删除"
+        loading={isDeleting}
+        onConfirm={handleConfirmDelete}
+        onClose={() => !isDeleting && setPendingDeleteSite(null)}
+      />
 
       {/* Add/Edit Modal */}
       {isModalOpen && (

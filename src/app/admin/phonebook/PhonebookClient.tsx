@@ -4,6 +4,7 @@ import React, { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { PhonebookEntry } from '@/types';
 import { useMessage } from '@/contexts/MessageContext';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 
 interface PhonebookClientProps {
   initialEntries: PhonebookEntry[];
@@ -45,6 +46,8 @@ export function PhonebookClient({ initialEntries }: PhonebookClientProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<PhonebookEntry | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [pendingDeleteEntry, setPendingDeleteEntry] = useState<PhonebookEntry | null>(null);
   const [formError, setFormError] = useState('');
   const [formData, setFormData] = useState<EntryFormData>(DEFAULT_FORM);
 
@@ -163,9 +166,7 @@ export function PhonebookClient({ initialEntries }: PhonebookClientProps) {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('确定要删除这个电话本条目吗？')) return;
-
+  const executeDelete = async (id: number) => {
     try {
       const res = await fetch(`/api/phonebook/${id}`, { method: 'DELETE' });
       if (!res.ok) {
@@ -180,6 +181,21 @@ export function PhonebookClient({ initialEntries }: PhonebookClientProps) {
     } catch (error) {
       console.error('Failed to delete phonebook entry:', error);
       message.error('删除失败，请稍后重试');
+    }
+  };
+
+  const handleDelete = (entry: PhonebookEntry) => {
+    setPendingDeleteEntry(entry);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDeleteEntry) return;
+    setIsDeleting(true);
+    try {
+      await executeDelete(pendingDeleteEntry.id);
+      setPendingDeleteEntry(null);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -286,7 +302,7 @@ export function PhonebookClient({ initialEntries }: PhonebookClientProps) {
                           <span className="material-symbols-outlined text-[18px]">edit</span>
                         </button>
                         <button
-                          onClick={() => handleDelete(entry.id)}
+                          onClick={() => handleDelete(entry)}
                           className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                           title="删除"
                         >
@@ -301,6 +317,16 @@ export function PhonebookClient({ initialEntries }: PhonebookClientProps) {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={Boolean(pendingDeleteEntry)}
+        title="删除电话本条目"
+        description={pendingDeleteEntry ? `确定删除科室「${pendingDeleteEntry.department_name}」吗？` : ''}
+        confirmText="删除"
+        loading={isDeleting}
+        onConfirm={handleConfirmDelete}
+        onClose={() => !isDeleting && setPendingDeleteEntry(null)}
+      />
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">

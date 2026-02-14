@@ -2,6 +2,38 @@
 
 本文件记录 NavStation 导航站的所有重要更新。
 
+## [2.9.2] - 2026-02-14
+
+### 新增
+
+#### 统一确认弹窗（ConfirmDialog）
+- 新增 `src/components/ConfirmDialog.tsx`，用于替换后台管理页的原生 `confirm()` 删除确认
+- DNS 管理、站点管理、软件管理、电话本管理统一接入同一删除确认交互
+
+### 变更
+
+#### DNS 管理页面交互优化
+- `新增 Zone` 从页面常驻表单改为弹窗填写
+- `新增记录` 入口下沉到 Zone 列表行内图标按钮，点击后弹窗添加并默认绑定当前 Zone
+- `新增转发区域` 从页面常驻表单改为弹窗填写
+
+#### 全局消息提示体验
+- `MessageContext` 消息提示改为页面居中弹出，统一后台操作反馈位置
+
+### 修改文件
+
+```
+src/app/admin/dns/DnsClient.tsx
+src/app/admin/AdminClient.tsx
+src/app/admin/software/SoftwareAdminClient.tsx
+src/app/admin/phonebook/PhonebookClient.tsx
+src/contexts/MessageContext.tsx
+src/components/ConfirmDialog.tsx
+README.md
+```
+
+---
+
 ## [2.9.1] - 2026-02-14
 
 ### 新增

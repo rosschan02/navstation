@@ -3,6 +3,7 @@
 import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { IconPicker } from '@/components/IconPicker';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import type { SoftwareItem, Category } from '@/types';
 import { useMessage } from '@/contexts/MessageContext';
 
@@ -27,6 +28,8 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
   const [editingItem, setEditingItem] = useState<SoftwareItem | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [pendingDeleteItem, setPendingDeleteItem] = useState<SoftwareItem | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [formData, setFormData] = useState({
@@ -173,9 +176,7 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('确定要删除这个软件吗？')) return;
-
+  const executeDelete = async (id: number) => {
     try {
       const res = await fetch(`/api/software/${id}`, { method: 'DELETE' });
       if (res.ok) {
@@ -188,6 +189,21 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
     } catch (error) {
       console.error('Delete failed:', error);
       message.error('删除失败');
+    }
+  };
+
+  const handleDelete = (item: SoftwareItem) => {
+    setPendingDeleteItem(item);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDeleteItem) return;
+    setIsDeleting(true);
+    try {
+      await executeDelete(pendingDeleteItem.id);
+      setPendingDeleteItem(null);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -397,7 +413,7 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
                           <span className="material-symbols-outlined text-[20px]">download</span>
                         </a>
                         <button
-                          onClick={() => handleDelete(item.id)}
+                          onClick={() => handleDelete(item)}
                           className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                           title="删除"
                         >
@@ -412,6 +428,16 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={Boolean(pendingDeleteItem)}
+        title="删除软件"
+        description={pendingDeleteItem ? `确定删除软件「${pendingDeleteItem.name}」吗？` : ''}
+        confirmText="删除"
+        loading={isDeleting}
+        onConfirm={handleConfirmDelete}
+        onClose={() => !isDeleting && setPendingDeleteItem(null)}
+      />
 
       {/* Upload Modal */}
       {isModalOpen && (

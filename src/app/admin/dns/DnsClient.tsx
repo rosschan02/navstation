@@ -4,6 +4,7 @@ import React, { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { DnsChangeLog, DnsForwardZone, DnsRecord, DnsRecordType, DnsZone } from '@/types';
 import { useMessage } from '@/contexts/MessageContext';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 
 interface DnsClientProps {
   initialZones: DnsZone[];
@@ -46,6 +47,13 @@ interface ForwardZoneFormData {
   forwarders: string;
   forward_policy: 'only' | 'first';
   description: string;
+}
+
+interface ConfirmDialogState {
+  title: string;
+  description: string;
+  confirmText: string;
+  onConfirm: () => Promise<void>;
 }
 
 const DEFAULT_FORWARD_ZONE_FORM: ForwardZoneFormData = {
@@ -125,6 +133,10 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
     buildRecordForm(initialZones[0]?.id || 0)
   );
   const [forwardZoneForm, setForwardZoneForm] = useState<ForwardZoneFormData>(DEFAULT_FORWARD_ZONE_FORM);
+  const [isCreateZoneModalOpen, setIsCreateZoneModalOpen] = useState(false);
+  const [isCreateForwardZoneModalOpen, setIsCreateForwardZoneModalOpen] = useState(false);
+  const [createRecordZone, setCreateRecordZone] = useState<DnsZone | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState | null>(null);
 
   const [editingZone, setEditingZone] = useState<ZoneEditFormData | null>(null);
   const [editingForwardZone, setEditingForwardZone] = useState<(ForwardZoneFormData & { id: number; is_active: boolean }) | null>(null);
@@ -136,6 +148,7 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
   const [isLoadingLogs, setIsLoadingLogs] = useState(false);
   const [isSavingForwardZone, setIsSavingForwardZone] = useState(false);
   const [isUpdatingForwardZone, setIsUpdatingForwardZone] = useState(false);
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
 
   const zoneById = useMemo(() => {
     const map = new Map<number, DnsZone>();
@@ -211,6 +224,7 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
 
       await loadData();
       setZoneForm(DEFAULT_ZONE_FORM);
+      setIsCreateZoneModalOpen(false);
       message.success(`Zone ${data.name || ''} 创建成功`);
       router.refresh();
     } catch (error) {
@@ -303,12 +317,7 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
     }
   };
 
-  const handleDeleteZone = async (zone: DnsZone) => {
-    const count = recordCountByZone.get(zone.id) || 0;
-    if (!confirm(`确定删除 Zone ${zone.name} 吗？\n当前包含 ${count} 条记录。`)) {
-      return;
-    }
-
+  const executeDeleteZone = async (zone: DnsZone) => {
     try {
       const res = await fetch(`/api/dns/zones/${zone.id}`, { method: 'DELETE' });
       const data = await res.json().catch(() => ({}));
@@ -325,6 +334,16 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
       console.error('Failed to delete zone:', error);
       message.error('删除 Zone 失败');
     }
+  };
+
+  const handleDeleteZone = (zone: DnsZone) => {
+    const count = recordCountByZone.get(zone.id) || 0;
+    setConfirmDialog({
+      title: '删除 Zone',
+      description: `确定删除 Zone ${zone.name} 吗？\n当前包含 ${count} 条记录。`,
+      confirmText: '删除 Zone',
+      onConfirm: () => executeDeleteZone(zone),
+    });
   };
 
   const handleCreateRecord = async (e: React.FormEvent) => {
@@ -353,6 +372,7 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
 
       await loadData();
       setRecordForm(buildRecordForm(recordForm.zone_id || zones[0]?.id || 0));
+      setCreateRecordZone(null);
       const syncMessage = data.record?.last_sync_message || '记录已创建';
       message.success(syncMessage);
       router.refresh();
@@ -364,11 +384,7 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
     }
   };
 
-  const handleDeleteRecord = async (record: DnsRecord) => {
-    if (!confirm(`确定删除记录 ${record.name} ${record.type} 吗？`)) {
-      return;
-    }
-
+  const executeDeleteRecord = async (record: DnsRecord) => {
     try {
       const res = await fetch(`/api/dns/records/${record.id}`, { method: 'DELETE' });
       const data = await res.json().catch(() => ({}));
@@ -384,6 +400,15 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
       console.error('Failed to delete record:', error);
       message.error('删除记录失败');
     }
+  };
+
+  const handleDeleteRecord = (record: DnsRecord) => {
+    setConfirmDialog({
+      title: '删除记录',
+      description: `确定删除记录 ${record.name} ${record.type} 吗？`,
+      confirmText: '删除记录',
+      onConfirm: () => executeDeleteRecord(record),
+    });
   };
 
   const handleToggleRecordStatus = async (record: DnsRecord) => {
@@ -432,6 +457,7 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
 
       await loadData();
       setForwardZoneForm(DEFAULT_FORWARD_ZONE_FORM);
+      setIsCreateForwardZoneModalOpen(false);
       message.success(`转发区域 ${data.name || ''} 创建成功`);
       router.refresh();
     } catch (error) {
@@ -451,6 +477,21 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
       description: zone.description || '',
       is_active: zone.is_active,
     });
+  };
+
+  const openCreateZoneModal = () => {
+    setZoneForm(DEFAULT_ZONE_FORM);
+    setIsCreateZoneModalOpen(true);
+  };
+
+  const openCreateForwardZoneModal = () => {
+    setForwardZoneForm(DEFAULT_FORWARD_ZONE_FORM);
+    setIsCreateForwardZoneModalOpen(true);
+  };
+
+  const openCreateRecordModal = (zone: DnsZone) => {
+    setRecordForm(buildRecordForm(zone.id));
+    setCreateRecordZone(zone);
   };
 
   const handleUpdateForwardZone = async (e: React.FormEvent) => {
@@ -512,11 +553,7 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
     }
   };
 
-  const handleDeleteForwardZone = async (zone: DnsForwardZone) => {
-    if (!confirm(`确定删除转发区域 ${zone.name} 吗？`)) {
-      return;
-    }
-
+  const executeDeleteForwardZone = async (zone: DnsForwardZone) => {
     try {
       const res = await fetch(`/api/dns/forward-zones/${zone.id}`, { method: 'DELETE' });
       const data = await res.json().catch(() => ({}));
@@ -532,6 +569,26 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
     } catch (error) {
       console.error('Failed to delete forward zone:', error);
       message.error('删除转发区域失败');
+    }
+  };
+
+  const handleDeleteForwardZone = (zone: DnsForwardZone) => {
+    setConfirmDialog({
+      title: '删除转发区域',
+      description: `确定删除转发区域 ${zone.name} 吗？`,
+      confirmText: '删除转发区域',
+      onConfirm: () => executeDeleteForwardZone(zone),
+    });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!confirmDialog) return;
+    setIsConfirmingDelete(true);
+    try {
+      await confirmDialog.onConfirm();
+      setConfirmDialog(null);
+    } finally {
+      setIsConfirmingDelete(false);
     }
   };
 
@@ -582,9 +639,18 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
         </div>
 
         <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto">
-          <div className="p-5 border-b border-slate-100">
-            <h2 className="text-lg font-semibold text-slate-900">Zone 列表</h2>
-            <p className="text-sm text-slate-500 mt-1">支持编辑、启停、删除（删除前需先清空记录）</p>
+          <div className="p-5 border-b border-slate-100 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900">Zone 列表</h2>
+              <p className="text-sm text-slate-500 mt-1">支持编辑、启停、删除（删除前需先清空记录）</p>
+            </div>
+            <button
+              onClick={openCreateZoneModal}
+              className="inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-blue-600"
+            >
+              <span className="material-symbols-outlined text-[18px]">add</span>
+              新增 Zone
+            </button>
           </div>
 
           <table className="w-full min-w-[980px]">
@@ -627,6 +693,13 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
                     <td className="px-4 py-3 text-right">
                       <div className="inline-flex items-center gap-1">
                         <button
+                          onClick={() => openCreateRecordModal(zone)}
+                          className="inline-flex items-center justify-center size-8 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                          title="新增记录"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">add_circle</span>
+                        </button>
+                        <button
                           onClick={() => openEditZone(zone)}
                           className="inline-flex items-center justify-center size-8 rounded-lg text-slate-400 hover:text-primary hover:bg-slate-100 transition-colors"
                           title="编辑"
@@ -647,192 +720,6 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
               )}
             </tbody>
           </table>
-        </div>
-
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          <form onSubmit={handleCreateZone} className="bg-white rounded-xl border border-slate-200 p-5 flex flex-col gap-4">
-            <div>
-              <h2 className="text-lg font-semibold text-slate-900">新增 Zone</h2>
-              <p className="text-sm text-slate-500 mt-1">用于定义 BIND9 的目标域和认证信息</p>
-            </div>
-
-            <input
-              type="text"
-              value={zoneForm.name}
-              onChange={(e) => setZoneForm((prev) => ({ ...prev, name: e.target.value }))}
-              placeholder="example.com"
-              className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
-              required
-            />
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <input
-                type="text"
-                value={zoneForm.server}
-                onChange={(e) => setZoneForm((prev) => ({ ...prev, server: e.target.value }))}
-                placeholder="10.0.0.53"
-                className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
-                required
-              />
-              <input
-                type="number"
-                value={zoneForm.port}
-                onChange={(e) => setZoneForm((prev) => ({ ...prev, port: Number(e.target.value) || 53 }))}
-                placeholder="53"
-                className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
-                min={1}
-                max={65535}
-                required
-              />
-            </div>
-
-            <input
-              type="text"
-              value={zoneForm.tsig_key_name}
-              onChange={(e) => setZoneForm((prev) => ({ ...prev, tsig_key_name: e.target.value }))}
-              placeholder="tsig-key-name (可选)"
-              className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
-            />
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <input
-                type="text"
-                value={zoneForm.tsig_algorithm}
-                onChange={(e) => setZoneForm((prev) => ({ ...prev, tsig_algorithm: e.target.value }))}
-                placeholder="hmac-sha256"
-                className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
-              />
-              <input
-                type="text"
-                value={zoneForm.tsig_secret}
-                onChange={(e) => setZoneForm((prev) => ({ ...prev, tsig_secret: e.target.value }))}
-                placeholder="TSIG Secret (可选)"
-                className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
-              />
-            </div>
-
-            <textarea
-              value={zoneForm.description}
-              onChange={(e) => setZoneForm((prev) => ({ ...prev, description: e.target.value }))}
-              placeholder="备注"
-              rows={2}
-              className="px-3 py-2 border border-slate-200 rounded-lg text-sm resize-none"
-            />
-
-            <button
-              type="submit"
-              disabled={isSavingZone}
-              className="h-10 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-blue-600 disabled:opacity-60"
-            >
-              {isSavingZone ? '创建中...' : '创建 Zone'}
-            </button>
-          </form>
-
-          <form onSubmit={handleCreateRecord} className="bg-white rounded-xl border border-slate-200 p-5 flex flex-col gap-4">
-            <div>
-              <h2 className="text-lg font-semibold text-slate-900">新增记录</h2>
-              <p className="text-sm text-slate-500 mt-1">创建记录后可立即同步到 BIND9</p>
-            </div>
-
-            <select
-              value={recordForm.zone_id}
-              onChange={(e) => setRecordForm((prev) => ({ ...prev, zone_id: Number(e.target.value) }))}
-              className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
-              required
-            >
-              {zones.length === 0 ? (
-                <option value={0}>请先创建 Zone</option>
-              ) : (
-                zones.map((zone) => (
-                  <option key={zone.id} value={zone.id}>
-                    {zone.name} ({zone.server}:{zone.port})
-                  </option>
-                ))
-              )}
-            </select>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <input
-                type="text"
-                value={recordForm.name}
-                onChange={(e) => setRecordForm((prev) => ({ ...prev, name: e.target.value }))}
-                placeholder="@ / www"
-                className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
-                required
-              />
-              <select
-                value={recordForm.type}
-                onChange={(e) => setRecordForm((prev) => ({ ...prev, type: e.target.value as DnsRecordType, priority: e.target.value === 'MX' ? 10 : '' }))}
-                className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
-              >
-                <option value="A">A</option>
-                <option value="AAAA">AAAA</option>
-                <option value="CNAME">CNAME</option>
-                <option value="TXT">TXT</option>
-                <option value="MX">MX</option>
-              </select>
-              <input
-                type="number"
-                value={recordForm.ttl}
-                onChange={(e) => setRecordForm((prev) => ({ ...prev, ttl: Number(e.target.value) || 300 }))}
-                placeholder="300"
-                min={30}
-                max={86400}
-                className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
-                required
-              />
-            </div>
-
-            <input
-              type="text"
-              value={recordForm.value}
-              onChange={(e) => setRecordForm((prev) => ({ ...prev, value: e.target.value }))}
-              placeholder={recordForm.type === 'MX' ? 'mail.example.com' : '记录值'}
-              className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
-              required
-            />
-
-            {recordForm.type === 'MX' && (
-              <input
-                type="number"
-                value={recordForm.priority}
-                onChange={(e) => setRecordForm((prev) => ({ ...prev, priority: e.target.value === '' ? '' : Number(e.target.value) }))}
-                placeholder="优先级"
-                min={0}
-                max={65535}
-                className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
-                required
-              />
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <select
-                value={recordForm.status}
-                onChange={(e) => setRecordForm((prev) => ({ ...prev, status: e.target.value as RecordStatus }))}
-                className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
-              >
-                <option value="active">active</option>
-                <option value="inactive">inactive</option>
-              </select>
-
-              <label className="flex items-center gap-2 px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-700">
-                <input
-                  type="checkbox"
-                  checked={recordForm.sync_now}
-                  onChange={(e) => setRecordForm((prev) => ({ ...prev, sync_now: e.target.checked }))}
-                />
-                立即同步到 BIND9
-              </label>
-            </div>
-
-            <button
-              type="submit"
-              disabled={isSavingRecord || zones.length === 0 || !zoneById.has(recordForm.zone_id)}
-              className="h-10 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-blue-600 disabled:opacity-60"
-            >
-              {isSavingRecord ? '创建中...' : '创建记录'}
-            </button>
-          </form>
         </div>
 
         <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto">
@@ -909,9 +796,18 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
 
         {/* Forward Zones Section */}
         <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto">
-          <div className="p-5 border-b border-slate-100">
-            <h2 className="text-lg font-semibold text-slate-900">转发区域</h2>
-            <p className="text-sm text-slate-500 mt-1">条件转发（Conditional Forwarding）— 将指定域名的 DNS 查询转发到目标 DNS 服务器</p>
+          <div className="p-5 border-b border-slate-100 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900">转发区域</h2>
+              <p className="text-sm text-slate-500 mt-1">条件转发（Conditional Forwarding）— 将指定域名的 DNS 查询转发到目标 DNS 服务器</p>
+            </div>
+            <button
+              onClick={openCreateForwardZoneModal}
+              className="inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-blue-600"
+            >
+              <span className="material-symbols-outlined text-[18px]">add</span>
+              新增转发区域
+            </button>
           </div>
 
           <table className="w-full min-w-[980px]">
@@ -993,58 +889,6 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
           </table>
         </div>
 
-        {/* Add Forward Zone Form */}
-        <form onSubmit={handleCreateForwardZone} className="bg-white rounded-xl border border-slate-200 p-5 flex flex-col gap-4">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-900">新增转发区域</h2>
-            <p className="text-sm text-slate-500 mt-1">添加后将自动同步到 BIND9 配置并重启服务</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <input
-              type="text"
-              value={forwardZoneForm.name}
-              onChange={(e) => setForwardZoneForm((prev) => ({ ...prev, name: e.target.value }))}
-              placeholder="域名（如 yibao.example.com）"
-              className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
-              required
-            />
-            <select
-              value={forwardZoneForm.forward_policy}
-              onChange={(e) => setForwardZoneForm((prev) => ({ ...prev, forward_policy: e.target.value as 'only' | 'first' }))}
-              className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
-            >
-              <option value="only">forward only（仅转发）</option>
-              <option value="first">forward first（优先转发，失败回退）</option>
-            </select>
-          </div>
-
-          <textarea
-            value={forwardZoneForm.forwarders}
-            onChange={(e) => setForwardZoneForm((prev) => ({ ...prev, forwarders: e.target.value }))}
-            placeholder="转发 DNS 地址（每行一个或逗号分隔，如 10.1.1.1,10.1.1.2）"
-            rows={2}
-            className="px-3 py-2 border border-slate-200 rounded-lg text-sm resize-none"
-            required
-          />
-
-          <textarea
-            value={forwardZoneForm.description}
-            onChange={(e) => setForwardZoneForm((prev) => ({ ...prev, description: e.target.value }))}
-            placeholder="备注（可选）"
-            rows={1}
-            className="px-3 py-2 border border-slate-200 rounded-lg text-sm resize-none"
-          />
-
-          <button
-            type="submit"
-            disabled={isSavingForwardZone}
-            className="h-10 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-blue-600 disabled:opacity-60"
-          >
-            {isSavingForwardZone ? '创建中...' : '创建转发区域'}
-          </button>
-        </form>
-
         <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto">
           <div className="p-5 border-b border-slate-100 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
@@ -1119,6 +963,288 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
           </table>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={Boolean(confirmDialog)}
+        title={confirmDialog?.title || ''}
+        description={confirmDialog?.description}
+        confirmText={confirmDialog?.confirmText || '确认'}
+        tone="danger"
+        loading={isConfirmingDelete}
+        onConfirm={handleConfirmDelete}
+        onClose={() => !isConfirmingDelete && setConfirmDialog(null)}
+      />
+
+      {isCreateZoneModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/50" onClick={() => setIsCreateZoneModalOpen(false)} />
+          <form
+            onSubmit={handleCreateZone}
+            className="relative w-full max-w-2xl bg-white rounded-xl border border-slate-200 shadow-2xl p-5 flex flex-col gap-4"
+          >
+            <div>
+              <h3 className="text-lg font-semibold text-slate-900">新增 Zone</h3>
+              <p className="text-sm text-slate-500 mt-1">用于定义 BIND9 的目标域和认证信息</p>
+            </div>
+
+            <input
+              type="text"
+              value={zoneForm.name}
+              onChange={(e) => setZoneForm((prev) => ({ ...prev, name: e.target.value }))}
+              placeholder="example.com"
+              className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
+              required
+            />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <input
+                type="text"
+                value={zoneForm.server}
+                onChange={(e) => setZoneForm((prev) => ({ ...prev, server: e.target.value }))}
+                placeholder="10.0.0.53"
+                className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                required
+              />
+              <input
+                type="number"
+                value={zoneForm.port}
+                onChange={(e) => setZoneForm((prev) => ({ ...prev, port: Number(e.target.value) || 53 }))}
+                placeholder="53"
+                className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                min={1}
+                max={65535}
+                required
+              />
+            </div>
+
+            <input
+              type="text"
+              value={zoneForm.tsig_key_name}
+              onChange={(e) => setZoneForm((prev) => ({ ...prev, tsig_key_name: e.target.value }))}
+              placeholder="tsig-key-name (可选)"
+              className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
+            />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <input
+                type="text"
+                value={zoneForm.tsig_algorithm}
+                onChange={(e) => setZoneForm((prev) => ({ ...prev, tsig_algorithm: e.target.value }))}
+                placeholder="hmac-sha256"
+                className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
+              />
+              <input
+                type="text"
+                value={zoneForm.tsig_secret}
+                onChange={(e) => setZoneForm((prev) => ({ ...prev, tsig_secret: e.target.value }))}
+                placeholder="TSIG Secret (可选)"
+                className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
+              />
+            </div>
+
+            <textarea
+              value={zoneForm.description}
+              onChange={(e) => setZoneForm((prev) => ({ ...prev, description: e.target.value }))}
+              placeholder="备注"
+              rows={2}
+              className="px-3 py-2 border border-slate-200 rounded-lg text-sm resize-none"
+            />
+
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setIsCreateZoneModalOpen(false)}
+                className="px-4 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-100"
+              >
+                取消
+              </button>
+              <button
+                type="submit"
+                disabled={isSavingZone}
+                className="px-4 py-2 rounded-lg text-sm font-semibold bg-primary text-white hover:bg-blue-600 disabled:opacity-60"
+              >
+                {isSavingZone ? '创建中...' : '创建 Zone'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {createRecordZone && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/50" onClick={() => setCreateRecordZone(null)} />
+          <form
+            onSubmit={handleCreateRecord}
+            className="relative w-full max-w-2xl bg-white rounded-xl border border-slate-200 shadow-2xl p-5 flex flex-col gap-4"
+          >
+            <div>
+              <h3 className="text-lg font-semibold text-slate-900">新增记录</h3>
+              <p className="text-sm text-slate-500 mt-1">
+                Zone: {zoneById.get(recordForm.zone_id)?.name || createRecordZone.name}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <input
+                type="text"
+                value={recordForm.name}
+                onChange={(e) => setRecordForm((prev) => ({ ...prev, name: e.target.value }))}
+                placeholder="@ / www"
+                className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                required
+              />
+              <select
+                value={recordForm.type}
+                onChange={(e) => setRecordForm((prev) => ({ ...prev, type: e.target.value as DnsRecordType, priority: e.target.value === 'MX' ? 10 : '' }))}
+                className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
+              >
+                <option value="A">A</option>
+                <option value="AAAA">AAAA</option>
+                <option value="CNAME">CNAME</option>
+                <option value="TXT">TXT</option>
+                <option value="MX">MX</option>
+              </select>
+              <input
+                type="number"
+                value={recordForm.ttl}
+                onChange={(e) => setRecordForm((prev) => ({ ...prev, ttl: Number(e.target.value) || 300 }))}
+                placeholder="300"
+                min={30}
+                max={86400}
+                className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                required
+              />
+            </div>
+
+            <input
+              type="text"
+              value={recordForm.value}
+              onChange={(e) => setRecordForm((prev) => ({ ...prev, value: e.target.value }))}
+              placeholder={recordForm.type === 'MX' ? 'mail.example.com' : '记录值'}
+              className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
+              required
+            />
+
+            {recordForm.type === 'MX' && (
+              <input
+                type="number"
+                value={recordForm.priority}
+                onChange={(e) => setRecordForm((prev) => ({ ...prev, priority: e.target.value === '' ? '' : Number(e.target.value) }))}
+                placeholder="优先级"
+                min={0}
+                max={65535}
+                className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                required
+              />
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <select
+                value={recordForm.status}
+                onChange={(e) => setRecordForm((prev) => ({ ...prev, status: e.target.value as RecordStatus }))}
+                className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
+              >
+                <option value="active">active</option>
+                <option value="inactive">inactive</option>
+              </select>
+
+              <label className="flex items-center gap-2 px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={recordForm.sync_now}
+                  onChange={(e) => setRecordForm((prev) => ({ ...prev, sync_now: e.target.checked }))}
+                />
+                立即同步到 BIND9
+              </label>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setCreateRecordZone(null)}
+                className="px-4 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-100"
+              >
+                取消
+              </button>
+              <button
+                type="submit"
+                disabled={isSavingRecord || !zoneById.has(recordForm.zone_id)}
+                className="px-4 py-2 rounded-lg text-sm font-semibold bg-primary text-white hover:bg-blue-600 disabled:opacity-60"
+              >
+                {isSavingRecord ? '创建中...' : '创建记录'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {isCreateForwardZoneModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/50" onClick={() => setIsCreateForwardZoneModalOpen(false)} />
+          <form
+            onSubmit={handleCreateForwardZone}
+            className="relative w-full max-w-2xl bg-white rounded-xl border border-slate-200 shadow-2xl p-5 flex flex-col gap-4"
+          >
+            <div>
+              <h3 className="text-lg font-semibold text-slate-900">新增转发区域</h3>
+              <p className="text-sm text-slate-500 mt-1">添加后将自动同步到 BIND9 配置并重启服务</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <input
+                type="text"
+                value={forwardZoneForm.name}
+                onChange={(e) => setForwardZoneForm((prev) => ({ ...prev, name: e.target.value }))}
+                placeholder="域名（如 yibao.example.com）"
+                className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                required
+              />
+              <select
+                value={forwardZoneForm.forward_policy}
+                onChange={(e) => setForwardZoneForm((prev) => ({ ...prev, forward_policy: e.target.value as 'only' | 'first' }))}
+                className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
+              >
+                <option value="only">forward only（仅转发）</option>
+                <option value="first">forward first（优先转发，失败回退）</option>
+              </select>
+            </div>
+
+            <textarea
+              value={forwardZoneForm.forwarders}
+              onChange={(e) => setForwardZoneForm((prev) => ({ ...prev, forwarders: e.target.value }))}
+              placeholder="转发 DNS 地址（每行一个或逗号分隔，如 10.1.1.1,10.1.1.2）"
+              rows={2}
+              className="px-3 py-2 border border-slate-200 rounded-lg text-sm resize-none"
+              required
+            />
+
+            <textarea
+              value={forwardZoneForm.description}
+              onChange={(e) => setForwardZoneForm((prev) => ({ ...prev, description: e.target.value }))}
+              placeholder="备注（可选）"
+              rows={1}
+              className="px-3 py-2 border border-slate-200 rounded-lg text-sm resize-none"
+            />
+
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setIsCreateForwardZoneModalOpen(false)}
+                className="px-4 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-100"
+              >
+                取消
+              </button>
+              <button
+                type="submit"
+                disabled={isSavingForwardZone}
+                className="px-4 py-2 rounded-lg text-sm font-semibold bg-primary text-white hover:bg-blue-600 disabled:opacity-60"
+              >
+                {isSavingForwardZone ? '创建中...' : '创建转发区域'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {editingForwardZone && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

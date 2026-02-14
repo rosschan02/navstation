@@ -2,6 +2,13 @@
 
 综合导航门户与站点管理系统，提供统一的站点导航、软件下载、二维码展示、数据分析与 BIND9 DNS 管理功能。
 
+## 最近更新（2026-02-14）
+
+- DNS 管理页面新增交互优化：`新增 Zone`、`新增记录`、`新增转发区域` 改为弹窗录入，页面更简洁
+- `新增记录` 入口下沉到 Zone 列表行内，点击图标即可在当前 Zone 下快速添加记录
+- 后台删除确认统一为友好弹窗（替换原生 `confirm()`），并复用同一组件
+- 全局消息提示（Toast）改为页面居中弹出，视觉反馈更统一
+
 ## 技术栈
 
 - **前端**: Next.js 16 (App Router) + React 19 + Tailwind CSS 4 + TypeScript（字体本地托管，无外部 CDN 依赖）
@@ -46,9 +53,11 @@ navstation/
 │   │   ├── Sidebar.tsx         # 侧边栏导航
 │   │   ├── LoginModal.tsx      # 登录弹窗
 │   │   ├── PhonebookQuickSearchModal.tsx # 院内电话速查弹窗
+│   │   ├── ConfirmDialog.tsx   # 统一删除确认弹窗
 │   │   └── IconPicker.tsx      # 图标选择器组件
 │   ├── contexts/
-│   │   └── AuthContext.tsx      # 认证状态管理
+│   │   ├── AuthContext.tsx     # 认证状态管理
+│   │   └── MessageContext.tsx  # 全局消息提示（Toast）
 │   ├── lib/
 │   │   ├── apiAuth.ts          # API Key 认证工具
 │   │   ├── analyticsSource.ts  # 分析埋点 source 构建/解析工具

@@ -67,28 +67,30 @@ export function MessageProvider({ children }: { children: React.ReactNode }) {
     <MessageContext.Provider value={value}>
       {children}
 
-      <div className="pointer-events-none fixed right-4 top-4 z-[200] flex w-[min(92vw,380px)] flex-col gap-2">
-        {toasts.map((toast) => (
-          <div
-            key={toast.id}
-            className={`pointer-events-auto rounded-xl border px-4 py-3 shadow-lg backdrop-blur-sm ${toastClass(toast.type)}`}
-            role="status"
-            aria-live="polite"
-          >
-            <div className="flex items-start gap-3">
-              <span className="material-symbols-outlined text-[20px]">{toastIcon(toast.type)}</span>
-              <p className="flex-1 text-sm font-medium leading-5">{toast.text}</p>
-              <button
-                type="button"
-                onClick={() => removeToast(toast.id)}
-                className="rounded-md p-0.5 opacity-70 transition-opacity hover:opacity-100"
-                aria-label="关闭消息"
-              >
-                <span className="material-symbols-outlined text-[18px]">close</span>
-              </button>
+      <div className="pointer-events-none fixed inset-0 z-[200] flex items-center justify-center p-4">
+        <div className="flex w-[min(92vw,420px)] flex-col gap-2">
+          {toasts.map((toast) => (
+            <div
+              key={toast.id}
+              className={`pointer-events-auto rounded-xl border px-4 py-3 shadow-lg backdrop-blur-sm ${toastClass(toast.type)}`}
+              role="status"
+              aria-live="polite"
+            >
+              <div className="flex items-start gap-3">
+                <span className="material-symbols-outlined text-[20px]">{toastIcon(toast.type)}</span>
+                <p className="flex-1 text-sm font-medium leading-5">{toast.text}</p>
+                <button
+                  type="button"
+                  onClick={() => removeToast(toast.id)}
+                  className="rounded-md p-0.5 opacity-70 transition-opacity hover:opacity-100"
+                  aria-label="关闭消息"
+                >
+                  <span className="material-symbols-outlined text-[18px]">close</span>
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </MessageContext.Provider>
   );
