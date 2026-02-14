@@ -4,6 +4,7 @@ import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { IconPicker } from '@/components/IconPicker';
 import type { SoftwareItem, Category } from '@/types';
+import { useMessage } from '@/contexts/MessageContext';
 
 interface SoftwareAdminClientProps {
   initialSoftware: SoftwareItem[];
@@ -19,6 +20,7 @@ function formatFileSize(bytes: number): string {
 }
 
 export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdminClientProps) {
+  const message = useMessage();
   const [software, setSoftware] = useState<SoftwareItem[]>(initialSoftware);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -76,12 +78,13 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
           setLogoPreview(logoPath);
           setFormData(prev => ({ ...prev, logo: logoPath }));
         }
+        message.success('Logo 上传成功');
       } else {
-        alert('Logo 上传失败');
+        message.error('Logo 上传失败');
       }
     } catch (error) {
       console.error('Logo upload failed:', error);
-      alert('Logo 上传失败');
+      message.error('Logo 上传失败');
     }
   };
 
@@ -91,7 +94,7 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
       // Check file size (4GB limit)
       const maxSize = 4 * 1024 * 1024 * 1024;
       if (file.size > maxSize) {
-        alert('文件大小超过 4GB 限制');
+        message.warning('文件大小超过 4GB 限制');
         return;
       }
       setSelectedFile(file);
@@ -106,11 +109,11 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedFile) {
-      alert('请选择要上传的文件');
+      message.warning('请选择要上传的文件');
       return;
     }
     if (!formData.name.trim()) {
-      alert('请输入软件名称');
+      message.warning('请输入软件名称');
       return;
     }
 
@@ -148,15 +151,16 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
           setIsModalOpen(false);
           resetForm();
           router.refresh();
+          message.success('软件上传成功');
         } else {
           const error = JSON.parse(xhr.responseText);
-          alert(error.error || '上传失败');
+          message.error(error.error || '上传失败');
         }
         setIsUploading(false);
       };
 
       xhr.onerror = () => {
-        alert('上传失败，请重试');
+        message.error('上传失败，请重试');
         setIsUploading(false);
       };
 
@@ -164,7 +168,7 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
       xhr.send(data);
     } catch (error) {
       console.error('Upload failed:', error);
-      alert('上传失败，请重试');
+      message.error('上传失败，请重试');
       setIsUploading(false);
     }
   };
@@ -177,12 +181,13 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
       if (res.ok) {
         setSoftware(prev => prev.filter(s => s.id !== id));
         router.refresh();
+        message.success('软件删除成功');
       } else {
-        alert('删除失败');
+        message.error('删除失败');
       }
     } catch (error) {
       console.error('Delete failed:', error);
-      alert('删除失败');
+      message.error('删除失败');
     }
   };
 
@@ -206,7 +211,7 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
     e.preventDefault();
     if (!editingItem) return;
     if (!editFormData.name.trim()) {
-      alert('请输入软件名称');
+      message.warning('请输入软件名称');
       return;
     }
 
@@ -224,12 +229,13 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
         setIsEditModalOpen(false);
         setEditingItem(null);
         router.refresh();
+        message.success('软件信息更新成功');
       } else {
-        alert('保存失败');
+        message.error('保存失败');
       }
     } catch (error) {
       console.error('Edit failed:', error);
-      alert('保存失败');
+      message.error('保存失败');
     } finally {
       setIsSaving(false);
     }

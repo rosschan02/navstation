@@ -173,9 +173,9 @@ export async function POST(request: NextRequest) {
 
     const updateResult = await pool.query<DnsRecord>(
       `UPDATE dns_records SET
-         last_sync_status = $1,
+         last_sync_status = $1::varchar,
          last_sync_message = $2,
-         last_synced_at = CASE WHEN $1 IN ('success', 'failed') THEN NOW() ELSE last_synced_at END,
+         last_synced_at = CASE WHEN $1::varchar IN ('success', 'failed') THEN NOW() ELSE last_synced_at END,
          updated_at = NOW()
        WHERE id = $3
        RETURNING *`,

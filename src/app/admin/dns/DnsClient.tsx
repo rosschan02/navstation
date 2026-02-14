@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { DnsChangeLog, DnsForwardZone, DnsRecord, DnsRecordType, DnsZone } from '@/types';
+import { useMessage } from '@/contexts/MessageContext';
 
 interface DnsClientProps {
   initialZones: DnsZone[];
@@ -112,6 +113,7 @@ function buildLogsUrl(zoneFilter: string): string {
 
 export function DnsClient({ initialZones, initialRecords, initialLogs, initialForwardZones }: DnsClientProps) {
   const router = useRouter();
+  const message = useMessage();
 
   const [zones, setZones] = useState<DnsZone[]>(initialZones);
   const [records, setRecords] = useState<DnsRecord[]>(initialRecords);
@@ -134,8 +136,6 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
   const [isLoadingLogs, setIsLoadingLogs] = useState(false);
   const [isSavingForwardZone, setIsSavingForwardZone] = useState(false);
   const [isUpdatingForwardZone, setIsUpdatingForwardZone] = useState(false);
-
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const zoneById = useMemo(() => {
     const map = new Map<number, DnsZone>();
@@ -194,7 +194,6 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
 
   const handleCreateZone = async (e: React.FormEvent) => {
     e.preventDefault();
-    setMessage(null);
     setIsSavingZone(true);
 
     try {
@@ -206,17 +205,17 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
 
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setMessage({ type: 'error', text: data.error || '创建 Zone 失败' });
+        message.error(data.error || '创建 Zone 失败');
         return;
       }
 
       await loadData();
       setZoneForm(DEFAULT_ZONE_FORM);
-      setMessage({ type: 'success', text: `Zone ${data.name || ''} 创建成功` });
+      message.success(`Zone ${data.name || ''} 创建成功`);
       router.refresh();
     } catch (error) {
       console.error('Failed to create zone:', error);
-      setMessage({ type: 'error', text: '创建 Zone 失败' });
+      message.error('创建 Zone 失败');
     } finally {
       setIsSavingZone(false);
     }
@@ -240,8 +239,6 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
   const handleUpdateZone = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingZone) return;
-
-    setMessage(null);
     setIsUpdatingZone(true);
 
     try {
@@ -267,17 +264,17 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
 
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setMessage({ type: 'error', text: data.error || '更新 Zone 失败' });
+        message.error(data.error || '更新 Zone 失败');
         return;
       }
 
       await loadData();
       setEditingZone(null);
-      setMessage({ type: 'success', text: `Zone ${data.name || ''} 更新成功` });
+      message.success(`Zone ${data.name || ''} 更新成功`);
       router.refresh();
     } catch (error) {
       console.error('Failed to update zone:', error);
-      setMessage({ type: 'error', text: '更新 Zone 失败' });
+      message.error('更新 Zone 失败');
     } finally {
       setIsUpdatingZone(false);
     }
@@ -293,16 +290,16 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
 
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setMessage({ type: 'error', text: data.error || '更新 Zone 状态失败' });
+        message.error(data.error || '更新 Zone 状态失败');
         return;
       }
 
       await loadData();
-      setMessage({ type: 'success', text: `Zone ${zone.name} 已${zone.is_active ? '停用' : '启用'}` });
+      message.success(`Zone ${zone.name} 已${zone.is_active ? '停用' : '启用'}`);
       router.refresh();
     } catch (error) {
       console.error('Failed to toggle zone status:', error);
-      setMessage({ type: 'error', text: '更新 Zone 状态失败' });
+      message.error('更新 Zone 状态失败');
     }
   };
 
@@ -317,22 +314,21 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        setMessage({ type: 'error', text: data.error || '删除 Zone 失败' });
+        message.error(data.error || '删除 Zone 失败');
         return;
       }
 
       await loadData();
-      setMessage({ type: 'success', text: `Zone ${zone.name} 已删除` });
+      message.success(`Zone ${zone.name} 已删除`);
       router.refresh();
     } catch (error) {
       console.error('Failed to delete zone:', error);
-      setMessage({ type: 'error', text: '删除 Zone 失败' });
+      message.error('删除 Zone 失败');
     }
   };
 
   const handleCreateRecord = async (e: React.FormEvent) => {
     e.preventDefault();
-    setMessage(null);
     setIsSavingRecord(true);
 
     try {
@@ -351,18 +347,18 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
 
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setMessage({ type: 'error', text: data.error || '创建记录失败' });
+        message.error(data.error || '创建记录失败');
         return;
       }
 
       await loadData();
       setRecordForm(buildRecordForm(recordForm.zone_id || zones[0]?.id || 0));
       const syncMessage = data.record?.last_sync_message || '记录已创建';
-      setMessage({ type: 'success', text: syncMessage });
+      message.success(syncMessage);
       router.refresh();
     } catch (error) {
       console.error('Failed to create record:', error);
-      setMessage({ type: 'error', text: '创建记录失败' });
+      message.error('创建记录失败');
     } finally {
       setIsSavingRecord(false);
     }
@@ -377,16 +373,16 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
       const res = await fetch(`/api/dns/records/${record.id}`, { method: 'DELETE' });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setMessage({ type: 'error', text: data.error || '删除记录失败' });
+        message.error(data.error || '删除记录失败');
         return;
       }
 
       await loadData();
-      setMessage({ type: 'success', text: '记录已删除' });
+      message.success('记录已删除');
       router.refresh();
     } catch (error) {
       console.error('Failed to delete record:', error);
-      setMessage({ type: 'error', text: '删除记录失败' });
+      message.error('删除记录失败');
     }
   };
 
@@ -402,16 +398,16 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
 
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setMessage({ type: 'error', text: data.error || '更新状态失败' });
+        message.error(data.error || '更新状态失败');
         return;
       }
 
       await loadData();
-      setMessage({ type: 'success', text: data.record?.last_sync_message || '状态更新成功' });
+      message.success(data.record?.last_sync_message || '状态更新成功');
       router.refresh();
     } catch (error) {
       console.error('Failed to update record status:', error);
-      setMessage({ type: 'error', text: '更新状态失败' });
+      message.error('更新状态失败');
     }
   };
 
@@ -419,7 +415,6 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
 
   const handleCreateForwardZone = async (e: React.FormEvent) => {
     e.preventDefault();
-    setMessage(null);
     setIsSavingForwardZone(true);
 
     try {
@@ -431,17 +426,17 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
 
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setMessage({ type: 'error', text: data.error || '创建转发区域失败' });
+        message.error(data.error || '创建转发区域失败');
         return;
       }
 
       await loadData();
       setForwardZoneForm(DEFAULT_FORWARD_ZONE_FORM);
-      setMessage({ type: 'success', text: `转发区域 ${data.name || ''} 创建成功` });
+      message.success(`转发区域 ${data.name || ''} 创建成功`);
       router.refresh();
     } catch (error) {
       console.error('Failed to create forward zone:', error);
-      setMessage({ type: 'error', text: '创建转发区域失败' });
+      message.error('创建转发区域失败');
     } finally {
       setIsSavingForwardZone(false);
     }
@@ -461,8 +456,6 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
   const handleUpdateForwardZone = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingForwardZone) return;
-
-    setMessage(null);
     setIsUpdatingForwardZone(true);
 
     try {
@@ -480,17 +473,17 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
 
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setMessage({ type: 'error', text: data.error || '更新转发区域失败' });
+        message.error(data.error || '更新转发区域失败');
         return;
       }
 
       await loadData();
       setEditingForwardZone(null);
-      setMessage({ type: 'success', text: `转发区域 ${data.name || ''} 更新成功` });
+      message.success(`转发区域 ${data.name || ''} 更新成功`);
       router.refresh();
     } catch (error) {
       console.error('Failed to update forward zone:', error);
-      setMessage({ type: 'error', text: '更新转发区域失败' });
+      message.error('更新转发区域失败');
     } finally {
       setIsUpdatingForwardZone(false);
     }
@@ -506,16 +499,16 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
 
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setMessage({ type: 'error', text: data.error || '更新状态失败' });
+        message.error(data.error || '更新状态失败');
         return;
       }
 
       await loadData();
-      setMessage({ type: 'success', text: `转发区域 ${zone.name} 已${zone.is_active ? '停用' : '启用'}` });
+      message.success(`转发区域 ${zone.name} 已${zone.is_active ? '停用' : '启用'}`);
       router.refresh();
     } catch (error) {
       console.error('Failed to toggle forward zone status:', error);
-      setMessage({ type: 'error', text: '更新状态失败' });
+      message.error('更新状态失败');
     }
   };
 
@@ -529,16 +522,16 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        setMessage({ type: 'error', text: data.error || '删除转发区域失败' });
+        message.error(data.error || '删除转发区域失败');
         return;
       }
 
       await loadData();
-      setMessage({ type: 'success', text: `转发区域 ${zone.name} 已删除` });
+      message.success(`转发区域 ${zone.name} 已删除`);
       router.refresh();
     } catch (error) {
       console.error('Failed to delete forward zone:', error);
-      setMessage({ type: 'error', text: '删除转发区域失败' });
+      message.error('删除转发区域失败');
     }
   };
 
@@ -548,14 +541,14 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
       const res = await fetch(buildLogsUrl(zoneFilter));
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setMessage({ type: 'error', text: data.error || '加载日志失败' });
+        message.error(data.error || '加载日志失败');
         return;
       }
       const data: DnsChangeLog[] = await res.json();
       setLogs(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Failed to refresh logs:', error);
-      setMessage({ type: 'error', text: '加载日志失败' });
+      message.error('加载日志失败');
     } finally {
       setIsLoadingLogs(false);
     }
@@ -568,16 +561,6 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">DNS 管理</h1>
           <p className="text-slate-500 mt-1">BIND9 动态更新（nsupdate）MVP 管理界面</p>
         </div>
-
-        {message && (
-          <div className={`rounded-lg border px-4 py-3 text-sm ${
-            message.type === 'success'
-              ? 'bg-green-50 border-green-200 text-green-700'
-              : 'bg-red-50 border-red-200 text-red-700'
-          }`}>
-            {message.text}
-          </div>
-        )}
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="bg-white rounded-xl border border-slate-200 p-4">

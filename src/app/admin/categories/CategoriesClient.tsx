@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Category } from '@/types';
 import { IconPicker } from '@/components/IconPicker';
+import { useMessage } from '@/contexts/MessageContext';
 
 // Category type options
 const TYPE_OPTIONS = [
@@ -31,6 +32,7 @@ interface CategoriesClientProps {
 
 export function CategoriesClient({ initialCategories }: CategoriesClientProps) {
   const router = useRouter();
+  const message = useMessage();
   const [categories, setCategories] = useState(initialCategories);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -103,9 +105,10 @@ export function CategoriesClient({ initialCategories }: CategoriesClientProps) {
       router.refresh();
       const newCategories = await fetch('/api/categories').then(r => r.json());
       setCategories(newCategories);
+      message.success(editingCategory ? '分类更新成功' : '分类创建成功');
     } else {
       const data = await res.json();
-      alert(data.error || '操作失败');
+      message.error(data.error || '操作失败');
     }
   };
 
@@ -116,9 +119,10 @@ export function CategoriesClient({ initialCategories }: CategoriesClientProps) {
       setDeleteConfirm(null);
       router.refresh();
       setCategories(categories.filter(c => c.id !== id));
+      message.success('分类删除成功');
     } else {
       const data = await res.json();
-      alert(data.error || '删除失败');
+      message.error(data.error || '删除失败');
     }
   };
 

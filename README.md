@@ -100,6 +100,8 @@ JWT_SECRET=你的密钥
 # BIND9_RESTART_CMD=systemctl restart named
 ```
 
+> 说明：Docker 运行镜像已内置 `nsupdate`（`bind-tools`），无需在容器内手动安装。
+
 ### 3. 初始化数据库
 
 ```bash
@@ -277,6 +279,7 @@ docker-compose up -d
 - **DNS 管理**: 管理 BIND9 的 Zone 与记录，支持 A/AAAA/CNAME/TXT/MX，支持条件转发区域（Forward Zone），同步状态追踪与变更日志审计
 - **站点设置**: 自定义站点名称、描述、Logo、版本号、页脚版权
 - **账号设置**: 修改管理员头像和密码
+- **统一消息提醒**: 后台增删改与状态操作统一使用全局 Message/Toast 提示，支持 success/error/warning/info，交互反馈更一致
 - **数据分析**: 查看点击统计、访问趋势和热门站点 Top 10 排行榜（支持 7 天/30 天切换）
   - 支持总点击、独立访客、站点/软件下载点击、搜索上下文点击率
   - 支持 24 小时分布、来源页面分布、热门分类

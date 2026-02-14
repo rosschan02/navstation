@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import type { PhonebookEntry } from '@/types';
+import { useMessage } from '@/contexts/MessageContext';
 
 interface PhonebookQuickSearchModalProps {
   isOpen: boolean;
@@ -34,6 +35,7 @@ async function copyText(text: string): Promise<void> {
 }
 
 export function PhonebookQuickSearchModal({ isOpen, onClose }: PhonebookQuickSearchModalProps) {
+  const message = useMessage();
   const [keyword, setKeyword] = useState('');
   const [items, setItems] = useState<PhonebookEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -104,7 +106,7 @@ export function PhonebookQuickSearchModal({ isOpen, onClose }: PhonebookQuickSea
         setCopiedKey((prev) => (prev === key ? '' : prev));
       }, 1500);
     } catch {
-      alert('复制失败，请手动复制');
+      message.error('复制失败，请手动复制');
     }
   };
 

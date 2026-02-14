@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { PhonebookEntry } from '@/types';
+import { useMessage } from '@/contexts/MessageContext';
 
 interface PhonebookClientProps {
   initialEntries: PhonebookEntry[];
@@ -37,6 +38,7 @@ function normalizeDigits(value: string, maxLength: number): string {
 
 export function PhonebookClient({ initialEntries }: PhonebookClientProps) {
   const router = useRouter();
+  const message = useMessage();
   const [entries, setEntries] = useState<PhonebookEntry[]>(initialEntries);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | EntryStatus>('all');
@@ -116,9 +118,9 @@ export function PhonebookClient({ initialEntries }: PhonebookClientProps) {
     e.preventDefault();
     setFormError('');
 
-    const message = validateForm();
-    if (message) {
-      setFormError(message);
+    const validationError = validateForm();
+    if (validationError) {
+      setFormError(validationError);
       return;
     }
 
@@ -152,6 +154,7 @@ export function PhonebookClient({ initialEntries }: PhonebookClientProps) {
       setIsModalOpen(false);
       resetForm();
       router.refresh();
+      message.success(editingEntry ? '电话本条目更新成功' : '电话本条目创建成功');
     } catch (error) {
       console.error('Failed to save phonebook entry:', error);
       setFormError('保存失败，请稍后重试');
@@ -167,15 +170,16 @@ export function PhonebookClient({ initialEntries }: PhonebookClientProps) {
       const res = await fetch(`/api/phonebook/${id}`, { method: 'DELETE' });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        alert(data.error || '删除失败');
+        message.error(data.error || '删除失败');
         return;
       }
 
       setEntries(prev => prev.filter(item => item.id !== id));
       router.refresh();
+      message.success('电话本条目删除成功');
     } catch (error) {
       console.error('Failed to delete phonebook entry:', error);
-      alert('删除失败，请稍后重试');
+      message.error('删除失败，请稍后重试');
     }
   };
 

@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ApiKey } from '@/types';
+import { useMessage } from '@/contexts/MessageContext';
 
 const PERMISSION_OPTIONS = [
   { value: 'read', label: '只读', description: '读取站点、分类、统计数据' },
@@ -15,6 +16,7 @@ interface KeysClientProps {
 
 export function KeysClient({ initialKeys }: KeysClientProps) {
   const router = useRouter();
+  const message = useMessage();
   const [keys, setKeys] = useState(initialKeys);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -71,9 +73,10 @@ export function KeysClient({ initialKeys }: KeysClientProps) {
       router.refresh();
       const newKeys = await fetch('/api/keys').then(r => r.json());
       setKeys(newKeys);
+      message.success('API 密钥创建成功');
     } else {
       const data = await res.json();
-      alert(data.error || '创建失败');
+      message.error(data.error || '创建失败');
     }
   };
 
@@ -93,9 +96,10 @@ export function KeysClient({ initialKeys }: KeysClientProps) {
       router.refresh();
       const newKeys = await fetch('/api/keys').then(r => r.json());
       setKeys(newKeys);
+      message.success('API 密钥更新成功');
     } else {
       const data = await res.json();
-      alert(data.error || '更新失败');
+      message.error(data.error || '更新失败');
     }
   };
 
@@ -110,7 +114,12 @@ export function KeysClient({ initialKeys }: KeysClientProps) {
       router.refresh();
       const newKeys = await fetch('/api/keys').then(r => r.json());
       setKeys(newKeys);
+      message.success(key.is_active ? 'API 密钥已禁用' : 'API 密钥已启用');
+      return;
     }
+
+    const data = await res.json().catch(() => ({}));
+    message.error(data.error || '状态更新失败');
   };
 
   const handleDelete = async (id: number) => {
@@ -120,9 +129,10 @@ export function KeysClient({ initialKeys }: KeysClientProps) {
       setDeleteConfirm(null);
       router.refresh();
       setKeys(keys.filter(k => k.id !== id));
+      message.success('API 密钥删除成功');
     } else {
       const data = await res.json();
-      alert(data.error || '删除失败');
+      message.error(data.error || '删除失败');
     }
   };
 
@@ -130,9 +140,10 @@ export function KeysClient({ initialKeys }: KeysClientProps) {
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
+      message.success('已复制到剪贴板');
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      alert('复制失败，请手动复制');
+      message.error('复制失败，请手动复制');
     }
   };
 

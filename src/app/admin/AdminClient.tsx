@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import type { SiteData, Category, SoftwareItem } from '@/types';
 import { IconPicker } from '@/components/IconPicker';
+import { useMessage } from '@/contexts/MessageContext';
 
 interface AdminClientProps {
   initialSites: SiteData[];
@@ -12,6 +13,7 @@ interface AdminClientProps {
 
 export function AdminClient({ initialSites, categories }: AdminClientProps) {
   const router = useRouter();
+  const message = useMessage();
   const [sites, setSites] = useState(initialSites);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSite, setEditingSite] = useState<SiteData | null>(null);
@@ -124,7 +126,7 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
       }
     } catch (error) {
       console.error('Upload failed:', error);
-      alert('上传失败');
+      message.error('上传失败');
     }
   };
 
@@ -152,9 +154,10 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
       // Refresh local state
       const newSites = await fetch('/api/sites').then(r => r.json());
       setSites(newSites);
+      message.success(editingSite ? '站点更新成功' : '站点创建成功');
     } else {
       const data = await res.json();
-      alert(data.error || '操作失败');
+      message.error(data.error || '操作失败');
     }
   };
 
@@ -165,7 +168,12 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
     if (res.ok) {
       setSites(sites.filter(s => s.id !== id));
       router.refresh();
+      message.success('站点删除成功');
+      return;
     }
+
+    const data = await res.json().catch(() => ({}));
+    message.error(data.error || '删除失败');
   };
 
   const addTag = () => {
@@ -251,11 +259,12 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
           description: prev.description || software.description || '',
           url: downloadUrl,
         }));
+        message.success('二维码生成成功');
       } else {
-        alert('二维码生成失败');
+        message.error('二维码生成失败');
       }
     } catch {
-      alert('二维码生成失败');
+      message.error('二维码生成失败');
     } finally {
       setGeneratingQr(false);
     }

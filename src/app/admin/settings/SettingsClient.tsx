@@ -3,6 +3,7 @@
 import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import type { SiteSettings } from '@/types';
+import { useMessage } from '@/contexts/MessageContext';
 
 interface SettingsClientProps {
   initialSettings: SiteSettings;
@@ -10,9 +11,9 @@ interface SettingsClientProps {
 
 export function SettingsClient({ initialSettings }: SettingsClientProps) {
   const router = useRouter();
+  const message = useMessage();
   const [settings, setSettings] = useState<SiteSettings>(initialSettings);
   const [isSaving, setIsSaving] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [logoPreview, setLogoPreview] = useState<string>(initialSettings.logo_url || '');
   const logoInputRef = useRef<HTMLInputElement>(null);
 
@@ -37,11 +38,11 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
         setLogoPreview(path);
         setSettings(prev => ({ ...prev, logo_url: path }));
       } else {
-        setMessage({ type: 'error', text: '上传失败' });
+        message.error('上传失败');
       }
     } catch (error) {
       console.error('Upload failed:', error);
-      setMessage({ type: 'error', text: '上传失败' });
+      message.error('上传失败');
     }
   };
 
@@ -53,7 +54,6 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
-    setMessage(null);
 
     try {
       const res = await fetch('/api/settings', {
@@ -63,15 +63,15 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
       });
 
       if (res.ok) {
-        setMessage({ type: 'success', text: '设置已保存' });
+        message.success('设置已保存');
         router.refresh();
       } else {
         const data = await res.json();
-        setMessage({ type: 'error', text: data.error || '保存失败' });
+        message.error(data.error || '保存失败');
       }
     } catch (error) {
       console.error('Failed to save settings:', error);
-      setMessage({ type: 'error', text: '保存失败' });
+      message.error('保存失败');
     } finally {
       setIsSaving(false);
     }
@@ -85,22 +85,6 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">站点设置</h1>
           <p className="text-slate-500 mt-1">自定义站点名称、描述、Logo 等全局配置</p>
         </div>
-
-        {/* Message */}
-        {message && (
-          <div className={`mb-6 p-4 rounded-lg ${
-            message.type === 'success'
-              ? 'bg-green-50 text-green-700 border border-green-200'
-              : 'bg-red-50 text-red-700 border border-red-200'
-          }`}>
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-[20px]">
-                {message.type === 'success' ? 'check_circle' : 'error'}
-              </span>
-              {message.text}
-            </div>
-          </div>
-        )}
 
         <form onSubmit={handleSubmit} className="max-w-2xl">
           {/* 基础信息 */}

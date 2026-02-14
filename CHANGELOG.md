@@ -2,6 +2,26 @@
 
 本文件记录 NavStation 导航站的所有重要更新。
 
+## [2.9.1] - 2026-02-14
+
+### 新增
+
+#### 全局消息提醒（Message/Toast）
+- 新增 `src/contexts/MessageContext.tsx`，提供全局可复用的 `success/error/info/warning` 消息能力
+- 在 `AppShell` 注入 `MessageProvider`，后台管理页面统一使用全局消息提醒
+- 替换后台管理中的原生 `alert` 提示，覆盖站点、分类、软件、电话本、API 密钥、DNS、设置、账号等操作反馈
+
+### 修复
+
+#### DNS 记录创建后误报失败
+- 修复 `dns_records` 同步状态更新 SQL 的参数类型推断冲突（`42P08`）
+- 解决“接口返回 500 但刷新后记录已存在”的问题
+
+#### Docker 环境 BIND9 联动
+- 运行镜像增加 `bind-tools`，内置 `nsupdate`，避免 `spawn nsupdate ENOENT`
+
+---
+
 ## [2.9.0] - 2026-02-13
 
 ### 新增

@@ -3,9 +3,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { useMessage } from '@/contexts/MessageContext';
 
 export function ProfileClient() {
   const router = useRouter();
+  const message = useMessage();
   const { user, refreshUser } = useAuth();
   const [avatar, setAvatar] = useState<string>('');
   const [avatarPreview, setAvatarPreview] = useState<string>('');
@@ -19,7 +21,6 @@ export function ProfileClient() {
 
   const [isSavingAvatar, setIsSavingAvatar] = useState(false);
   const [isSavingPassword, setIsSavingPassword] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
     if (user?.avatar) {
@@ -45,17 +46,16 @@ export function ProfileClient() {
         setAvatarPreview(path);
         setAvatar(path);
       } else {
-        setMessage({ type: 'error', text: '上传失败' });
+        message.error('上传失败');
       }
     } catch (error) {
       console.error('Upload failed:', error);
-      setMessage({ type: 'error', text: '上传失败' });
+      message.error('上传失败');
     }
   };
 
   const handleSaveAvatar = async () => {
     setIsSavingAvatar(true);
-    setMessage(null);
 
     try {
       const res = await fetch('/api/auth/profile', {
@@ -65,16 +65,16 @@ export function ProfileClient() {
       });
 
       if (res.ok) {
-        setMessage({ type: 'success', text: '头像已保存' });
+        message.success('头像已保存');
         refreshUser?.();
         router.refresh();
       } else {
         const data = await res.json();
-        setMessage({ type: 'error', text: data.error || '保存失败' });
+        message.error(data.error || '保存失败');
       }
     } catch (error) {
       console.error('Failed to save avatar:', error);
-      setMessage({ type: 'error', text: '保存失败' });
+      message.error('保存失败');
     } finally {
       setIsSavingAvatar(false);
     }
@@ -82,15 +82,14 @@ export function ProfileClient() {
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    setMessage(null);
 
     if (passwords.new_password !== passwords.confirm_password) {
-      setMessage({ type: 'error', text: '两次输入的新密码不一致' });
+      message.error('两次输入的新密码不一致');
       return;
     }
 
     if (passwords.new_password.length < 4) {
-      setMessage({ type: 'error', text: '新密码长度至少4位' });
+      message.error('新密码长度至少4位');
       return;
     }
 
@@ -107,15 +106,15 @@ export function ProfileClient() {
       });
 
       if (res.ok) {
-        setMessage({ type: 'success', text: '密码修改成功' });
+        message.success('密码修改成功');
         setPasswords({ old_password: '', new_password: '', confirm_password: '' });
       } else {
         const data = await res.json();
-        setMessage({ type: 'error', text: data.error || '修改失败' });
+        message.error(data.error || '修改失败');
       }
     } catch (error) {
       console.error('Failed to change password:', error);
-      setMessage({ type: 'error', text: '修改失败' });
+      message.error('修改失败');
     } finally {
       setIsSavingPassword(false);
     }
@@ -129,22 +128,6 @@ export function ProfileClient() {
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">账号设置</h1>
           <p className="text-slate-500 mt-1">修改头像和密码</p>
         </div>
-
-        {/* Message */}
-        {message && (
-          <div className={`mb-6 p-4 rounded-lg ${
-            message.type === 'success'
-              ? 'bg-green-50 text-green-700 border border-green-200'
-              : 'bg-red-50 text-red-700 border border-red-200'
-          }`}>
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-[20px]">
-                {message.type === 'success' ? 'check_circle' : 'error'}
-              </span>
-              {message.text}
-            </div>
-          </div>
-        )}
 
         <div className="max-w-2xl space-y-6">
           {/* Avatar Section */}
