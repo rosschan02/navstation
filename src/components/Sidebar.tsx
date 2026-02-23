@@ -24,6 +24,7 @@ const ADMIN_ITEMS: NavItem[] = [
   { href: '/analytics', icon: 'analytics', label: '数据分析', requiresAuth: true },
   { href: '/admin/keys', icon: 'key', label: 'API 管理', requiresAuth: true },
   { href: '/admin/profile', icon: 'person', label: '账号设置', requiresAuth: true },
+  { href: '/admin/tools', icon: 'terminal', label: '管理工具', requiresAuth: true },
   { href: '/admin/settings', icon: 'tune', label: '站点设置', requiresAuth: true },
 ];
 
@@ -88,32 +89,28 @@ export function Sidebar({ onLoginClick }: SidebarProps) {
 
   const getLinkClass = (href: string) => {
     const active = isActive(href);
-    return `flex items-center ${collapsed ? 'justify-center' : 'gap-3'} px-3 py-2.5 rounded-lg transition-colors group cursor-pointer ${
-      active
+    return `flex items-center ${collapsed ? 'justify-center' : 'gap-3'} px-3 py-2.5 rounded-lg transition-colors group cursor-pointer ${active
         ? 'bg-primary/10 text-primary font-semibold'
         : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium'
-    }`;
+      }`;
   };
 
   const getIconClass = (href: string) => {
     const active = isActive(href);
-    return `material-symbols-outlined text-[20px] ${
-      active ? 'filled text-primary' : 'group-hover:text-primary'
-    }`;
+    return `material-symbols-outlined text-[20px] ${active ? 'filled text-primary' : 'group-hover:text-primary'
+      }`;
   };
 
   return (
-    <aside className={`flex flex-col h-full bg-white border-r border-slate-200 shrink-0 z-20 transition-all duration-300 ${
-      collapsed ? 'w-[72px]' : 'w-64'
-    }`}>
+    <aside className={`flex flex-col h-full bg-white border-r border-slate-200 shrink-0 z-20 transition-all duration-300 ${collapsed ? 'w-[72px]' : 'w-64'
+      }`}>
       <div className="flex flex-col h-full p-4">
         {/* Header */}
         <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'} px-2 py-4 mb-2`}>
-          <div className={`flex items-center justify-center size-10 rounded-xl overflow-hidden shrink-0 ${
-            settings.logo_url
+          <div className={`flex items-center justify-center size-10 rounded-xl overflow-hidden shrink-0 ${settings.logo_url
               ? ''
               : 'bg-gradient-to-br from-primary to-blue-600 text-white shadow-lg shadow-primary/20'
-          }`}>
+            }`}>
             {settings.logo_url ? (
               <img src={settings.logo_url} alt={settings.site_name} className="size-10 object-contain" />
             ) : (
@@ -131,14 +128,12 @@ export function Sidebar({ onLoginClick }: SidebarProps) {
         {/* Navigation */}
         <nav className="flex flex-col gap-1 flex-1 overflow-y-auto py-2 no-scrollbar">
           {/* 首页（全部） */}
-          <Link href="/" className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'} px-3 py-2.5 rounded-lg transition-colors group cursor-pointer ${
-            pathname === '/' && selectedCategory === 'all'
+          <Link href="/" className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'} px-3 py-2.5 rounded-lg transition-colors group cursor-pointer ${pathname === '/' && selectedCategory === 'all'
               ? 'bg-primary/10 text-primary font-semibold'
               : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium'
-          }`} title={collapsed ? '首页' : undefined}>
-            <span className={`material-symbols-outlined text-[20px] shrink-0 ${
-              pathname === '/' && selectedCategory === 'all' ? 'filled text-primary' : 'group-hover:text-primary'
-            }`}>home</span>
+            }`} title={collapsed ? '首页' : undefined}>
+            <span className={`material-symbols-outlined text-[20px] shrink-0 ${pathname === '/' && selectedCategory === 'all' ? 'filled text-primary' : 'group-hover:text-primary'
+              }`}>home</span>
             {!collapsed && <span className="text-sm">首页</span>}
           </Link>
 
@@ -147,16 +142,14 @@ export function Sidebar({ onLoginClick }: SidebarProps) {
             <Link
               key={category.id}
               href={`/?category=${category.id}`}
-              className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'} px-3 py-2 rounded-lg transition-colors group cursor-pointer ${
-                pathname === '/' && selectedCategory === category.id.toString()
+              className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'} px-3 py-2 rounded-lg transition-colors group cursor-pointer ${pathname === '/' && selectedCategory === category.id.toString()
                   ? 'bg-primary/10 text-primary font-semibold'
                   : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium'
-              }`}
+                }`}
               title={collapsed ? category.label : undefined}
             >
-              <span className={`material-symbols-outlined text-[20px] shrink-0 ${
-                pathname === '/' && selectedCategory === category.id.toString() ? 'text-primary' : category.icon_color + ' group-hover:text-primary'
-              }`}>{category.icon}</span>
+              <span className={`material-symbols-outlined text-[20px] shrink-0 ${pathname === '/' && selectedCategory === category.id.toString() ? 'text-primary' : category.icon_color + ' group-hover:text-primary'
+                }`}>{category.icon}</span>
               {!collapsed && <span className="text-sm">{category.label}</span>}
             </Link>
           ))}

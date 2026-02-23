@@ -2,6 +2,43 @@
 
 本文件记录 NavStation 导航站的所有重要更新。
 
+## [2.10.0] - 2026-02-23
+
+### 新增
+
+#### 管理工具（网络诊断）
+- 工作区新增「管理工具」菜单入口（`/admin/tools`）
+- 支持 Ping 测试：输入 IP 或域名，可自定义 Ping 次数（1-20 次）
+- 支持 Traceroute 路由追踪：输入 IP 或域名，显示完整路由跳转路径
+- 终端风格暗色背景结果展示区，命令输出一目了然
+- 标签切换式 UI，Ping 和 Traceroute 面板独立操作
+- 输入安全校验：仅允许合法域名/IP 字符，防止命令注入
+- 跨平台兼容：自动适配 Windows（`ping -n` / `tracert`）和 Linux（`ping -c` / `traceroute`）
+- 使用 `spawn` 流式收集输出，确保大量输出不被截断
+- 超时保护：Ping 30 秒 / Traceroute 120 秒，超时仍返回已收集的部分结果
+
+#### 管理工具 API
+- 新增 `POST /api/tools/ping` — 执行 Ping 测试
+- 新增 `POST /api/tools/tracert` — 执行 Traceroute 路由追踪
+
+### 新增文件
+
+```
+src/app/api/tools/ping/route.ts         # Ping API
+src/app/api/tools/tracert/route.ts      # Traceroute API
+src/app/admin/tools/page.tsx            # 管理工具页面入口
+src/app/admin/tools/ToolsClient.tsx     # 管理工具客户端组件
+```
+
+### 修改文件
+
+```
+src/components/Sidebar.tsx              # 新增「管理工具」菜单项
+README.md
+```
+
+---
+
 ## [2.9.2] - 2026-02-14
 
 ### 新增

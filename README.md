@@ -2,12 +2,11 @@
 
 综合导航门户与站点管理系统，提供统一的站点导航、软件下载、二维码展示、数据分析与 BIND9 DNS 管理功能。
 
-## 最近更新（2026-02-14）
+## 最近更新（2026-02-23）
 
-- DNS 管理页面新增交互优化：`新增 Zone`、`新增记录`、`新增转发区域` 改为弹窗录入，页面更简洁
-- `新增记录` 入口下沉到 Zone 列表行内，点击图标即可在当前 Zone 下快速添加记录
-- 后台删除确认统一为友好弹窗（替换原生 `confirm()`），并复用同一组件
-- 全局消息提示（Toast）改为页面居中弹出，视觉反馈更统一
+- 工作区新增「管理工具」菜单，支持页面上进行 Ping 测试和 Traceroute 路由追踪
+- 终端风格暗色背景结果展示，支持跨平台（Windows / Linux）
+- 输入安全校验防止命令注入，使用 `spawn` 流式收集完整输出
 
 ## 技术栈
 
@@ -32,6 +31,7 @@ navstation/
 │   │   │   ├── phonebook/      # 电话本管理
 │   │   │   ├── dns/            # DNS 管理（BIND9）
 │   │   │   ├── keys/           # API 密钥管理
+│   │   │   ├── tools/          # 管理工具（Ping / Traceroute）
 │   │   │   └── settings/       # 站点设置
 │   │   ├── analytics/          # 数据分析
 │   │   ├── software/           # 软件下载页面
@@ -47,6 +47,7 @@ navstation/
 │   │       ├── phonebook/      # 电话本查询与管理
 │   │       ├── dns/            # DNS Zone/记录/日志管理
 │   │       ├── keys/           # API 密钥管理
+│   │       ├── tools/          # 管理工具 API（Ping / Traceroute）
 │   │       └── settings/       # 站点设置 API
 │   ├── components/             # 客户端组件
 │   │   ├── AppShell.tsx        # 布局壳（Sidebar + 模态框）
@@ -263,6 +264,12 @@ docker-compose up -d
 | `PUT /api/dns/forward-zones/:id` | PUT | 更新转发区域并同步到 BIND9（需 write 权限） |
 | `DELETE /api/dns/forward-zones/:id` | DELETE | 删除转发区域并同步到 BIND9（需 write 权限） |
 
+### 管理工具
+| 路径 | 方法 | 说明 |
+|------|------|------|
+| `POST /api/tools/ping` | POST | Ping 测试（参数：`host`、`count`） |
+| `POST /api/tools/tracert` | POST | Traceroute 路由追踪（参数：`host`） |
+
 ## 默认账号
 
 - 用户名: `admin`
@@ -286,6 +293,7 @@ docker-compose up -d
 - **软件管理**: 上传、编辑、删除软件下载资源（单文件最大 4GB），支持自定义 Logo 或图标
 - **电话本管理**: 管理科室电话本，支持短码（3-4 位，可留空）和长码（1-13 位，可留空）维护、启用/停用与排序
 - **DNS 管理**: 管理 BIND9 的 Zone 与记录，支持 A/AAAA/CNAME/TXT/MX，支持条件转发区域（Forward Zone），同步状态追踪与变更日志审计
+- **管理工具**: 页面上执行 Ping 测试和 Traceroute 路由追踪，终端风格结果展示，支持跨平台
 - **站点设置**: 自定义站点名称、描述、Logo、版本号、页脚版权
 - **账号设置**: 修改管理员头像和密码
 - **统一消息提醒**: 后台增删改与状态操作统一使用全局 Message/Toast 提示，支持 success/error/warning/info，交互反馈更一致
