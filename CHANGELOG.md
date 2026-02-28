@@ -2,6 +2,46 @@
 
 本文件记录 NavStation 导航站的所有重要更新。
 
+## [2.13.0] - 2026-02-28
+
+### 新增 / 变更
+
+#### 天气速查（百度天气）能力增强
+- 新增 `GET /api/weather` 服务端天气代理，支持按 `district_id`、`location`、`district/province/city` 查询
+- 新增天气缓存表 `weather_cache`，默认查询命中缓存以减少上游 API 调用
+- 新增行政区划映射表 `weather_districts`，支持中文地名优先映射到 `district_id` 后查询天气
+- 新增天气区划 CSV 导入脚本 `scripts/import-weather-districts.mjs`
+- 新增迁移 `010_add_weather_districts_and_cache.sql`
+
+#### 天气速查弹窗 UI 重构
+- 天气弹窗改为渐变 Hero 风格，增加指标条、预警区、7日预报与生活指数卡片
+- 7日预报优化为不换行优先展示（必要时横向滚动），缓解日期与星期换行问题
+- 生活指数卡片新增图标与按类型配色（如紫外线暖黄、感冒青蓝）
+
+#### 可读性与易用性优化（面向年长同事）
+- 行政区域速查详情页字体放大，代码标签、名称、代码值与点击区域加大
+- 详情页地址增加“详细地址：”标签并放大显示
+- 电话本速查整体字体放大，短码字号显著增大
+
+### 修改文件
+
+```
+src/app/api/weather/route.ts
+src/components/WeatherQuickSearchModal.tsx
+src/components/AdministrativeRegionQuickSearchModal.tsx
+src/components/PhonebookQuickSearchModal.tsx
+src/db/schema.sql
+src/db/migrations/010_add_weather_districts_and_cache.sql
+scripts/import-weather-districts.mjs
+docker-compose.yml
+README.md
+DEPLOY.md
+package.json
+add_import-weather-districts.md
+```
+
+---
+
 ## [2.12.0] - 2026-02-28
 
 ### 新增 / 变更

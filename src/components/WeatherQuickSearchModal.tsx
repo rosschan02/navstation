@@ -89,6 +89,69 @@ function toText(value: unknown, suffix = ''): string {
   return '-';
 }
 
+function getWeatherIndexVisual(indexName?: string): {
+  icon: string;
+  badgeClass: string;
+  iconClass: string;
+  briefClass: string;
+} {
+  const name = indexName || '';
+  if (name.includes('紫外线')) {
+    return {
+      icon: 'wb_sunny',
+      badgeClass: 'bg-amber-100',
+      iconClass: 'text-amber-700',
+      briefClass: 'text-amber-700',
+    };
+  }
+  if (name.includes('感冒')) {
+    return {
+      icon: 'masks',
+      badgeClass: 'bg-cyan-100',
+      iconClass: 'text-cyan-700',
+      briefClass: 'text-cyan-700',
+    };
+  }
+  if (name.includes('洗车')) {
+    return {
+      icon: 'directions_car',
+      badgeClass: 'bg-emerald-100',
+      iconClass: 'text-emerald-700',
+      briefClass: 'text-emerald-700',
+    };
+  }
+  if (name.includes('穿衣')) {
+    return {
+      icon: 'checkroom',
+      badgeClass: 'bg-rose-100',
+      iconClass: 'text-rose-700',
+      briefClass: 'text-rose-700',
+    };
+  }
+  if (name.includes('晨练') || name.includes('运动')) {
+    return {
+      icon: 'fitness_center',
+      badgeClass: 'bg-orange-100',
+      iconClass: 'text-orange-700',
+      briefClass: 'text-orange-700',
+    };
+  }
+  if (name.includes('雨') || name.includes('降水')) {
+    return {
+      icon: 'umbrella',
+      badgeClass: 'bg-indigo-100',
+      iconClass: 'text-indigo-700',
+      briefClass: 'text-indigo-700',
+    };
+  }
+  return {
+    icon: 'monitoring',
+    badgeClass: 'bg-blue-100',
+    iconClass: 'text-blue-700',
+    briefClass: 'text-blue-700',
+  };
+}
+
 export function WeatherQuickSearchModal({ isOpen, onClose }: WeatherQuickSearchModalProps) {
   const [keyword, setKeyword] = useState(DEFAULT_DISTRICT_NAME);
   const [weather, setWeather] = useState<WeatherResult | null>(null);
@@ -191,8 +254,8 @@ export function WeatherQuickSearchModal({ isOpen, onClose }: WeatherQuickSearchM
 
     return (
       <div>
-        {/* 4-column metrics strip */}
-        <div className="grid grid-cols-4 gap-px bg-slate-100">
+        {/* Metrics strip */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-slate-100">
           {[
             { label: '风向风力', value: `${toText(now?.wind_dir)} ${toText(now?.wind_class)}` },
             { label: 'AQI', value: toText(now?.aqi) },
@@ -206,7 +269,7 @@ export function WeatherQuickSearchModal({ isOpen, onClose }: WeatherQuickSearchM
           ))}
         </div>
 
-        <div className="space-y-4 p-4">
+        <div className="space-y-5 p-5">
           {alerts.length > 0 && (
             <div className="rounded-xl bg-amber-50 border-l-4 border-amber-400 px-4 py-3">
               <div className="flex items-center gap-2 mb-1">
@@ -228,16 +291,16 @@ export function WeatherQuickSearchModal({ isOpen, onClose }: WeatherQuickSearchM
 
           <div>
             <p className="text-sm font-semibold text-slate-700 mb-2">7日预报</p>
-            <div className="rounded-xl overflow-hidden border border-slate-100">
+            <div className="rounded-xl border border-slate-100 overflow-x-auto">
               {forecasts.length > 0 ? (
                 forecasts.slice(0, 7).map((item, idx) => (
                   <div
                     key={`${item.date || idx}-${item.week || ''}`}
-                    className="flex items-center justify-between px-4 py-2.5 hover:bg-slate-50 border-b border-slate-100 last:border-0 transition-colors"
+                    className="grid grid-cols-[170px_minmax(240px,1fr)_120px] items-center gap-3 px-4 py-2.5 min-w-[560px] hover:bg-slate-50 border-b border-slate-100 last:border-0 transition-colors"
                   >
-                    <p className="text-sm text-slate-500 w-28 shrink-0">{item.date || '-'} {item.week || ''}</p>
-                    <p className="text-sm text-slate-600 flex-1 truncate">{toText(item.text_day)} 转 {toText(item.text_night)}</p>
-                    <p className="text-sm font-semibold text-slate-800 shrink-0 ml-2">
+                    <p className="text-sm text-slate-500 whitespace-nowrap">{item.date || '-'} {item.week || ''}</p>
+                    <p className="text-sm text-slate-600 whitespace-nowrap overflow-hidden text-ellipsis">{toText(item.text_day)} 转 {toText(item.text_night)}</p>
+                    <p className="text-sm font-semibold text-slate-800 whitespace-nowrap text-right">
                       {toText(item.low)}~{toText(item.high)}°C
                     </p>
                   </div>
@@ -251,14 +314,22 @@ export function WeatherQuickSearchModal({ isOpen, onClose }: WeatherQuickSearchM
           <div>
             <p className="text-sm font-semibold text-slate-700 mb-2">生活指数</p>
             {indexes.length > 0 ? (
-              <div className="grid grid-cols-2 gap-3">
-                {indexes.map((item, idx) => (
-                  <div key={`${item.name || 'index'}-${idx}`} className="bg-slate-50 rounded-xl p-3">
-                    <p className="text-sm font-semibold text-slate-800">{item.name || '指数'}</p>
-                    <p className="text-xs text-[#137fec] mt-0.5 font-medium">{item.brief || '-'}</p>
-                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">{item.detail || '-'}</p>
-                  </div>
-                ))}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {indexes.map((item, idx) => {
+                  const visual = getWeatherIndexVisual(item.name);
+                  return (
+                    <div key={`${item.name || 'index'}-${idx}`} className="bg-slate-50 rounded-xl p-3">
+                      <div className="flex items-center gap-2">
+                        <span className={`inline-flex items-center justify-center size-7 rounded-lg ${visual.badgeClass}`}>
+                          <span className={`material-symbols-outlined text-[18px] ${visual.iconClass}`}>{visual.icon}</span>
+                        </span>
+                        <p className="text-sm font-semibold text-slate-800">{item.name || '指数'}</p>
+                      </div>
+                      <p className={`text-xs mt-1 font-medium ${visual.briefClass}`}>{item.brief || '-'}</p>
+                      <p className="text-xs text-slate-500 mt-1 leading-relaxed">{item.detail || '-'}</p>
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <p className="text-sm text-slate-400">暂无生活指数数据</p>
@@ -274,7 +345,7 @@ export function WeatherQuickSearchModal({ isOpen, onClose }: WeatherQuickSearchM
       <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
 
       <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative w-full max-w-2xl rounded-2xl bg-white shadow-2xl overflow-hidden">
+        <div className="relative w-full max-w-3xl rounded-2xl bg-white shadow-2xl overflow-hidden">
           <div className="bg-gradient-to-br from-[#137fec] to-[#0d5cb8] px-5 pt-4 pb-5">
             {/* Row 1: location + close */}
             <div className="flex items-center justify-between gap-3 mb-4">

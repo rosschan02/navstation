@@ -117,8 +117,8 @@ export function PhonebookQuickSearchModal({ isOpen, onClose }: PhonebookQuickSea
       return (
         <div className="py-16 flex flex-col items-center text-slate-400">
           <span className="material-symbols-outlined text-[48px] mb-3 text-slate-300">search</span>
-          <p className="text-sm">输入关键词开始搜索</p>
-          <p className="text-xs mt-1 text-slate-300">支持科室名称、短码、长码</p>
+          <p className="text-base">输入关键词开始搜索</p>
+          <p className="text-sm mt-1 text-slate-300">支持科室名称、短码、长码</p>
         </div>
       );
     }
@@ -127,7 +127,7 @@ export function PhonebookQuickSearchModal({ isOpen, onClose }: PhonebookQuickSea
       return (
         <div className="py-16 flex flex-col items-center text-slate-400">
           <span className="material-symbols-outlined text-[36px] mb-3 animate-spin">progress_activity</span>
-          <p className="text-sm">查询中...</p>
+          <p className="text-base">查询中...</p>
         </div>
       );
     }
@@ -140,20 +140,20 @@ export function PhonebookQuickSearchModal({ isOpen, onClose }: PhonebookQuickSea
       return (
         <div className="py-16 flex flex-col items-center text-slate-400">
           <span className="material-symbols-outlined text-[48px] mb-3 text-slate-300">search_off</span>
-          <p className="text-sm">没有找到匹配结果</p>
-          <p className="text-xs mt-1 text-slate-300">试试其他关键词</p>
+          <p className="text-base">没有找到匹配结果</p>
+          <p className="text-sm mt-1 text-slate-300">试试其他关键词</p>
         </div>
       );
     }
 
     return (
       <div>
-        <p className="text-xs text-slate-400 px-1 mb-2">找到 {items.length} 条结果</p>
+        <p className="text-sm text-slate-500 px-1 mb-2">找到 {items.length} 条结果</p>
         {/* Table header */}
-        <div className="flex items-center px-4 py-2 text-xs text-slate-400 font-medium border-b border-slate-100">
+        <div className="flex items-center px-4 py-2 text-sm text-slate-500 font-medium border-b border-slate-100">
           <span className="flex-1 min-w-0">科室</span>
-          <span className="w-20 text-center shrink-0">短码</span>
-          <span className="w-32 text-center shrink-0">长码</span>
+          <span className="w-24 text-center shrink-0">短码</span>
+          <span className="w-36 text-center shrink-0">长码</span>
         </div>
         {/* Rows */}
         <div className="divide-y divide-slate-100">
@@ -164,55 +164,55 @@ export function PhonebookQuickSearchModal({ isOpen, onClose }: PhonebookQuickSea
             return (
               <div
                 key={item.id}
-                className="flex items-center px-4 py-2.5 hover:bg-slate-50 transition-colors"
+                className="flex items-center px-4 py-3 hover:bg-slate-50 transition-colors"
               >
                 {/* Department */}
                 <div className="flex-1 min-w-0 pr-3">
-                  <p className="text-sm text-slate-900 truncate">{item.department_name}</p>
-                  {item.remark && <p className="text-xs text-slate-400 truncate">{item.remark}</p>}
+                  <p className="text-base text-slate-900 truncate">{item.department_name}</p>
+                  {item.remark && <p className="text-sm text-slate-500 truncate">{item.remark}</p>}
                 </div>
 
                 {/* Short code */}
-                <div className="w-20 text-center shrink-0">
+                <div className="w-24 text-center shrink-0">
                   {item.short_code ? (
                     <button
                       onClick={() => handleCopy(item.short_code, `${item.id}-short`)}
-                      className="inline-flex items-center gap-1 px-2 py-1 rounded-md hover:bg-primary/10 transition-colors group"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md hover:bg-primary/10 transition-colors group"
                       title="点击复制"
                     >
                       {shortCopied ? (
-                        <span className="text-xs text-green-600 font-medium">已复制</span>
+                        <span className="text-sm text-green-600 font-medium">已复制</span>
                       ) : (
                         <>
-                          <span className="text-sm font-mono font-semibold text-slate-800">{item.short_code}</span>
-                          <span className="material-symbols-outlined text-[13px] text-slate-300 group-hover:text-primary transition-colors">content_copy</span>
+                          <span className="text-xl font-mono font-semibold text-slate-800">{item.short_code}</span>
+                          <span className="material-symbols-outlined text-[15px] text-slate-300 group-hover:text-primary transition-colors">content_copy</span>
                         </>
                       )}
                     </button>
                   ) : (
-                    <span className="text-xs text-slate-300">-</span>
+                    <span className="text-sm text-slate-300">-</span>
                   )}
                 </div>
 
                 {/* Long code */}
-                <div className="w-32 text-center shrink-0">
+                <div className="w-36 text-center shrink-0">
                   {item.long_code ? (
                     <button
                       onClick={() => handleCopy(item.long_code, `${item.id}-long`)}
-                      className="inline-flex items-center gap-1 px-2 py-1 rounded-md hover:bg-primary/10 transition-colors group"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md hover:bg-primary/10 transition-colors group"
                       title="点击复制"
                     >
                       {longCopied ? (
-                        <span className="text-xs text-green-600 font-medium">已复制</span>
+                        <span className="text-sm text-green-600 font-medium">已复制</span>
                       ) : (
                         <>
-                          <span className="text-sm font-mono font-semibold text-slate-800">{item.long_code}</span>
-                          <span className="material-symbols-outlined text-[13px] text-slate-300 group-hover:text-primary transition-colors">content_copy</span>
+                          <span className="text-base font-mono font-semibold text-slate-800">{item.long_code}</span>
+                          <span className="material-symbols-outlined text-[15px] text-slate-300 group-hover:text-primary transition-colors">content_copy</span>
                         </>
                       )}
                     </button>
                   ) : (
-                    <span className="text-xs text-slate-300">-</span>
+                    <span className="text-sm text-slate-300">-</span>
                   )}
                 </div>
               </div>
@@ -231,7 +231,7 @@ export function PhonebookQuickSearchModal({ isOpen, onClose }: PhonebookQuickSea
         <div className="relative w-full max-w-xl rounded-2xl bg-white shadow-xl border border-slate-200 overflow-hidden">
           <div className="px-5 py-4 border-b border-slate-200">
             <div className="flex items-center justify-between gap-3">
-              <h3 className="text-base font-semibold text-slate-900">电话本速查</h3>
+              <h3 className="text-lg font-semibold text-slate-900">电话本速查</h3>
               <button
                 onClick={onClose}
                 className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100"
@@ -249,7 +249,7 @@ export function PhonebookQuickSearchModal({ isOpen, onClose }: PhonebookQuickSea
                 value={keyword}
                 onChange={(e) => setKeyword(e.target.value)}
                 placeholder="搜索科室名称、短码或长码..."
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white transition-colors"
+                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-base focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white transition-colors"
               />
             </div>
           </div>

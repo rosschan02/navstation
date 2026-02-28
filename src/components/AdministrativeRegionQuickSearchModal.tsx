@@ -231,41 +231,44 @@ export function AdministrativeRegionQuickSearchModal({
         <button
           type="button"
           onClick={() => setSelectedItem(null)}
-          className="inline-flex items-center gap-1 text-sm text-primary hover:opacity-80"
+          className="inline-flex items-center gap-1.5 text-base text-primary hover:opacity-80"
         >
-          <span className="material-symbols-outlined text-[18px]">arrow_back</span>
+          <span className="material-symbols-outlined text-[20px]">arrow_back</span>
           返回列表
         </button>
 
         <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
-          <h4 className="text-base font-semibold text-slate-900 break-words">{selectedItem.name || '-'}</h4>
-          <p className="mt-1 text-xs text-slate-500 break-words">{selectedItem.address || ''}</p>
+          <h4 className="text-xl font-semibold text-slate-900 break-words">{selectedItem.name || '-'}</h4>
+          <p className="mt-2 text-base text-slate-700 break-words">
+            <span className="font-medium text-slate-800">详细地址：</span>
+            {selectedItem.address || '-'}
+          </p>
         </div>
 
         {/* 行政区划代码 — 直接由 town_code 推算 */}
         {divisionChain.length > 0 && (
-          <div className="rounded-xl border border-slate-200 p-3">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="material-symbols-outlined text-[16px] text-slate-400">account_tree</span>
-              <p className="text-xs text-slate-400 font-medium">行政区划代码</p>
+          <div className="rounded-xl border border-slate-200 p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="material-symbols-outlined text-[18px] text-slate-400">account_tree</span>
+              <p className="text-sm text-slate-500 font-medium">行政区划代码</p>
             </div>
-            <div className="flex flex-wrap items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-2">
               {divisionChain.map((div, idx) => (
                 <React.Fragment key={div.code}>
-                  {idx > 0 && <span className="text-slate-300 text-xs">›</span>}
+                  {idx > 0 && <span className="text-slate-300 text-base">›</span>}
                   <button
                     onClick={() => handleCopyCode(div.code)}
-                    className="inline-flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-primary/10 transition-colors group"
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-primary/10 transition-colors group"
                     title="点击复制代码"
                   >
-                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${LEVEL_COLORS[div.level] || 'bg-gray-100 text-gray-700'}`}>
+                    <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-semibold ${LEVEL_COLORS[div.level] || 'bg-gray-100 text-gray-700'}`}>
                       {LEVEL_NAMES[div.level]}
                     </span>
-                    <span className="text-sm text-slate-800">{div.name}</span>
+                    <span className="text-base font-medium text-slate-800">{div.name}</span>
                     {copiedCode === div.code ? (
-                      <span className="text-[11px] text-green-600 font-medium">✓{div.code}</span>
+                      <span className="text-sm text-green-600 font-semibold">✓{div.code}</span>
                     ) : (
-                      <span className="text-[11px] font-mono text-slate-400 group-hover:text-primary">{div.code}</span>
+                      <span className="text-sm font-mono text-slate-500 group-hover:text-primary">{div.code}</span>
                     )}
                   </button>
                 </React.Fragment>
@@ -276,12 +279,12 @@ export function AdministrativeRegionQuickSearchModal({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="rounded-xl border border-slate-200 p-3">
-            <p className="text-xs text-slate-400">纬度 (lat)</p>
-            <p className="mt-1 text-sm font-mono text-slate-800">{selectedItem.location.lat ?? '-'}</p>
+            <p className="text-sm text-slate-500">纬度 (lat)</p>
+            <p className="mt-1 text-lg font-mono text-slate-800">{selectedItem.location.lat ?? '-'}</p>
           </div>
           <div className="rounded-xl border border-slate-200 p-3">
-            <p className="text-xs text-slate-400">经度 (lng)</p>
-            <p className="mt-1 text-sm font-mono text-slate-800">{selectedItem.location.lng ?? '-'}</p>
+            <p className="text-sm text-slate-500">经度 (lng)</p>
+            <p className="mt-1 text-lg font-mono text-slate-800">{selectedItem.location.lng ?? '-'}</p>
           </div>
         </div>
       </div>
