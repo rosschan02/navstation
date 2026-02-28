@@ -4,10 +4,9 @@
 
 ## 最近更新（2026-02-28）
 
-- 首页搜索框旁新增「行政区域速查」按钮，支持按省份 + 关键词查询地点
-- 新增结果“详情页”视图：支持从列表点击查看完整地址与经纬度，并可返回列表
-- 新增后端代理接口 `GET /api/regions/search`，由服务端请求百度 Place API
-- 百度地图 AK 改为环境变量配置（`BAIDU_MAP_AK`），不再在代码中写死
+- 行政区域速查升级至百度 Place API v3，新增街道（乡镇）层级及 `town_code`（9位行政区划代码）
+- 详情页直接由 `town_code` 推算省/市/区/街道四级区划代码，无需本地数据库，每级代码可一键复制
+- 首页搜索框旁新增「行政区域速查」按钮，支持按省份 + 关键词查询地点，结果展示四级行政区划
 
 ## 技术栈
 
@@ -46,7 +45,7 @@ navstation/
 │   │       ├── auth/           # 登录/登出/当前用户
 │   │       ├── analytics/      # 统计查询 + 点击记录
 │   │       ├── phonebook/      # 电话本查询与管理
-│   │       ├── regions/        # 行政区域速查（百度 Place API 代理）
+│   │       ├── regions/        # 行政区域速查（百度 Place API v3 代理）
 │   │       ├── dns/            # DNS Zone/记录/日志管理
 │   │       ├── keys/           # API 密钥管理
 │   │       ├── tools/          # 管理工具 API（Ping / Traceroute）
@@ -56,7 +55,7 @@ navstation/
 │   │   ├── Sidebar.tsx         # 侧边栏导航
 │   │   ├── LoginModal.tsx      # 登录弹窗
 │   │   ├── PhonebookQuickSearchModal.tsx # 院内电话速查弹窗
-│   │   ├── AdministrativeRegionQuickSearchModal.tsx # 行政区域速查弹窗
+│   │   ├── AdministrativeRegionQuickSearchModal.tsx # 行政区域速查弹窗（百度 v3，含区划代码）
 │   │   ├── ConfirmDialog.tsx   # 统一删除确认弹窗
 │   │   └── IconPicker.tsx      # 图标选择器组件
 │   ├── contexts/
@@ -245,7 +244,7 @@ docker-compose up -d
 ### 行政区域速查
 | 路径 | 方法 | 说明 |
 |------|------|------|
-| `GET /api/regions/search` | GET | 行政区域查询代理（参数：`query`、`region`；服务端转发百度 Place API） |
+| `GET /api/regions/search` | GET | 行政区域查询代理（参数：`query`、`region`；服务端转发百度 Place API v3，返回四级区划及代码） |
 
 ### API 密钥管理（需管理员登录）
 | 路径 | 方法 | 说明 |
@@ -290,7 +289,7 @@ docker-compose up -d
 
 - **首页导航**: 所有站点按分类分组展示，左侧边栏分类筛选，支持全文搜索，显示服务器局域网 IP 地址
 - **院内电话速查**: 首页搜索框旁提供「院内电话速查」按钮，输入关键词后按科室名/短码/长码搜索，支持一键复制号码
-- **行政区域速查**: 首页搜索框旁提供「行政区域速查」按钮，支持按省份搜索地点，结果可进入详情页查看完整地址与经纬度
+- **行政区域速查**: 首页搜索框旁提供「行政区域速查」按钮，支持按省份 + 关键词查询地点；详情页展示省/市/区/街道四级行政区划代码（由百度 v3 API `town_code` 直接推算），每级代码可一键复制
 - **软件下载**: 下载管理员上传的常用软件（支持大文件，按排序显示）
 - **二维码展示**: 公众号/小程序二维码以图片网格形式展示
 - **IE8+ 兼容**: 自动检测 IE8/9/10/11 并重定向到兼容页面（float 布局，无 Flexbox/Grid）

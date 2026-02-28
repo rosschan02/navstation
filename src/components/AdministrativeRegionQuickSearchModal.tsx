@@ -19,6 +19,8 @@ interface RegionSearchItem {
   province: string;
   city: string;
   area: string;
+  town: string;
+  town_code: string;
   address: string;
 }
 
@@ -30,6 +32,20 @@ interface RegionSearchResponse {
   total: number;
   items: RegionSearchItem[];
 }
+
+const LEVEL_NAMES: Record<number, string> = {
+  1: '省/直辖市',
+  2: '市/地级',
+  3: '区/县',
+  4: '街道/乡镇',
+};
+
+const LEVEL_COLORS: Record<number, string> = {
+  1: 'bg-red-100 text-red-700',
+  2: 'bg-orange-100 text-orange-700',
+  3: 'bg-blue-100 text-blue-700',
+  4: 'bg-green-100 text-green-700',
+};
 
 const PROVINCES = [
   '北京市',
@@ -93,6 +109,27 @@ export function AdministrativeRegionQuickSearchModal({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
+  const [copiedCode, setCopiedCode] = useState('');
+
+  const handleCopyCode = async (code: string) => {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(code);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = code;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      setCopiedCode(code);
+      setTimeout(() => setCopiedCode((p) => (p === code ? '' : p)), 1500);
+    } catch { /* ignore */ }
+  };
 
   useEffect(() => {
     if (!isOpen) return;
@@ -120,6 +157,7 @@ export function AdministrativeRegionQuickSearchModal({
       setError('');
       setHasSearched(false);
       setIsLoading(false);
+      setCopiedCode('');
     }
   }, [isOpen]);
 
@@ -174,12 +212,19 @@ export function AdministrativeRegionQuickSearchModal({
 
   if (!isOpen) return null;
 
-  const detailRegionText = selectedItem
-    ? [selectedItem.province, selectedItem.city, selectedItem.area].filter(Boolean).join(' / ') || '-'
-    : '-';
-
   const renderDetailView = () => {
     if (!selectedItem) return null;
+
+    // Derive division codes from town_code (9-digit street code from Baidu v3)
+    const tc = selectedItem.town_code;
+    const divisionChain = tc
+      ? [
+          { level: 1, name: selectedItem.province, code: tc.slice(0, 2) },
+          { level: 2, name: selectedItem.city,     code: tc.slice(0, 4) },
+          { level: 3, name: selectedItem.area,     code: tc.slice(0, 6) },
+          { level: 4, name: selectedItem.town,     code: tc },
+        ].filter((d) => d.name)
+      : [];
 
     return (
       <div className="space-y-4">
@@ -194,27 +239,50 @@ export function AdministrativeRegionQuickSearchModal({
 
         <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
           <h4 className="text-base font-semibold text-slate-900 break-words">{selectedItem.name || '-'}</h4>
-          <p className="mt-1 text-xs text-slate-500">详情页（格式化展示）</p>
+          <p className="mt-1 text-xs text-slate-500 break-words">{selectedItem.address || ''}</p>
         </div>
+
+        {/* 行政区划代码 — 直接由 town_code 推算 */}
+        {divisionChain.length > 0 && (
+          <div className="rounded-xl border border-slate-200 p-3">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="material-symbols-outlined text-[16px] text-slate-400">account_tree</span>
+              <p className="text-xs text-slate-400 font-medium">行政区划代码</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {divisionChain.map((div, idx) => (
+                <React.Fragment key={div.code}>
+                  {idx > 0 && <span className="text-slate-300 text-xs">›</span>}
+                  <button
+                    onClick={() => handleCopyCode(div.code)}
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-primary/10 transition-colors group"
+                    title="点击复制代码"
+                  >
+                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${LEVEL_COLORS[div.level] || 'bg-gray-100 text-gray-700'}`}>
+                      {LEVEL_NAMES[div.level]}
+                    </span>
+                    <span className="text-sm text-slate-800">{div.name}</span>
+                    {copiedCode === div.code ? (
+                      <span className="text-[11px] text-green-600 font-medium">✓{div.code}</span>
+                    ) : (
+                      <span className="text-[11px] font-mono text-slate-400 group-hover:text-primary">{div.code}</span>
+                    )}
+                  </button>
+                </React.Fragment>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="rounded-xl border border-slate-200 p-3">
-            <p className="text-xs text-slate-400">所属行政区域</p>
-            <p className="mt-1 text-sm text-slate-800 break-words">{detailRegionText}</p>
-          </div>
-          <div className="rounded-xl border border-slate-200 p-3">
             <p className="text-xs text-slate-400">纬度 (lat)</p>
-            <p className="mt-1 text-sm text-slate-800">{selectedItem.location.lat ?? '-'}</p>
+            <p className="mt-1 text-sm font-mono text-slate-800">{selectedItem.location.lat ?? '-'}</p>
           </div>
           <div className="rounded-xl border border-slate-200 p-3">
             <p className="text-xs text-slate-400">经度 (lng)</p>
-            <p className="mt-1 text-sm text-slate-800">{selectedItem.location.lng ?? '-'}</p>
+            <p className="mt-1 text-sm font-mono text-slate-800">{selectedItem.location.lng ?? '-'}</p>
           </div>
-        </div>
-
-        <div className="rounded-xl border border-slate-200 p-3">
-          <p className="text-xs text-slate-400">详细地址</p>
-          <p className="mt-1 text-sm text-slate-800 break-words">{selectedItem.address || '-'}</p>
         </div>
       </div>
     );
@@ -278,7 +346,7 @@ export function AdministrativeRegionQuickSearchModal({
 
         <div className="space-y-3">
           {items.map((item, index) => {
-            const regionText = [item.province, item.city, item.area].filter(Boolean).join(' / ') || '-';
+            const regionText = [item.province, item.city, item.area, item.town].filter(Boolean).join(' / ') || '-';
             return (
               <div
                 key={`${item.uid || item.name}-${index}`}

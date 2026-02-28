@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-const BAIDU_PLACE_SEARCH_ENDPOINT = 'https://api.map.baidu.com/place/v2/search';
+// Upgraded to v3: returns town + town_code (4-level hierarchy)
+const BAIDU_PLACE_SEARCH_ENDPOINT = 'https://api.map.baidu.com/place/v3/region';
 
 interface BaiduPlaceResult {
   uid?: string;
@@ -16,6 +17,8 @@ interface BaiduPlaceResult {
   province?: string;
   city?: string;
   area?: string;
+  town?: string;
+  town_code?: number;
   address?: string;
 }
 
@@ -51,12 +54,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: '未配置百度地图 AK（BAIDU_MAP_AK）' }, { status: 500 });
   }
 
-  const params = new URLSearchParams({
-    query,
-    region,
-    output: 'json',
-    ak,
-  });
+  // v3 does not need output=json (always returns JSON)
+  const params = new URLSearchParams({ query, region, ak });
 
   try {
     const response = await fetch(`${BAIDU_PLACE_SEARCH_ENDPOINT}?${params.toString()}`, {
@@ -89,6 +88,9 @@ export async function GET(request: NextRequest) {
           province: item.province || '',
           city: item.city || '',
           area: item.area || '',
+          // v3 additions
+          town: item.town || '',
+          town_code: typeof item.town_code === 'number' ? String(item.town_code) : '',
           address: item.address || '',
         }))
       : [];
