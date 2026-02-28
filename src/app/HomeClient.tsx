@@ -6,6 +6,7 @@ import type { Category, SiteData } from '@/types';
 import { buildAnalyticsSource } from '@/lib/analyticsSource';
 import { getOrCreateVisitorId } from '@/lib/visitorId';
 import { PhonebookQuickSearchModal } from '@/components/PhonebookQuickSearchModal';
+import { AdministrativeRegionQuickSearchModal } from '@/components/AdministrativeRegionQuickSearchModal';
 
 interface HomeClientProps {
   categories: Category[];
@@ -19,6 +20,7 @@ export function HomeClient({ categories, sites, footerText, clientIP }: HomeClie
   const [searchQuery, setSearchQuery] = useState('');
   const [visitorId, setVisitorId] = useState('anon');
   const [isPhonebookModalOpen, setIsPhonebookModalOpen] = useState(false);
+  const [isAdministrativeRegionModalOpen, setIsAdministrativeRegionModalOpen] = useState(false);
   const selectedCategory = searchParams.get('category') || 'all';
 
   useEffect(() => {
@@ -106,7 +108,7 @@ export function HomeClient({ categories, sites, footerText, clientIP }: HomeClie
       <div className="max-w-[1400px] mx-auto w-full px-6 py-8 flex flex-col gap-6">
 
         {/* Search Bar */}
-        <section className="flex items-center gap-4 w-full">
+        <section className="flex flex-wrap items-center gap-3 w-full">
           {/* Client IP Badge */}
           {clientIP && (
             <div className="hidden sm:flex items-center shrink-0">
@@ -114,7 +116,7 @@ export function HomeClient({ categories, sites, footerText, clientIP }: HomeClie
               <span className="text-lg font-mono text-slate-600">{clientIP}</span>
             </div>
           )}
-          <div className="w-full max-w-2xl relative">
+          <div className="flex-1 min-w-[260px] max-w-2xl relative">
             <label className="flex flex-col w-full group relative z-10">
               <div className="flex w-full items-center rounded-xl bg-white shadow-sm ring-1 ring-slate-200 h-14 overflow-hidden focus-within:ring-2 focus-within:ring-primary transition-shadow">
                 <div className="flex items-center justify-center pl-5 pr-3 text-slate-400">
@@ -138,6 +140,14 @@ export function HomeClient({ categories, sites, footerText, clientIP }: HomeClie
               </div>
             </label>
           </div>
+          <button
+            type="button"
+            onClick={() => setIsAdministrativeRegionModalOpen(true)}
+            className="shrink-0 h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-700 hover:text-primary hover:border-primary/30 hover:bg-primary/5 shadow-sm transition-colors flex items-center gap-2"
+          >
+            <span className="material-symbols-outlined text-[20px]">location_city</span>
+            <span className="hidden md:inline text-sm font-medium">行政区域速查</span>
+          </button>
           <button
             type="button"
             onClick={() => setIsPhonebookModalOpen(true)}
@@ -245,6 +255,10 @@ export function HomeClient({ categories, sites, footerText, clientIP }: HomeClie
       <PhonebookQuickSearchModal
         isOpen={isPhonebookModalOpen}
         onClose={() => setIsPhonebookModalOpen(false)}
+      />
+      <AdministrativeRegionQuickSearchModal
+        isOpen={isAdministrativeRegionModalOpen}
+        onClose={() => setIsAdministrativeRegionModalOpen(false)}
       />
     </div>
   );

@@ -28,6 +28,7 @@ services:
     environment:
       DATABASE_URL: postgresql://navstation:navstation123@db:5432/navstation
       JWT_SECRET: navstation-secret-change-me-in-production
+      BAIDU_MAP_AK: ${BAIDU_MAP_AK:-}
     volumes:
       - uploads:/app/uploads
     depends_on:

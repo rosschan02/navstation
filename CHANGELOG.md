@@ -2,6 +2,44 @@
 
 本文件记录 NavStation 导航站的所有重要更新。
 
+## [2.11.0] - 2026-02-28
+
+### 新增
+
+#### 行政区域速查（首页）
+- 首页搜索框右侧新增「行政区域速查」按钮
+- 新增行政区域速查弹窗，支持选择中国省份后按关键词查询地点
+- 查询结果支持“列表页 -> 详情页”切换，详情页支持返回列表
+- 详情页格式化展示地点信息（名称、所属行政区域、详细地址、经纬度）
+
+#### 行政区域速查 API
+- 新增 `GET /api/regions/search` — 服务端代理百度 Place API 查询
+- 接口返回标准化字段：`status`、`message`、`resultType`、`queryType`、`items`
+
+### 变更
+
+#### 百度地图 AK 配置方式
+- 移除代码内置默认 AK，改为环境变量配置
+- 新增 `BAIDU_MAP_AK` 配置项（支持 Docker Compose 透传）
+
+### 新增文件
+
+```
+src/app/api/regions/search/route.ts
+src/components/AdministrativeRegionQuickSearchModal.tsx
+```
+
+### 修改文件
+
+```
+src/app/HomeClient.tsx
+docker-compose.yml
+.env
+README.md
+```
+
+---
+
 ## [2.10.0] - 2026-02-23
 
 ### 新增
