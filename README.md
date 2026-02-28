@@ -106,6 +106,8 @@ npm install
 DATABASE_URL=postgresql://用户名:密码@localhost:5432/数据库名
 JWT_SECRET=你的密钥
 BAIDU_MAP_AK=你的百度地图AK
+BAIDU_WEATHER_AK=你的百度天气AK
+WEATHER_CACHE_TTL_MINUTES=30
 # 可选：DNS/BIND9 联调配置
 # BIND9_DRY_RUN=1
 # BIND9_NSUPDATE_BIN=nsupdate
@@ -123,6 +125,14 @@ psql -h localhost -U 用户名 -d 数据库名 -f src/db/schema.sql
 
 # 导入初始数据
 psql -h localhost -U 用户名 -d 数据库名 -f src/db/seed.sql
+```
+
+可选：导入百度天气行政区划映射（用于中文地名 -> `district_id` 查询）
+
+```bash
+npm run import:weather-districts
+# 或指定 CSV 路径
+node scripts/import-weather-districts.mjs data/weather_district_id.csv
 ```
 
 ### 4. 启动开发服务器

@@ -29,6 +29,8 @@ services:
       DATABASE_URL: postgresql://navstation:navstation123@db:5432/navstation
       JWT_SECRET: navstation-secret-change-me-in-production
       BAIDU_MAP_AK: ${BAIDU_MAP_AK:-}
+      BAIDU_WEATHER_AK: ${BAIDU_WEATHER_AK:-}
+      WEATHER_CACHE_TTL_MINUTES: ${WEATHER_CACHE_TTL_MINUTES:-30}
     volumes:
       - uploads:/app/uploads
     depends_on:

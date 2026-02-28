@@ -7,6 +7,7 @@ import { buildAnalyticsSource } from '@/lib/analyticsSource';
 import { getOrCreateVisitorId } from '@/lib/visitorId';
 import { PhonebookQuickSearchModal } from '@/components/PhonebookQuickSearchModal';
 import { AdministrativeRegionQuickSearchModal } from '@/components/AdministrativeRegionQuickSearchModal';
+import { WeatherQuickSearchModal } from '@/components/WeatherQuickSearchModal';
 
 interface HomeClientProps {
   categories: Category[];
@@ -21,6 +22,7 @@ export function HomeClient({ categories, sites, footerText, clientIP }: HomeClie
   const [visitorId, setVisitorId] = useState('anon');
   const [isPhonebookModalOpen, setIsPhonebookModalOpen] = useState(false);
   const [isAdministrativeRegionModalOpen, setIsAdministrativeRegionModalOpen] = useState(false);
+  const [isWeatherModalOpen, setIsWeatherModalOpen] = useState(false);
   const selectedCategory = searchParams.get('category') || 'all';
 
   useEffect(() => {
@@ -142,6 +144,14 @@ export function HomeClient({ categories, sites, footerText, clientIP }: HomeClie
           </div>
           <button
             type="button"
+            onClick={() => setIsWeatherModalOpen(true)}
+            className="shrink-0 h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-700 hover:text-primary hover:border-primary/30 hover:bg-primary/5 shadow-sm transition-colors flex items-center gap-2"
+          >
+            <span className="material-symbols-outlined text-[20px]">partly_cloudy_day</span>
+            <span className="hidden md:inline text-sm font-medium">天气速查</span>
+          </button>
+          <button
+            type="button"
             onClick={() => setIsAdministrativeRegionModalOpen(true)}
             className="shrink-0 h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-700 hover:text-primary hover:border-primary/30 hover:bg-primary/5 shadow-sm transition-colors flex items-center gap-2"
           >
@@ -259,6 +269,10 @@ export function HomeClient({ categories, sites, footerText, clientIP }: HomeClie
       <AdministrativeRegionQuickSearchModal
         isOpen={isAdministrativeRegionModalOpen}
         onClose={() => setIsAdministrativeRegionModalOpen(false)}
+      />
+      <WeatherQuickSearchModal
+        isOpen={isWeatherModalOpen}
+        onClose={() => setIsWeatherModalOpen(false)}
       />
     </div>
   );

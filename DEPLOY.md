@@ -63,6 +63,8 @@ services:
     environment:
       DATABASE_URL: postgresql://navstation:你的密码@db:5432/navstation
       JWT_SECRET: 你的JWT密钥
+      BAIDU_WEATHER_AK: 你的百度天气AK
+      WEATHER_CACHE_TTL_MINUTES: 30
 ```
 
 ### 更新部署
@@ -93,6 +95,8 @@ docker run -d \
   -p 3000:3000 \
   -e DATABASE_URL="postgresql://用户名:密码@数据库地址:5432/数据库名" \
   -e JWT_SECRET="你的JWT密钥" \
+  -e BAIDU_WEATHER_AK="你的百度天气AK" \
+  -e WEATHER_CACHE_TTL_MINUTES="30" \
   navstation
 ```
 
@@ -136,6 +140,8 @@ cp .env.local.example .env.local
 ```env
 DATABASE_URL=postgresql://用户名:密码@localhost:5432/数据库名
 JWT_SECRET=你的JWT密钥
+BAIDU_WEATHER_AK=你的百度天气AK
+WEATHER_CACHE_TTL_MINUTES=30
 ```
 
 #### 3. 初始化数据库
@@ -146,6 +152,9 @@ psql -h localhost -U 用户名 -d 数据库名 -f src/db/schema.sql
 
 # 导入初始数据（分类、站点、资源、二维码、管理员账号、示例点击数据）
 psql -h localhost -U 用户名 -d 数据库名 -f src/db/seed.sql
+
+# 可选：导入天气行政区划映射表（中文地名查询天气会用到）
+npm run import:weather-districts
 ```
 
 #### 4. 构建
@@ -201,6 +210,8 @@ server {
 |------|------|------|------|
 | `DATABASE_URL` | 是 | PostgreSQL 连接字符串 | `postgresql://user:pass@host:5432/dbname` |
 | `JWT_SECRET` | 是 | 认证令牌加密密钥，生产环境请使用随机字符串 | `openssl rand -base64 32` 生成 |
+| `BAIDU_WEATHER_AK` | 建议 | 百度天气 API 密钥（天气查询） | 控制台申请 |
+| `WEATHER_CACHE_TTL_MINUTES` | 否 | 天气缓存时长（分钟）默认 30 | `30` |
 | `PORT` | 否 | 应用监听端口，默认 3000 | `3000` |
 
 ---

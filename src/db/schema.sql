@@ -116,6 +116,28 @@ CREATE TABLE IF NOT EXISTS phonebook_entries (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Weather district lookup dictionary (Baidu weather district_id mapping)
+CREATE TABLE IF NOT EXISTS weather_districts (
+    district_id VARCHAR(12) PRIMARY KEY,
+    province VARCHAR(32) NOT NULL,
+    city VARCHAR(32) NOT NULL,
+    city_geocode VARCHAR(12) NOT NULL,
+    district VARCHAR(32) NOT NULL,
+    district_geocode VARCHAR(12) NOT NULL,
+    lon DOUBLE PRECISION,
+    lat DOUBLE PRECISION,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Weather response cache (to reduce upstream API calls)
+CREATE TABLE IF NOT EXISTS weather_cache (
+    cache_key VARCHAR(40) PRIMARY KEY,
+    cache_fingerprint TEXT NOT NULL,
+    payload JSONB NOT NULL,
+    fetched_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL
+);
+
 -- DNS zones for BIND9 management
 CREATE TABLE IF NOT EXISTS dns_zones (
     id SERIAL PRIMARY KEY,
@@ -195,6 +217,10 @@ CREATE INDEX IF NOT EXISTS idx_api_keys_prefix ON api_keys(key_prefix);
 CREATE INDEX IF NOT EXISTS idx_api_keys_active ON api_keys(is_active);
 CREATE INDEX IF NOT EXISTS idx_phonebook_department ON phonebook_entries(department_name);
 CREATE INDEX IF NOT EXISTS idx_phonebook_status ON phonebook_entries(status);
+CREATE INDEX IF NOT EXISTS idx_weather_districts_province ON weather_districts(province);
+CREATE INDEX IF NOT EXISTS idx_weather_districts_city ON weather_districts(city);
+CREATE INDEX IF NOT EXISTS idx_weather_districts_district ON weather_districts(district);
+CREATE INDEX IF NOT EXISTS idx_weather_cache_expires_at ON weather_cache(expires_at);
 CREATE INDEX IF NOT EXISTS idx_dns_zones_active ON dns_zones(is_active);
 CREATE INDEX IF NOT EXISTS idx_dns_records_zone_id ON dns_records(zone_id);
 CREATE INDEX IF NOT EXISTS idx_dns_records_status ON dns_records(status);

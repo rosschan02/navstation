@@ -43,3 +43,9 @@ next-env.d.ts
 # uploads (software downloads)
 /uploads/*
 !/uploads/.gitkeep
+
+# local agent/docs artifacts
+CLAUDE.md
+stitch_exports/
+pnpm-lock.yaml
+data/
