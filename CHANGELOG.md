@@ -2,6 +2,30 @@
 
 本文件记录 NavStation 导航站的所有重要更新。
 
+## [2.13.1] - 2026-02-28
+
+### 新增 / 变更
+
+#### 天气速查弹窗（展示增强）
+- 新增横向 `24小时预报` 区块，接入百度天气 `forecast_hours` 数据（24 条）
+- 新增 `空气指数` 卡片：展示 AQI 等级与 `PM2.5 / PM10 / NO2 / SO2 / O3 / CO` 指标
+- 天气弹窗内容区按新版卡片布局重排，整体风格对齐设计稿
+
+#### 软件下载页（信息补充）
+- 每个软件卡片在软件名称下新增“更新时间”展示
+- 更新时间使用软件上传时间（`created_at`）并格式化为本地可读时间
+
+### 修改文件
+
+```
+src/components/WeatherQuickSearchModal.tsx
+src/app/software/SoftwareClient.tsx
+README.md
+CHANGELOG.md
+```
+
+---
+
 ## [2.13.0] - 2026-02-28
 
 ### 新增 / 变更

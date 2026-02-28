@@ -17,6 +17,21 @@ function formatFileSize(bytes: number): string {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
+function formatUploadTime(value: string): string {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '-';
+  return new Intl.DateTimeFormat('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: 'Asia/Shanghai',
+  }).format(date);
+}
+
 export function SoftwareClient({ items, categories }: SoftwareClientProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [visitorId, setVisitorId] = useState('anon');
@@ -154,6 +169,9 @@ export function SoftwareClient({ items, categories }: SoftwareClientProps) {
                             <span className="text-xs text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">v{item.version}</span>
                           )}
                         </div>
+                        <p className="text-xs text-slate-400 mt-0.5">
+                          更新时间：{formatUploadTime(item.created_at)}
+                        </p>
                         <p className="text-slate-500 text-sm line-clamp-1 mt-0.5">{item.description || item.file_name}</p>
                         <div className="flex items-center gap-3 mt-2 text-xs text-slate-400">
                           <span className="flex items-center gap-1">
