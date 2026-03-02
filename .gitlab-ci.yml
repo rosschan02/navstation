@@ -1,0 +1,30 @@
+# NavStation GitLab CI/CD 自动部署配置
+#
+# 前提条件：
+#   在部署服务器上安装并注册 GitLab Runner（Shell 模式）
+#   详见 DEPLOY_GITLAB.md
+
+stages:
+  - deploy
+
+variables:
+  COMPOSE_PROJECT_NAME: navstation
+  # 部署目录（Runner 用户需有读写权限）
+  DEPLOY_DIR: /opt/navstation
+
+# ─── 部署到生产环境 ────────────────────────────────────────────────────────────
+deploy:production:
+  stage: deploy
+  # 仅在 master 或 main 分支有推送时触发
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "main"'
+      when: on_success
+  # 此 tag 必须与你注册 Runner 时填写的 tag 一致
+  tags:
+    - navstation-deploy
+  environment:
+    name: production
+    url: http://$DEPLOY_HOST
+  script:
+    - bash $DEPLOY_DIR/deploy.sh
+  timeout: 10 minutes
