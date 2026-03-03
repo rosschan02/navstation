@@ -6,8 +6,7 @@ import type { Category, SiteData } from '@/types';
 import { buildAnalyticsSource } from '@/lib/analyticsSource';
 import { getOrCreateVisitorId } from '@/lib/visitorId';
 import { PhonebookQuickSearchModal } from '@/components/PhonebookQuickSearchModal';
-import { AdministrativeRegionQuickSearchModal } from '@/components/AdministrativeRegionQuickSearchModal';
-import { LocalAdministrativeDivisionQuickSearchModal } from '@/components/LocalAdministrativeDivisionQuickSearchModal';
+import { AdministrativeDivisionModal } from '@/components/AdministrativeDivisionModal';
 import { WeatherQuickSearchModal } from '@/components/WeatherQuickSearchModal';
 
 interface HomeClientProps {
@@ -22,8 +21,7 @@ export function HomeClient({ categories, sites, footerText, clientIP }: HomeClie
   const [searchQuery, setSearchQuery] = useState('');
   const [visitorId, setVisitorId] = useState('anon');
   const [isPhonebookModalOpen, setIsPhonebookModalOpen] = useState(false);
-  const [isAdministrativeRegionModalOpen, setIsAdministrativeRegionModalOpen] = useState(false);
-  const [isLocalAdministrativeDivisionModalOpen, setIsLocalAdministrativeDivisionModalOpen] = useState(false);
+  const [isAdminDivisionModalOpen, setIsAdminDivisionModalOpen] = useState(false);
   const [isWeatherModalOpen, setIsWeatherModalOpen] = useState(false);
   const selectedCategory = searchParams.get('category') || 'all';
 
@@ -154,19 +152,11 @@ export function HomeClient({ categories, sites, footerText, clientIP }: HomeClie
           </button>
           <button
             type="button"
-            onClick={() => setIsAdministrativeRegionModalOpen(true)}
+            onClick={() => setIsAdminDivisionModalOpen(true)}
             className="shrink-0 h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-700 hover:text-primary hover:border-primary/30 hover:bg-primary/5 shadow-sm transition-colors flex items-center gap-2"
           >
             <span className="material-symbols-outlined text-[20px]">location_city</span>
-            <span className="hidden md:inline text-sm font-medium">行政区域速查</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsLocalAdministrativeDivisionModalOpen(true)}
-            className="shrink-0 h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-700 hover:text-primary hover:border-primary/30 hover:bg-primary/5 shadow-sm transition-colors flex items-center gap-2"
-          >
-            <span className="material-symbols-outlined text-[20px]">account_tree</span>
-            <span className="hidden md:inline text-sm font-medium">本地行政区查询</span>
+            <span className="hidden md:inline text-sm font-medium">行政区域查询</span>
           </button>
           <button
             type="button"
@@ -276,13 +266,9 @@ export function HomeClient({ categories, sites, footerText, clientIP }: HomeClie
         isOpen={isPhonebookModalOpen}
         onClose={() => setIsPhonebookModalOpen(false)}
       />
-      <AdministrativeRegionQuickSearchModal
-        isOpen={isAdministrativeRegionModalOpen}
-        onClose={() => setIsAdministrativeRegionModalOpen(false)}
-      />
-      <LocalAdministrativeDivisionQuickSearchModal
-        isOpen={isLocalAdministrativeDivisionModalOpen}
-        onClose={() => setIsLocalAdministrativeDivisionModalOpen(false)}
+      <AdministrativeDivisionModal
+        isOpen={isAdminDivisionModalOpen}
+        onClose={() => setIsAdminDivisionModalOpen(false)}
       />
       <WeatherQuickSearchModal
         isOpen={isWeatherModalOpen}
