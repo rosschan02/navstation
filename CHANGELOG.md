@@ -2,6 +2,44 @@
 
 本文件记录 NavStation 导航站的所有重要更新。
 
+## [2.14.0] - 2026-03-03
+
+### 新增 / 变更
+
+#### 本地行政区查询（新按钮，独立于百度接口）
+- 首页新增「本地行政区查询」按钮与独立弹窗
+- 新增本地查询 API：`GET /api/admin-divisions`
+- 支持按关键词检索四级行政区（默认街道/乡镇层级）
+- 详情页支持查看完整上级链路，并可继续点击下级区域
+
+#### 四级行政区数据库能力
+- 新增迁移 `011_add_admin_divisions.sql`
+- 新增主表 `admin_divisions`（支持层级、父子关系、完整路径）
+- 新增导入暂存表 `admin_divisions_import`
+- 新增导入脚本 `scripts/import-admin-divisions.sql`（可重复执行 Upsert）
+- 新增导入文档 `add_import-admin-divisions.md`
+
+#### 文档更新
+- README 增加本地行政区功能、API 与导入说明
+- DEPLOY 增加 Docker 场景下四级行政区导入步骤与校验命令
+
+### 修改文件
+
+```
+src/app/HomeClient.tsx
+src/app/api/admin-divisions/route.ts
+src/components/LocalAdministrativeDivisionQuickSearchModal.tsx
+src/db/schema.sql
+src/db/migrations/011_add_admin_divisions.sql
+scripts/import-admin-divisions.sql
+add_import-admin-divisions.md
+README.md
+DEPLOY.md
+CHANGELOG.md
+```
+
+---
+
 ## [2.13.1] - 2026-02-28
 
 ### 新增 / 变更

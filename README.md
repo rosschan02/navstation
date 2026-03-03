@@ -2,8 +2,11 @@
 
 综合导航门户与站点管理系统，提供统一的站点导航、软件下载、二维码展示、数据分析与 BIND9 DNS 管理功能。
 
-## 最近更新（2026-02-28）
+## 最近更新（2026-03-03）
 
+- 新增「本地行政区查询」按钮与独立弹窗：直接查询本地 `admin_divisions` 数据库，不依赖百度接口
+- 新增本地行政区 API：`GET /api/admin-divisions`，支持关键词搜索、详情上级链路、下级区域钻取
+- 新增四级行政区数据库迁移与导入脚本：`011_add_admin_divisions.sql` + `scripts/import-admin-divisions.sql`
 - 行政区域速查升级至百度 Place API v3，新增街道（乡镇）层级及 `town_code`（9位行政区划代码）
 - 详情页直接由 `town_code` 推算省/市/区/街道四级区划代码，无需本地数据库，每级代码可一键复制
 - 首页搜索框旁新增「行政区域速查」按钮，支持按省份 + 关键词查询地点，结果展示四级行政区划
@@ -52,6 +55,7 @@ navstation/
 │   │       ├── analytics/      # 统计查询 + 点击记录
 │   │       ├── phonebook/      # 电话本查询与管理
 │   │       ├── regions/        # 行政区域速查（百度 Place API v3 代理）
+│   │       ├── admin-divisions/ # 本地行政区查询（搜索/详情/下级）
 │   │       ├── dns/            # DNS Zone/记录/日志管理
 │   │       ├── keys/           # API 密钥管理
 │   │       ├── tools/          # 管理工具 API（Ping / Traceroute）
@@ -62,6 +66,7 @@ navstation/
 │   │   ├── LoginModal.tsx      # 登录弹窗
 │   │   ├── PhonebookQuickSearchModal.tsx # 院内电话速查弹窗
 │   │   ├── AdministrativeRegionQuickSearchModal.tsx # 行政区域速查弹窗（百度 v3，含区划代码）
+│   │   ├── LocalAdministrativeDivisionQuickSearchModal.tsx # 本地行政区查询弹窗（数据库）
 │   │   ├── ConfirmDialog.tsx   # 统一删除确认弹窗
 │   │   └── IconPicker.tsx      # 图标选择器组件
 │   ├── contexts/
@@ -141,6 +146,18 @@ npm run import:weather-districts
 node scripts/import-weather-districts.mjs data/weather_district_id.csv
 ```
 
+可选：导入本地四级行政区（用于“本地行政区查询”按钮）
+
+```bash
+# 1) 执行迁移（建表）
+psql -h localhost -U 用户名 -d 数据库名 -f src/db/migrations/011_add_admin_divisions.sql
+
+# 2) 执行导入/合并（需先准备 data/admin_code_251218.clean.csv）
+psql -h localhost -U 用户名 -d 数据库名 -f scripts/import-admin-divisions.sql
+```
+
+完整导入说明见：`add_import-admin-divisions.md`
+
 ### 4. 启动开发服务器
 
 ```bash
@@ -176,6 +193,10 @@ docker-compose up -d
 | `site_settings` | 站点全局设置（名称、描述、Logo等） |
 | `api_keys` | API 密钥（外部系统对接认证） |
 | `phonebook_entries` | 电话本条目（科室名、长码、短码） |
+| `weather_districts` | 天气行政区映射（中文地名 -> district_id） |
+| `weather_cache` | 天气接口响应缓存 |
+| `admin_divisions` | 本地四级行政区（省/市/区县/街道乡镇） |
+| `admin_divisions_import` | 本地四级行政区导入暂存表 |
 | `dns_zones` | DNS Zone 配置（服务器、TSIG、启停状态） |
 | `dns_records` | DNS 记录（A/AAAA/CNAME/TXT/MX）与同步状态 |
 | `dns_forward_zones` | DNS 转发区域（条件转发到指定 DNS 服务器） |
@@ -261,6 +282,7 @@ docker-compose up -d
 | 路径 | 方法 | 说明 |
 |------|------|------|
 | `GET /api/regions/search` | GET | 行政区域查询代理（参数：`query`、`region`；服务端转发百度 Place API v3，返回四级区划及代码） |
+| `GET /api/admin-divisions` | GET | 本地行政区查询（参数：`keyword`/`level` 或 `detail_level`/`detail_code`） |
 
 ### API 密钥管理（需管理员登录）
 | 路径 | 方法 | 说明 |
@@ -306,6 +328,7 @@ docker-compose up -d
 - **首页导航**: 所有站点按分类分组展示，左侧边栏分类筛选，支持全文搜索，显示服务器局域网 IP 地址
 - **院内电话速查**: 首页搜索框旁提供「院内电话速查」按钮，输入关键词后按科室名/短码/长码搜索，支持一键复制号码
 - **行政区域速查**: 首页搜索框旁提供「行政区域速查」按钮，支持按省份 + 关键词查询地点；详情页展示省/市/区/街道四级行政区划代码（由百度 v3 API `town_code` 直接推算），每级代码可一键复制
+- **本地行政区查询**: 首页搜索框旁提供「本地行政区查询」按钮，支持按关键词检索本地四级行政区，详情页可查看上级链路并继续点击下级区域
 - **软件下载**: 下载管理员上传的常用软件（支持大文件，按排序显示）
 - **二维码展示**: 公众号/小程序二维码以图片网格形式展示
 - **IE8+ 兼容**: 自动检测 IE8/9/10/11 并重定向到兼容页面（float 布局，无 Flexbox/Grid）
@@ -425,6 +448,18 @@ psql -d your_database -f src/db/migrations/008_add_dns_management.sql
 
 # v2.9.0 - DNS 转发区域
 psql -d your_database -f src/db/migrations/009_add_dns_forward_zones.sql
+
+# v2.13.0 - 天气行政区映射与天气缓存
+psql -d your_database -f src/db/migrations/010_add_weather_districts_and_cache.sql
+
+# v2.14.0 - 本地四级行政区查询
+psql -d your_database -f src/db/migrations/011_add_admin_divisions.sql
+```
+
+若启用本地四级行政区查询，迁移后再执行：
+
+```bash
+psql -d your_database -f scripts/import-admin-divisions.sql
 ```
 
 对于全新部署，直接运行：

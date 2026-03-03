@@ -75,6 +75,30 @@ git pull
 docker-compose up -d --build
 ```
 
+### 导入四级行政区数据（Docker 数据库）
+
+如果你要启用首页「本地行政区查询」按钮，请执行以下步骤：
+
+```bash
+# 1) 下载并转换 Excel
+mkdir -p data
+curl -L "https://mapopen-pub-webserviceapi.cdn.bcebos.com/geocoding/admin_code_251218.xlsx" -o data/admin_code_251218.xlsx
+npx -y xlsx-cli -o data/admin_code_251218.csv data/admin_code_251218.xlsx
+awk -F',' 'BEGIN{OFS=","} NR==1{sub(/^\xef\xbb\xbf/,"",$1)} NF>=12{print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12}' data/admin_code_251218.csv > data/admin_code_251218.clean.csv
+
+# 2) 执行迁移与导入（默认 docker-compose 数据库账号）
+PGPASSWORD='navstation123' psql -h 127.0.0.1 -U navstation -d navstation -f src/db/migrations/011_add_admin_divisions.sql
+PGPASSWORD='navstation123' psql -h 127.0.0.1 -U navstation -d navstation -f scripts/import-admin-divisions.sql
+```
+
+校验导入结果：
+
+```bash
+PGPASSWORD='navstation123' psql -h 127.0.0.1 -U navstation -d navstation -c "SELECT level, COUNT(*) FROM admin_divisions GROUP BY level ORDER BY level;"
+```
+
+预期输出：`1/2/3/4` 四个层级都应有数据。
+
 ---
 
 ## Docker 单独构建
@@ -155,6 +179,10 @@ psql -h localhost -U 用户名 -d 数据库名 -f src/db/seed.sql
 
 # 可选：导入天气行政区划映射表（中文地名查询天气会用到）
 npm run import:weather-districts
+
+# 可选：导入本地四级行政区（本地行政区查询按钮会用到）
+psql -h localhost -U 用户名 -d 数据库名 -f src/db/migrations/011_add_admin_divisions.sql
+psql -h localhost -U 用户名 -d 数据库名 -f scripts/import-admin-divisions.sql
 ```
 
 #### 4. 构建
@@ -221,12 +249,22 @@ server {
 ### 表结构
 
 ```
-categories    - 分类（7 条初始数据）
-sites         - 导航站点（4 条初始数据）
-resources     - 资源项目（35 条初始数据，覆盖 5 个分类页）
-qr_codes      - 二维码（8 条初始数据）
-users         - 管理员（1 条：admin/admin）
-click_events  - 点击事件统计（22 条示例数据）
+categories             - 分类
+sites                  - 导航站点
+software               - 软件下载
+users                  - 管理员
+click_events           - 点击事件统计
+site_settings          - 站点设置
+api_keys               - API 密钥
+phonebook_entries      - 电话本条目
+weather_districts      - 天气行政区映射
+weather_cache          - 天气缓存
+admin_divisions        - 本地四级行政区
+admin_divisions_import - 本地行政区导入暂存表
+dns_zones              - DNS 区域
+dns_records            - DNS 记录
+dns_forward_zones      - DNS 转发区域
+dns_change_logs        - DNS 审计日志
 ```
 
 ### 重置数据库
