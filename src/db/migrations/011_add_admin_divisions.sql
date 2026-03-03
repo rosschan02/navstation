@@ -46,5 +46,9 @@ CREATE TABLE IF NOT EXISTS admin_divisions_import (
 CREATE INDEX IF NOT EXISTS idx_admin_divisions_parent ON admin_divisions(parent_level, parent_code);
 CREATE INDEX IF NOT EXISTS idx_admin_divisions_name_zh ON admin_divisions(name_zh);
 CREATE INDEX IF NOT EXISTS idx_admin_divisions_level_name_zh ON admin_divisions(level, name_zh);
+
+-- Trigram index for fast ILIKE '%keyword%' fuzzy search
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE INDEX IF NOT EXISTS idx_admin_divisions_name_zh_trgm ON admin_divisions USING gin (name_zh gin_trgm_ops);
 CREATE INDEX IF NOT EXISTS idx_admin_divisions_province_city_county ON admin_divisions(province_code, city_code, county_code);
 CREATE INDEX IF NOT EXISTS idx_admin_divisions_town_code ON admin_divisions(town_code);

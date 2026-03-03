@@ -13,11 +13,18 @@
 - 本地查询：按关键词检索本地 `admin_divisions` 数据库，支持上级链路与下级钻取
 - 切换模式时自动重置搜索状态
 
+#### 本地行政区查询性能优化
+- 新增 `pg_trgm` GIN 三元组索引 `idx_admin_divisions_name_zh_trgm`
+- 解决 `ILIKE '%关键词%'` 前置通配符无法命中 B-tree 索引导致全表扫描的性能问题
+- Level 4（4 万行街道/乡镇）模糊搜索速度数量级提升
+
 ### 修改文件
 
 ```
 src/app/HomeClient.tsx                          # 合并两个按钮和状态为一个
 src/components/AdministrativeDivisionModal.tsx   # 新增合并后的双模式弹窗组件
+src/db/migrations/011_add_admin_divisions.sql   # 新增 pg_trgm GIN 索引
+src/db/schema.sql                               # 同步 pg_trgm GIN 索引
 README.md
 CHANGELOG.md
 ```

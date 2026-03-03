@@ -269,6 +269,8 @@ CREATE INDEX IF NOT EXISTS idx_weather_cache_expires_at ON weather_cache(expires
 CREATE INDEX IF NOT EXISTS idx_admin_divisions_parent ON admin_divisions(parent_level, parent_code);
 CREATE INDEX IF NOT EXISTS idx_admin_divisions_name_zh ON admin_divisions(name_zh);
 CREATE INDEX IF NOT EXISTS idx_admin_divisions_level_name_zh ON admin_divisions(level, name_zh);
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE INDEX IF NOT EXISTS idx_admin_divisions_name_zh_trgm ON admin_divisions USING gin (name_zh gin_trgm_ops);
 CREATE INDEX IF NOT EXISTS idx_admin_divisions_province_city_county ON admin_divisions(province_code, city_code, county_code);
 CREATE INDEX IF NOT EXISTS idx_admin_divisions_town_code ON admin_divisions(town_code);
 CREATE INDEX IF NOT EXISTS idx_dns_zones_active ON dns_zones(is_active);
