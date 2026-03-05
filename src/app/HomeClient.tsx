@@ -107,7 +107,7 @@ export function HomeClient({ categories, sites, footerText, clientIP }: HomeClie
 
   return (
     <div className="flex-1 overflow-y-auto w-full bg-background-light">
-      <div className="max-w-[1400px] mx-auto w-full px-6 py-8 flex flex-col gap-6">
+      <div className="max-w-[2200px] mr-auto w-full px-6 py-8 flex flex-col gap-6">
 
         {/* Search Bar */}
         <section className="flex flex-wrap items-center gap-3 w-full">
@@ -222,7 +222,7 @@ export function HomeClient({ categories, sites, footerText, clientIP }: HomeClie
                 </div>
               ) : (
                 // Regular Sites Grid
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                <div className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-4">
                   {categorySites.map((site) => (
                     <a
                       key={site.id}

@@ -2,10 +2,12 @@
   "name": "navstation",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "npm@10.9.2",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "test": "node --test",
     "import:weather-districts": "node scripts/import-weather-districts.mjs"
   },
   "dependencies": {

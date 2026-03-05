@@ -92,7 +92,7 @@ export function SoftwareClient({ items, categories }: SoftwareClientProps) {
 
   return (
     <div className="flex-1 overflow-y-auto p-6 md:p-8 lg:px-12 bg-background-light">
-      <div className="max-w-7xl mx-auto flex flex-col gap-8">
+      <div className="max-w-[2200px] mr-auto w-full flex flex-col gap-8">
         {/* Header */}
         <div className="flex flex-col gap-4 border-b border-slate-200 pb-6">
           <div className="flex items-center justify-between">
@@ -144,7 +144,7 @@ export function SoftwareClient({ items, categories }: SoftwareClientProps) {
                 </div>
 
                 {/* Software Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-4">
                   {categoryItems.map((item) => (
                     <div
                       key={item.id}

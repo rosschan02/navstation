@@ -2,6 +2,36 @@
 
 本文件记录 NavStation 导航站的所有重要更新。
 
+## [2.15.0] - 2026-03-06
+
+### 新增 / 变更
+
+#### 宽屏布局自适应优化
+- 首页导航站点卡片改为 `auto-fit + minmax` 自适应网格
+- 首页内容区最大宽度放宽并改为左对齐，解决 1080P 以上分辨率侧边栏与正文间距过大的问题
+- 软件下载页同步改为自适应网格，高分辨率下会自动展示更多软件卡片
+- 软件下载页内容区最大宽度同步放宽，减少右侧留白
+
+#### Next.js 16 兼容性与构建修复
+- 将请求拦截文件从 `src/middleware.ts` 迁移为 `src/proxy.ts`
+- `package.json` 显式声明 `packageManager: npm@10.9.2`
+- 修复依赖安装状态漂移导致的 `qrcode` 模块缺失与 Docker / 本地构建失败问题
+- 新增 Node 内置测试，锁定首页布局、软件下载布局、包管理器声明与 `proxy.ts` 约束
+
+### 修改文件
+
+```
+src/app/HomeClient.tsx
+src/app/software/SoftwareClient.tsx
+src/proxy.ts
+package.json
+README.md
+CHANGELOG.md
+tests/home-layout.test.mjs
+```
+
+---
+
 ## [2.14.1] - 2026-03-03
 
 ### 变更
