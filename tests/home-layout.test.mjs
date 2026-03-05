@@ -20,13 +20,13 @@ test('home page regular site grid expands on large screens with adaptive columns
   );
 
   assert.ok(
-    source.includes('grid-cols-[repeat(auto-fit,minmax(260px,1fr))]'),
-    'Regular site cards should use an auto-fit grid so larger screens can render more columns.',
+    source.includes('grid-cols-[repeat(auto-fill,minmax(260px,320px))]'),
+    'Regular site cards should use an auto-fill grid with a capped width so larger screens can render more columns without stretching sparse rows.',
   );
 
   assert.ok(
-    !source.includes('xl:grid-cols-4'),
-    'Regular site cards should not be capped at four columns.',
+    source.includes('justify-start'),
+    'Regular site cards should keep unused space on the right instead of stretching sparse rows.',
   );
 });
 
@@ -63,12 +63,12 @@ test('software page grid expands on large screens with adaptive columns', () => 
   );
 
   assert.ok(
-    source.includes('grid-cols-[repeat(auto-fit,minmax(280px,1fr))]'),
-    'Software cards should use an auto-fit grid so larger screens can render more columns.',
+    source.includes('grid-cols-[repeat(auto-fill,minmax(280px,340px))]'),
+    'Software cards should use an auto-fill grid with a capped width so larger screens can render more columns without stretching sparse rows.',
   );
 
   assert.ok(
-    !source.includes('lg:grid-cols-3'),
-    'Software cards should not be capped at three columns.',
+    source.includes('justify-start'),
+    'Software cards should keep unused space on the right instead of stretching sparse rows.',
   );
 });

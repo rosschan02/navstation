@@ -222,7 +222,7 @@ export function HomeClient({ categories, sites, footerText, clientIP }: HomeClie
                 </div>
               ) : (
                 // Regular Sites Grid
-                <div className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-4">
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,320px))] justify-start gap-4">
                   {categorySites.map((site) => (
                     <a
                       key={site.id}

@@ -144,7 +144,7 @@ export function SoftwareClient({ items, categories }: SoftwareClientProps) {
                 </div>
 
                 {/* Software Grid */}
-                <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-4">
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,340px))] justify-start gap-4">
                   {categoryItems.map((item) => (
                     <div
                       key={item.id}
