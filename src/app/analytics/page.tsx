@@ -343,6 +343,61 @@ export default function AnalyticsPage() {
           />
         </div>
 
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <TopList title="热门站点 Top 10" items={data?.top_sites || []} emptyText="暂无站点点击数据" />
+          <TopList title="热门软件 Top 10" items={data?.top_software || []} emptyText="暂无软件下载数据" />
+        </div>
+
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          <SearchList title="热门天气查询" items={data?.top_searches.weather || []} emptyText="暂无天气查询记录" />
+          <SearchList title="热门电话查询" items={data?.top_searches.phonebook || []} emptyText="暂无电话查询记录" />
+          <SearchList title="热门行政区域查询" items={data?.top_searches.regions || []} emptyText="暂无行政区域查询记录" />
+        </div>
+
+        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-slate-900">最近活动</h3>
+            <span className="text-xs text-slate-400">最近 30 条</span>
+          </div>
+          {loading ? (
+            <div className="text-slate-400 text-sm py-8 text-center">加载中...</div>
+          ) : (data?.recent.length || 0) > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr className="text-left text-slate-400 border-b border-slate-200">
+                    <th className="py-2 pr-4 font-medium">时间</th>
+                    <th className="py-2 pr-4 font-medium">行为</th>
+                    <th className="py-2 pr-4 font-medium">目标 / 关键词</th>
+                    <th className="py-2 pr-4 font-medium">来源</th>
+                    <th className="py-2 pr-4 font-medium">分类</th>
+                    <th className="py-2 pr-4 font-medium">客户端 IP</th>
+                    <th className="py-2 font-medium">搜索上下文</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(data?.recent || []).map((item) => (
+                    <tr key={item.id} className="border-b border-slate-100 text-slate-600 align-top">
+                      <td className="py-3 pr-4 whitespace-nowrap">{formatRelativeTime(item.created_at)}</td>
+                      <td className="py-3 pr-4"><EventBadge type={item.event_type} /></td>
+                      <td className="py-3 pr-4 min-w-[240px] max-w-[360px]">
+                        <p className="font-medium text-slate-800 break-words">{item.target_name}</p>
+                        {item.search_query && <p className="text-xs text-slate-500 mt-1 break-all">关键词：{item.search_query}</p>}
+                      </td>
+                      <td className="py-3 pr-4 whitespace-nowrap"><SourceBadge page={item.page} /></td>
+                      <td className="py-3 pr-4 whitespace-nowrap">{item.category_label || '-'}</td>
+                      <td className="py-3 pr-4 whitespace-nowrap font-mono text-xs">{item.client_ip || '-'}</td>
+                      <td className="py-3 whitespace-nowrap">{item.has_search ? '是' : '否'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="text-slate-400 text-sm py-8 text-center">暂无活动数据</div>
+          )}
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col">
             <div className="flex items-center justify-between mb-6">
@@ -433,61 +488,6 @@ export default function AnalyticsPage() {
               )}
             </div>
           </div>
-        </div>
-
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          <TopList title="热门站点 Top 10" items={data?.top_sites || []} emptyText="暂无站点点击数据" />
-          <TopList title="热门软件 Top 10" items={data?.top_software || []} emptyText="暂无软件下载数据" />
-        </div>
-
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          <SearchList title="热门天气查询" items={data?.top_searches.weather || []} emptyText="暂无天气查询记录" />
-          <SearchList title="热门电话查询" items={data?.top_searches.phonebook || []} emptyText="暂无电话查询记录" />
-          <SearchList title="热门行政区域查询" items={data?.top_searches.regions || []} emptyText="暂无行政区域查询记录" />
-        </div>
-
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-bold text-slate-900">最近活动</h3>
-            <span className="text-xs text-slate-400">最近 30 条</span>
-          </div>
-          {loading ? (
-            <div className="text-slate-400 text-sm py-8 text-center">加载中...</div>
-          ) : (data?.recent.length || 0) > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead>
-                  <tr className="text-left text-slate-400 border-b border-slate-200">
-                    <th className="py-2 pr-4 font-medium">时间</th>
-                    <th className="py-2 pr-4 font-medium">行为</th>
-                    <th className="py-2 pr-4 font-medium">目标 / 关键词</th>
-                    <th className="py-2 pr-4 font-medium">来源</th>
-                    <th className="py-2 pr-4 font-medium">分类</th>
-                    <th className="py-2 pr-4 font-medium">客户端 IP</th>
-                    <th className="py-2 font-medium">搜索上下文</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(data?.recent || []).map((item) => (
-                    <tr key={item.id} className="border-b border-slate-100 text-slate-600 align-top">
-                      <td className="py-3 pr-4 whitespace-nowrap">{formatRelativeTime(item.created_at)}</td>
-                      <td className="py-3 pr-4"><EventBadge type={item.event_type} /></td>
-                      <td className="py-3 pr-4 min-w-[240px] max-w-[360px]">
-                        <p className="font-medium text-slate-800 break-words">{item.target_name}</p>
-                        {item.search_query && <p className="text-xs text-slate-500 mt-1 break-all">关键词：{item.search_query}</p>}
-                      </td>
-                      <td className="py-3 pr-4 whitespace-nowrap"><SourceBadge page={item.page} /></td>
-                      <td className="py-3 pr-4 whitespace-nowrap">{item.category_label || '-'}</td>
-                      <td className="py-3 pr-4 whitespace-nowrap font-mono text-xs">{item.client_ip || '-'}</td>
-                      <td className="py-3 whitespace-nowrap">{item.has_search ? '是' : '否'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="text-slate-400 text-sm py-8 text-center">暂无活动数据</div>
-          )}
         </div>
       </div>
     </div>
