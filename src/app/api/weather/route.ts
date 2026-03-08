@@ -3,12 +3,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/db';
 import { recordAnalyticsEvent } from '@/lib/analyticsEvents';
 import { getClientIpFromRequest } from '@/lib/clientIp';
+import { getWeatherDefaults } from '@/lib/weatherDefaults';
 
 export const dynamic = 'force-dynamic';
 
 const BAIDU_WEATHER_ENDPOINT = 'https://api.map.baidu.com/weather/v1/';
-const DEFAULT_DISTRICT_ID = '441881';
-const DEFAULT_DISTRICT_NAME = '英德市';
 const DISTRICT_ID_PATTERN = /^\d{6,12}$/;
 const LOCATION_PATTERN = /^-?\d+(?:\.\d+)?,-?\d+(?:\.\d+)?$/;
 const ALLOWED_COORD_TYPES = new Set(['wgs84', 'bd09ll', 'bd09mc', 'gcj02']);
@@ -233,6 +232,7 @@ async function saveWeatherCache(cacheKey: string, fingerprint: string, payload: 
 }
 
 export async function GET(request: NextRequest) {
+  const { defaultDistrictId, defaultDistrictName } = getWeatherDefaults();
   const { searchParams } = new URL(request.url);
   const visitorId = normalizeText(searchParams.get('sid'), 64) || 'anon';
   const page = normalizeText(searchParams.get('page'), 32) || 'home';
@@ -282,19 +282,19 @@ export async function GET(request: NextRequest) {
     }
   } else {
     mode = 'district_id';
-    params.set('district_id', DEFAULT_DISTRICT_ID);
+    params.set('district_id', defaultDistrictId);
   }
 
   params.set('data_type', 'all');
   params.set('output', 'json');
 
   const fingerprint = (() => {
-    if (mode === 'district_id') return `district_id=${params.get('district_id') || DEFAULT_DISTRICT_ID}&data_type=all`;
+    if (mode === 'district_id') return `district_id=${params.get('district_id') || defaultDistrictId}&data_type=all`;
     if (mode === 'location') return `location=${params.get('location')}&coordtype=${params.get('coordtype')}&data_type=all`;
     return `province=${params.get('province') || ''}&city=${params.get('city') || ''}&district=${params.get('district') || ''}&data_type=all`;
   })();
   const cacheKey = buildCacheKey(fingerprint);
-  const searchIntent = districtIdParam || district || locationParam || DEFAULT_DISTRICT_NAME;
+  const searchIntent = districtIdParam || district || locationParam || defaultDistrictName;
 
   try {
     if (!forceRefresh) {

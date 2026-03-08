@@ -6,6 +6,7 @@ interface WeatherQuickSearchModalProps {
   isOpen: boolean;
   onClose: () => void;
   visitorId: string;
+  defaultKeyword?: string;
   autoLoadKeyword?: string;
   autoLoadTrack?: boolean;
 }
@@ -90,8 +91,7 @@ interface WeatherResponse {
   result?: WeatherResult;
 }
 
-const DEFAULT_DISTRICT_ID = '441881';
-const DEFAULT_DISTRICT_NAME = '英德市';
+const FALLBACK_DEFAULT_DISTRICT_NAME = '英德市';
 const DISTRICT_ID_PATTERN = /^\d{6,12}$/;
 
 function formatUpdateTime(value?: string): string {
@@ -286,10 +286,11 @@ export function WeatherQuickSearchModal({
   isOpen,
   onClose,
   visitorId,
+  defaultKeyword = FALLBACK_DEFAULT_DISTRICT_NAME,
   autoLoadKeyword,
   autoLoadTrack = true,
 }: WeatherQuickSearchModalProps) {
-  const [keyword, setKeyword] = useState(DEFAULT_DISTRICT_NAME);
+  const [keyword, setKeyword] = useState(defaultKeyword);
   const [weather, setWeather] = useState<WeatherResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -348,12 +349,12 @@ export function WeatherQuickSearchModal({
 
   useEffect(() => {
     if (!isOpen) {
-      setKeyword(DEFAULT_DISTRICT_NAME);
+      setKeyword(defaultKeyword);
       setWeather(null);
       setIsLoading(false);
       setError('');
     }
-  }, [isOpen]);
+  }, [isOpen, defaultKeyword]);
 
   useEffect(() => {
     if (!isOpen || !autoLoadKeyword) return;

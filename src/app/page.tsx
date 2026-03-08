@@ -3,6 +3,7 @@ import pool from '@/db';
 import { HomeClient } from './HomeClient';
 import type { Category, SiteData } from '@/types';
 import { getClientIpFromServerHeaders } from '@/lib/clientIp';
+import { getWeatherDefaults } from '@/lib/weatherDefaults';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,10 +38,18 @@ export default async function HomePage() {
 
   const footerText = await getFooterText();
   const clientIP = await getClientIpFromServerHeaders();
+  const weatherDefaults = getWeatherDefaults();
 
   return (
     <Suspense fallback={<div className="flex-1 bg-background-light" />}>
-      <HomeClient categories={categories} sites={sites} footerText={footerText} clientIP={clientIP} />
+      <HomeClient
+        categories={categories}
+        sites={sites}
+        footerText={footerText}
+        clientIP={clientIP}
+        defaultWeatherDistrictId={weatherDefaults.defaultDistrictId}
+        defaultWeatherLabel={weatherDefaults.defaultDistrictName}
+      />
     </Suspense>
   );
 }

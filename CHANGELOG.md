@@ -34,6 +34,11 @@
 - 站点图标支持 `.ico`、PNG、SVG 等图片格式上传
 - 根布局动态读取 `site_icon_url`，浏览器 favicon 跟随后台设置生效，并追加版本参数减少缓存干扰
 
+#### 默认天气地点改为环境变量配置
+- 天气接口、首页天气摘要卡与天气详情弹窗不再写死默认地点
+- 新增 `.env` 配置：`WEATHER_DEFAULT_DISTRICT_ID` 与 `WEATHER_DEFAULT_DISTRICT_NAME`
+- 未配置时继续回退到原默认值英德市（`441881`），避免影响现有部署
+
 #### 部署与文档
 - 新增迁移 `src/db/migrations/012_add_analytics_events.sql`
 - README、CHANGELOG 更新统一行为统计、首页天气摘要与升级迁移说明
@@ -53,6 +58,7 @@ src/app/api/software/[id]/download/route.ts
 src/app/api/weather/route.ts
 src/app/legacy/route.ts
 src/app/page.tsx
+src/lib/weatherDefaults.ts
 src/components/AdministrativeDivisionModal.tsx
 src/components/PhonebookQuickSearchModal.tsx
 src/components/WeatherQuickSearchModal.tsx

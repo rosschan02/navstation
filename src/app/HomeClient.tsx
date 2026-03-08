@@ -9,9 +9,6 @@ import { PhonebookQuickSearchModal } from '@/components/PhonebookQuickSearchModa
 import { AdministrativeDivisionModal } from '@/components/AdministrativeDivisionModal';
 import { WeatherQuickSearchModal } from '@/components/WeatherQuickSearchModal';
 
-const DEFAULT_HOME_WEATHER_DISTRICT_ID = '441881';
-const DEFAULT_HOME_WEATHER_LABEL = '英德市';
-
 interface HomeWeatherLocation {
   province?: string;
   city?: string;
@@ -62,9 +59,18 @@ interface HomeClientProps {
   sites: SiteData[];
   footerText?: string;
   clientIP?: string;
+  defaultWeatherDistrictId: string;
+  defaultWeatherLabel: string;
 }
 
-export function HomeClient({ categories, sites, footerText, clientIP }: HomeClientProps) {
+export function HomeClient({
+  categories,
+  sites,
+  footerText,
+  clientIP,
+  defaultWeatherDistrictId,
+  defaultWeatherLabel,
+}: HomeClientProps) {
   const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const [visitorId, setVisitorId] = useState('anon');
@@ -82,7 +88,7 @@ export function HomeClient({ categories, sites, footerText, clientIP }: HomeClie
 
   const loadWeatherSummary = useCallback(async () => {
     const params = new URLSearchParams();
-    params.set('district_id', DEFAULT_HOME_WEATHER_DISTRICT_ID);
+    params.set('district_id', defaultWeatherDistrictId);
     params.set('track', '0');
 
     setIsWeatherSummaryLoading(true);
@@ -101,7 +107,7 @@ export function HomeClient({ categories, sites, footerText, clientIP }: HomeClie
     } finally {
       setIsWeatherSummaryLoading(false);
     }
-  }, []);
+  }, [defaultWeatherDistrictId]);
 
   useEffect(() => {
     void loadWeatherSummary();
@@ -185,8 +191,8 @@ export function HomeClient({ categories, sites, footerText, clientIP }: HomeClie
 
   const weatherLocationLabel = useMemo(() => {
     const location = weatherSummary?.location;
-    return location?.name || location?.city || location?.province || DEFAULT_HOME_WEATHER_LABEL;
-  }, [weatherSummary]);
+    return location?.name || location?.city || location?.province || defaultWeatherLabel;
+  }, [weatherSummary, defaultWeatherLabel]);
 
   const weatherTempLabel = useMemo(() => {
     const temp = weatherSummary?.now?.temp;
@@ -237,7 +243,7 @@ export function HomeClient({ categories, sites, footerText, clientIP }: HomeClie
             type="button"
             onClick={() => setIsWeatherModalOpen(true)}
             className="shrink-0 w-full sm:w-[220px] md:w-[240px] h-12 rounded-xl border border-sky-200 bg-gradient-to-r from-sky-50 via-cyan-50 to-white shadow-sm overflow-hidden flex items-center gap-3 px-4 text-left hover:bg-white/40 transition-colors"
-            aria-label="英德市天气详情"
+            aria-label={`${defaultWeatherLabel}天气详情`}
           >
             <span className={`material-symbols-outlined text-[22px] shrink-0 ${weatherSummaryError ? 'text-rose-500' : 'text-sky-600'}`}>
               {weatherSummaryError ? 'cloud_off' : getWeatherIcon(weatherSummary?.now?.text)}
@@ -390,7 +396,8 @@ export function HomeClient({ categories, sites, footerText, clientIP }: HomeClie
         isOpen={isWeatherModalOpen}
         onClose={() => setIsWeatherModalOpen(false)}
         visitorId={visitorId}
-        autoLoadKeyword={DEFAULT_HOME_WEATHER_LABEL}
+        defaultKeyword={defaultWeatherLabel}
+        autoLoadKeyword={defaultWeatherLabel}
         autoLoadTrack={false}
       />
     </div>

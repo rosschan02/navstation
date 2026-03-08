@@ -2,22 +2,23 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-test('home page renders a persistent Yingde weather summary card instead of the old weather quick-search button', () => {
+test('home page renders a persistent server-configured weather summary card instead of the old weather quick-search button', () => {
   const source = readFileSync(new URL('../src/app/HomeClient.tsx', import.meta.url), 'utf8');
+  const pageSource = readFileSync(new URL('../src/app/page.tsx', import.meta.url), 'utf8');
 
   assert.ok(
-    source.includes("const DEFAULT_HOME_WEATHER_LABEL = '英德市';"),
-    'HomeClient should pin the persistent home weather summary to Yingde.',
+    source.includes('defaultWeatherDistrictId: string;') && source.includes('defaultWeatherLabel: string;'),
+    'HomeClient should receive weather defaults as props instead of hardcoding them in the client bundle.',
   );
 
   assert.ok(
-    source.includes('aria-label="英德市天气详情"'),
-    'HomeClient should expose the persistent weather summary card as the homepage weather entry.',
+    source.includes('aria-label={`${defaultWeatherLabel}天气详情`}'),
+    'HomeClient should expose the persistent weather summary card using the configured weather label.',
   );
 
   assert.ok(
-    !source.includes('<span className="hidden md:inline text-sm font-medium">天气速查</span>'),
-    'HomeClient should remove the old standalone weather quick-search button label.',
+    pageSource.includes('const weatherDefaults = getWeatherDefaults();'),
+    'Home page should load weather defaults from a server-side helper before rendering HomeClient.',
   );
 });
 
@@ -25,8 +26,8 @@ test('home page weather summary auto-loads without polluting manual weather quer
   const source = readFileSync(new URL('../src/app/HomeClient.tsx', import.meta.url), 'utf8');
 
   assert.ok(
-    source.includes("params.set('district_id', DEFAULT_HOME_WEATHER_DISTRICT_ID);"),
-    'HomeClient should fetch weather summary using the fixed default district.',
+    source.includes("params.set('district_id', defaultWeatherDistrictId);"),
+    'HomeClient should fetch weather summary using the configured default district.',
   );
 
   assert.ok(
@@ -40,8 +41,8 @@ test('home page weather summary auto-loads without polluting manual weather quer
   );
 
   assert.ok(
-    source.includes('autoLoadKeyword={DEFAULT_HOME_WEATHER_LABEL}'),
-    'HomeClient should open the weather modal with the fixed Yingde keyword preloaded.',
+    source.includes('defaultKeyword={defaultWeatherLabel}') && source.includes('autoLoadKeyword={defaultWeatherLabel}'),
+    'HomeClient should open the weather modal with the configured weather label preloaded.',
   );
 
   assert.ok(
@@ -52,6 +53,7 @@ test('home page weather summary auto-loads without polluting manual weather quer
 
 test('weather api route supports opt-out analytics tracking for passive summary requests', () => {
   const source = readFileSync(new URL('../src/app/api/weather/route.ts', import.meta.url), 'utf8');
+  const defaultsSource = readFileSync(new URL('../src/lib/weatherDefaults.ts', import.meta.url), 'utf8');
 
   assert.ok(
     source.includes('function shouldTrackAnalytics(value: string | null): boolean {'),
@@ -66,5 +68,11 @@ test('weather api route supports opt-out analytics tracking for passive summary 
   assert.ok(
     source.includes('if (shouldTrack) {'),
     'Weather API should only record analytics when tracking is enabled.',
+  );
+
+  assert.ok(
+    defaultsSource.includes('process.env.WEATHER_DEFAULT_DISTRICT_ID')
+      && defaultsSource.includes('process.env.WEATHER_DEFAULT_DISTRICT_NAME'),
+    'Weather defaults helper should source the default weather location from environment variables.',
   );
 });

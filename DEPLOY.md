@@ -179,6 +179,8 @@ DATABASE_URL=postgresql://用户名:密码@localhost:5432/数据库名
 JWT_SECRET=你的JWT密钥
 BAIDU_WEATHER_AK=你的百度天气AK
 WEATHER_CACHE_TTL_MINUTES=30
+WEATHER_DEFAULT_DISTRICT_ID=441881
+WEATHER_DEFAULT_DISTRICT_NAME=英德市
 ```
 
 #### 3. 初始化数据库
@@ -256,6 +258,8 @@ server {
 | `JWT_SECRET` | 是 | 认证令牌加密密钥，生产环境请使用随机字符串 | `openssl rand -base64 32` 生成 |
 | `BAIDU_WEATHER_AK` | 建议 | 百度天气 API 密钥（天气查询） | 控制台申请 |
 | `WEATHER_CACHE_TTL_MINUTES` | 否 | 天气缓存时长（分钟）默认 30 | `30` |
+| `WEATHER_DEFAULT_DISTRICT_ID` | 否 | 默认天气地区 `district_id`，首页摘要与天气详情默认查询会读取它 | `441881` |
+| `WEATHER_DEFAULT_DISTRICT_NAME` | 否 | 默认天气地区显示名/默认查询词，未配置时回退英德市 | `英德市` |
 | `PORT` | 否 | 应用监听端口，默认 3000 | `3000` |
 
 ---
