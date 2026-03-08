@@ -1,469 +1,414 @@
-# NavStation 导航站
+# NavStation
 
-综合导航门户与站点管理系统，提供统一的站点导航、软件下载、二维码展示、统一行为分析与 BIND9 DNS 管理功能。
+Languages: **English** | [简体中文](./README.zh-CN.md) | [한국어](./README.ko.md) | [日本語](./README.ja.md)
 
-## 技术栈
+For release history and change details, see [CHANGELOG.md](./CHANGELOG.md).
 
-- **前端**: Next.js 16 (App Router) + React 19 + Tailwind CSS 4 + TypeScript（字体本地托管，无外部 CDN 依赖）
-- **后端**: Next.js API Routes + node-postgres
-- **数据库**: PostgreSQL 14+
-- **认证**: bcryptjs + HttpOnly Cookie + API Key
+NavStation is a unified navigation portal and site management system that combines site navigation, software distribution, QR display, behavior analytics, and BIND9 DNS management in one application.
 
-## 项目结构
+## Tech Stack
 
-```
+- **Frontend**: Next.js 16 (App Router) + React 19 + Tailwind CSS 4 + TypeScript
+- **Backend**: Next.js API Routes + node-postgres
+- **Database**: PostgreSQL 14+
+- **Authentication**: bcryptjs + HttpOnly Cookie + API Key
+
+## Project Structure
+
+```text
 navstation/
 ├── src/
 │   ├── app/                    # Next.js App Router
-│   │   ├── page.tsx            # 首页（所有站点按分类展示）
-│   │   ├── HomeClient.tsx      # 首页客户端组件（搜索/过滤）
-│   │   ├── legacy/             # IE10 兼容页面（纯 HTML）
-│   │   ├── admin/              # 后台管理
-│   │   │   ├── page.tsx        # 站点管理（统一管理站点+二维码）
-│   │   │   ├── categories/     # 分类管理
-│   │   │   ├── software/       # 软件管理
-│   │   │   ├── phonebook/      # 电话本管理
-│   │   │   ├── dns/            # DNS 管理（BIND9）
-│   │   │   ├── keys/           # API 密钥管理
-│   │   │   ├── tools/          # 管理工具（Ping / Traceroute）
-│   │   │   └── settings/       # 站点设置
-│   │   ├── analytics/          # 数据分析
-│   │   ├── software/           # 软件下载页面
-│   │   └── api/                # RESTful API
-│   │       ├── sites/          # 站点 CRUD（含二维码）
-│   │       ├── software/       # 软件上传/下载
-│   │       ├── categories/     # 分类 CRUD（支持类型）
-│   │       ├── qrcode/         # 二维码生成
-│   │       ├── upload/         # 图片上传
-│   │       ├── uploads/        # 图片服务
-│   │       ├── auth/           # 登录/登出/当前用户
-│   │       ├── analytics/      # 统一行为统计与事件记录
-│   │       ├── phonebook/      # 电话本查询与管理
-│   │       ├── regions/        # 行政区域速查（百度 Place API v3 代理）
-│   │       ├── admin-divisions/ # 本地行政区查询（搜索/详情/下级）
-│   │       ├── dns/            # DNS Zone/记录/日志管理
-│   │       ├── keys/           # API 密钥管理
-│   │       ├── tools/          # 管理工具 API（Ping / Traceroute）
-│   │       └── settings/       # 站点设置 API
-│   ├── components/             # 客户端组件
-│   │   ├── AppShell.tsx        # 布局壳（Sidebar + 模态框）
-│   │   ├── Sidebar.tsx         # 侧边栏导航
-│   │   ├── LoginModal.tsx      # 登录弹窗
-│   │   ├── PhonebookQuickSearchModal.tsx # 院内电话速查弹窗
-│   │   ├── AdministrativeDivisionModal.tsx # 行政区域查询弹窗（在线/本地双模式）
-│   │   ├── ConfirmDialog.tsx   # 统一删除确认弹窗
-│   │   └── IconPicker.tsx      # 图标选择器组件
-│   ├── contexts/
-│   │   ├── AuthContext.tsx     # 认证状态管理
-│   │   └── MessageContext.tsx  # 全局消息提示（Toast）
-│   ├── lib/
-│   │   ├── apiAuth.ts          # API Key 认证工具
-│   │   ├── analyticsEvents.ts  # 统一行为日志写入工具
-│   │   ├── analyticsSource.ts  # 分析埋点 source 构建/解析工具（兼容旧点击数据）
-│   │   ├── clientIp.ts         # 客户端 IP 提取工具
-│   │   ├── dns/bind9.ts        # BIND9 nsupdate 封装
-│   │   ├── dns/bind9-forward.ts # BIND9 转发区域配置生成与同步
-│   │   └── visitorId.ts        # 匿名访客 ID 生成与读取
-│   ├── db/
-│   │   ├── index.ts            # PostgreSQL 连接池
-│   │   ├── schema.sql          # 建表语句
-│   │   ├── seed.sql            # 初始化数据
-│   │   └── migrations/         # 数据库迁移脚本
-│   ├── types/
-│   │   └── index.ts            # TypeScript 类型定义
-│   └── proxy.ts                # Next.js Proxy（IE 浏览器检测重定向）
-├── uploads/                    # 上传文件目录
-│   ├── logos/                  # 站点 Logo
-│   ├── qr/                     # 二维码图片
-│   └── software/               # 软件文件（最大 4GB）
+│   │   ├── page.tsx            # Home page
+│   │   ├── HomeClient.tsx      # Home page client component
+│   │   ├── legacy/             # IE10-compatible page
+│   │   ├── admin/              # Admin workspace
+│   │   ├── analytics/          # Analytics page
+│   │   ├── software/           # Software downloads page
+│   │   └── api/                # RESTful APIs
+│   ├── components/             # Client components
+│   ├── contexts/               # Auth and toast/message state
+│   ├── lib/                    # Shared utilities
+│   ├── db/                     # PostgreSQL schema, seed, migrations
+│   ├── types/                  # TypeScript types
+│   └── proxy.ts                # Next.js request interception
+├── uploads/                    # Uploaded files
 ├── Dockerfile
 ├── docker-compose.yml
-├── DEPLOY.md                   # 部署文档
-└── CHANGELOG.md                # 更新日志
+├── DEPLOY.md
+└── CHANGELOG.md
 ```
 
-## 快速开始
+## Quick Start
 
-### 前置条件
+### Prerequisites
 
 - Node.js 20+
 - PostgreSQL 14+
 
-### 1. 安装依赖
+### 1. Install Dependencies
 
 ```bash
 npm install
 ```
 
-如需执行本地回归检查：
+Run local regression tests if needed:
 
 ```bash
 npm test
 ```
 
-### 2. 配置环境变量
+### 2. Configure Environment Variables
 
-创建 `.env.local` 文件：
+Create `.env.local`:
 
 ```env
-DATABASE_URL=postgresql://用户名:密码@localhost:5432/数据库名
-JWT_SECRET=你的密钥
-BAIDU_MAP_AK=你的百度地图AK
-BAIDU_WEATHER_AK=你的百度天气AK
+DATABASE_URL=postgresql://username:password@localhost:5432/database
+JWT_SECRET=your-secret
+BAIDU_MAP_AK=your-baidu-map-ak
+BAIDU_WEATHER_AK=your-baidu-weather-ak
 WEATHER_CACHE_TTL_MINUTES=30
 WEATHER_DEFAULT_DISTRICT_ID=441881
-WEATHER_DEFAULT_DISTRICT_NAME=英德市
-# 可选：DNS/BIND9 联调配置
+WEATHER_DEFAULT_DISTRICT_NAME=Yingde
+# Optional: DNS/BIND9 integration
 # BIND9_DRY_RUN=1
 # BIND9_NSUPDATE_BIN=nsupdate
 # BIND9_FORWARD_CONF=/etc/bind/named.conf.forward
 # BIND9_RESTART_CMD=systemctl restart named
 ```
 
-> 说明：Docker 运行镜像已内置 `nsupdate`（`bind-tools`），无需在容器内手动安装。
+Note: the Docker image already includes `nsupdate` (`bind-tools`).
 
-### 3. 初始化数据库
+### 3. Initialize the Database
 
 ```bash
-# 建表
-psql -h localhost -U 用户名 -d 数据库名 -f src/db/schema.sql
+# Create tables
+psql -h localhost -U username -d database -f src/db/schema.sql
 
-# 导入初始数据
-psql -h localhost -U 用户名 -d 数据库名 -f src/db/seed.sql
+# Seed initial data
+psql -h localhost -U username -d database -f src/db/seed.sql
 ```
 
-可选：导入百度天气行政区划映射（用于中文地名 -> `district_id` 查询）
+Optional: import the Baidu weather district mapping for Chinese place-name to `district_id` resolution.
 
 ```bash
 npm run import:weather-districts
-# 或指定 CSV 路径
+# Or provide an explicit CSV path
 node scripts/import-weather-districts.mjs data/weather_district_id.csv
 ```
 
-可选：导入本地四级行政区（用于“本地行政区查询”按钮）
+Optional: import local four-level administrative divisions.
 
 ```bash
-# 1) 执行迁移（建表）
-psql -h localhost -U 用户名 -d 数据库名 -f src/db/migrations/011_add_admin_divisions.sql
+# 1) Create related tables
+psql -h localhost -U username -d database -f src/db/migrations/011_add_admin_divisions.sql
 
-# 2) 执行导入/合并（需先准备 data/admin_code_251218.clean.csv）
-psql -h localhost -U 用户名 -d 数据库名 -f scripts/import-admin-divisions.sql
+# 2) Import/merge data
+psql -h localhost -U username -d database -f scripts/import-admin-divisions.sql
 ```
 
-完整导入说明见：`add_import-admin-divisions.md`
-
-如果是从旧版本升级，需额外执行统一行为统计迁移：
+If you are upgrading from an older version, also run:
 
 ```bash
-psql -h localhost -U 用户名 -d 数据库名 -f src/db/migrations/012_add_analytics_events.sql
+psql -h localhost -U username -d database -f src/db/migrations/012_add_analytics_events.sql
 ```
 
-### 4. 启动开发服务器
+### 4. Start the Development Server
 
 ```bash
 npm run dev
 ```
 
-访问 http://localhost:3000
+Open `http://localhost:3000`.
 
-### 5. 生产构建
+### 5. Production Build
 
 ```bash
 npm run build
 npm run start
 ```
 
-## Docker 部署
+## Docker Deployment
 
 ```bash
 docker-compose up -d
 ```
 
-详见 [DEPLOY.md](./DEPLOY.md)
+See [DEPLOY.md](./DEPLOY.md) for full deployment details.
 
-## 数据库表结构
+## Database Tables
 
-| 表名 | 说明 |
+| Table | Description |
 |------|------|
-| `categories` | 分类（type: site/qrcode/software） |
-| `sites` | 统一站点表（含普通站点和二维码） |
-| `software` | 软件下载资源（支持 4GB 文件） |
-| `users` | 管理员账号（默认 admin/admin） |
-| `click_events` | 历史点击事件统计（兼容旧数据） |
-| `analytics_events` | 统一行为日志（点击/下载/天气/电话/行政区域查询） |
-| `site_settings` | 站点全局设置（名称、描述、Logo等） |
-| `api_keys` | API 密钥（外部系统对接认证） |
-| `phonebook_entries` | 电话本条目（科室名、长码、短码） |
-| `weather_districts` | 天气行政区映射（中文地名 -> district_id） |
-| `weather_cache` | 天气接口响应缓存 |
-| `admin_divisions` | 本地四级行政区（省/市/区县/街道乡镇） |
-| `admin_divisions_import` | 本地四级行政区导入暂存表 |
-| `dns_zones` | DNS Zone 配置（服务器、TSIG、启停状态） |
-| `dns_records` | DNS 记录（A/AAAA/CNAME/TXT/MX）与同步状态 |
-| `dns_forward_zones` | DNS 转发区域（条件转发到指定 DNS 服务器） |
-| `dns_change_logs` | DNS 变更审计日志（动作、结果、操作人） |
+| `categories` | Categories (`site` / `qrcode` / `software`) |
+| `sites` | Unified site table, including normal sites and QR entries |
+| `software` | Software resources, including large files |
+| `users` | Admin accounts |
+| `click_events` | Legacy click-event table kept for compatibility |
+| `analytics_events` | Unified behavior log table |
+| `site_settings` | Global site settings |
+| `api_keys` | API keys for external integrations |
+| `phonebook_entries` | Internal phonebook entries |
+| `weather_districts` | Weather district lookup table |
+| `weather_cache` | Cached weather responses |
+| `admin_divisions` | Local four-level administrative divisions |
+| `admin_divisions_import` | Staging table for admin-division imports |
+| `dns_zones` | DNS zone configuration |
+| `dns_records` | DNS records and sync state |
+| `dns_forward_zones` | Conditional DNS forward zones |
+| `dns_change_logs` | DNS audit logs |
 
-### 分类类型说明
+### Category Types
 
-| 类型 | 说明 |
+| Type | Description |
 |------|------|
-| `site` | 普通导航站点 |
-| `qrcode` | 公众号/小程序二维码 |
-| `software` | 软件下载分类 |
+| `site` | Standard navigation site |
+| `qrcode` | QR code category |
+| `software` | Software download category |
 
-## API 接口
+## API Endpoints
 
-### 站点管理
-| 路径 | 方法 | 说明 |
+### Site Management
+
+| Path | Method | Description |
 |------|------|------|
-| `GET /api/sites` | GET | 站点列表（支持 type/category/search 参数过滤） |
-| `POST /api/sites` | POST | 新增站点（含二维码） |
-| `PUT /api/sites/:id` | PUT | 更新站点 |
-| `DELETE /api/sites/:id` | DELETE | 删除站点 |
+| `GET /api/sites` | GET | List sites with optional filters |
+| `POST /api/sites` | POST | Create a new site or QR entry |
+| `PUT /api/sites/:id` | PUT | Update a site |
+| `DELETE /api/sites/:id` | DELETE | Delete a site |
 
-### 分类管理
-| 路径 | 方法 | 说明 |
+### Category Management
+
+| Path | Method | Description |
 |------|------|------|
-| `GET /api/categories` | GET | 分类列表（支持 type 参数过滤） |
-| `POST /api/categories` | POST | 新增分类（需指定 type） |
-| `PUT /api/categories/:id` | PUT | 更新分类 |
-| `DELETE /api/categories/:id` | DELETE | 删除分类 |
+| `GET /api/categories` | GET | List categories |
+| `POST /api/categories` | POST | Create a category |
+| `PUT /api/categories/:id` | PUT | Update a category |
+| `DELETE /api/categories/:id` | DELETE | Delete a category |
 
-### 软件下载
-| 路径 | 方法 | 说明 |
+### Software
+
+| Path | Method | Description |
 |------|------|------|
-| `GET /api/software` | GET | 软件列表 |
-| `POST /api/software` | POST | 上传软件（FormData，最大 4GB，支持 Logo） |
-| `PUT /api/software/:id` | PUT | 编辑软件信息 |
-| `DELETE /api/software/:id` | DELETE | 删除软件 |
-| `GET /api/software/:id/download` | GET | 下载软件文件 |
+| `GET /api/software` | GET | List software |
+| `POST /api/software` | POST | Upload software with FormData |
+| `PUT /api/software/:id` | PUT | Update software metadata |
+| `DELETE /api/software/:id` | DELETE | Delete software |
+| `GET /api/software/:id/download` | GET | Download the file |
 
-### 二维码生成
-| 路径 | 方法 | 说明 |
+### QR Code Generation
+
+| Path | Method | Description |
 |------|------|------|
-| `POST /api/qrcode/generate` | POST | 根据 URL 生成二维码 PNG 图片（需 write 权限） |
+| `POST /api/qrcode/generate` | POST | Generate a QR PNG from a URL |
 
-### 文件上传
-| 路径 | 方法 | 说明 |
+### File Upload
+
+| Path | Method | Description |
 |------|------|------|
-| `POST /api/upload` | POST | 上传图片（Logo/二维码，最大 5MB） |
-| `GET /api/uploads/[...path]` | GET | 获取上传的图片 |
+| `POST /api/upload` | POST | Upload images such as logos, site icons, and QR assets |
+| `GET /api/uploads/[...path]` | GET | Serve uploaded images |
 
-### 认证
-| 路径 | 方法 | 说明 |
+### Authentication
+
+| Path | Method | Description |
 |------|------|------|
-| `POST /api/auth/login` | POST | 管理员登录 |
-| `GET /api/auth/me` | GET | 获取当前用户（含头像） |
-| `POST /api/auth/logout` | POST | 退出登录 |
-| `PUT /api/auth/profile` | PUT | 更新头像 |
-| `PUT /api/auth/password` | PUT | 修改密码 |
+| `POST /api/auth/login` | POST | Admin login |
+| `GET /api/auth/me` | GET | Current user info |
+| `POST /api/auth/logout` | POST | Logout |
+| `PUT /api/auth/profile` | PUT | Update avatar |
+| `PUT /api/auth/password` | PUT | Change password |
 
-### 数据分析
-| 路径 | 方法 | 说明 |
+### Analytics
+
+| Path | Method | Description |
 |------|------|------|
-| `GET /api/analytics?days=7` | GET | 返回统一行为统计仪表盘数据（点击、查询、来源、热词、最近活动） |
-| `POST /api/analytics/click` | POST | 记录导航点击事件（统一写入 `analytics_events`） |
+| `GET /api/analytics?days=7` | GET | Unified analytics dashboard data |
+| `POST /api/analytics/click` | POST | Record navigation click events |
 
-### 站点设置
-| 路径 | 方法 | 说明 |
+### Site Settings
+
+| Path | Method | Description |
 |------|------|------|
-| `GET /api/settings` | GET | 获取站点设置 |
-| `PUT /api/settings` | PUT | 更新站点设置 |
+| `GET /api/settings` | GET | Fetch site settings |
+| `PUT /api/settings` | PUT | Update site settings |
 
-### 电话本管理
-| 路径 | 方法 | 说明 |
+### Phonebook
+
+| Path | Method | Description |
 |------|------|------|
-| `GET /api/phonebook` | GET | 电话本列表（支持 `search`，默认只返回启用条目） |
-| `POST /api/phonebook` | POST | 新增电话本条目（需 write 权限） |
-| `GET /api/phonebook/:id` | GET | 获取单个电话本条目 |
-| `PUT /api/phonebook/:id` | PUT | 更新电话本条目（需 write 权限） |
-| `DELETE /api/phonebook/:id` | DELETE | 删除电话本条目（需 write 权限） |
+| `GET /api/phonebook` | GET | List phonebook entries |
+| `POST /api/phonebook` | POST | Create a phonebook entry |
+| `GET /api/phonebook/:id` | GET | Get one entry |
+| `PUT /api/phonebook/:id` | PUT | Update an entry |
+| `DELETE /api/phonebook/:id` | DELETE | Delete an entry |
 
-### 行政区域速查
-| 路径 | 方法 | 说明 |
+### Administrative Region Lookup
+
+| Path | Method | Description |
 |------|------|------|
-| `GET /api/regions/search` | GET | 行政区域查询代理（参数：`query`、`region`；服务端转发百度 Place API v3，返回四级区划及代码） |
-| `GET /api/admin-divisions` | GET | 本地行政区查询（参数：`keyword`/`level` 或 `detail_level`/`detail_code`） |
+| `GET /api/regions/search` | GET | Proxy for Baidu Place API v3 region search |
+| `GET /api/admin-divisions` | GET | Local admin-division search and drill-down |
 
-### API 密钥管理（需管理员登录）
-| 路径 | 方法 | 说明 |
+### API Key Management
+
+| Path | Method | Description |
 |------|------|------|
-| `GET /api/keys` | GET | 获取 API 密钥列表 |
-| `POST /api/keys` | POST | 创建新 API 密钥（仅此一次返回完整密钥） |
-| `PUT /api/keys/:id` | PUT | 更新密钥信息（名称、权限、启用状态） |
-| `DELETE /api/keys/:id` | DELETE | 删除密钥 |
+| `GET /api/keys` | GET | List API keys |
+| `POST /api/keys` | POST | Create a new API key |
+| `PUT /api/keys/:id` | PUT | Update API key metadata |
+| `DELETE /api/keys/:id` | DELETE | Delete an API key |
 
-### DNS 管理
-| 路径 | 方法 | 说明 |
+### DNS Management
+
+| Path | Method | Description |
 |------|------|------|
-| `GET /api/dns/zones` | GET | 获取 Zone 列表（需 read 权限） |
-| `POST /api/dns/zones` | POST | 新增 Zone（需 write 权限） |
-| `PUT /api/dns/zones/:id` | PUT | 更新 Zone（需 write 权限） |
-| `DELETE /api/dns/zones/:id` | DELETE | 删除 Zone（需 write 权限） |
-| `GET /api/dns/records` | GET | 获取 DNS 记录列表（支持 `zone_id` / `include_inactive`） |
-| `POST /api/dns/records` | POST | 新增记录并可同步到 BIND9（需 write 权限） |
-| `GET /api/dns/records/:id` | GET | 获取单条 DNS 记录（需 read 权限） |
-| `PUT /api/dns/records/:id` | PUT | 更新记录并同步到 BIND9（需 write 权限） |
-| `DELETE /api/dns/records/:id` | DELETE | 删除记录并尝试同步删除（需 write 权限） |
-| `GET /api/dns/logs` | GET | 获取 DNS 变更日志（支持 `zone_id` / `record_id` / `limit`） |
-| `GET /api/dns/forward-zones` | GET | 获取转发区域列表（需 read 权限） |
-| `POST /api/dns/forward-zones` | POST | 新增转发区域并同步到 BIND9（需 write 权限） |
-| `PUT /api/dns/forward-zones/:id` | PUT | 更新转发区域并同步到 BIND9（需 write 权限） |
-| `DELETE /api/dns/forward-zones/:id` | DELETE | 删除转发区域并同步到 BIND9（需 write 权限） |
+| `GET /api/dns/zones` | GET | List DNS zones |
+| `POST /api/dns/zones` | POST | Create a zone |
+| `PUT /api/dns/zones/:id` | PUT | Update a zone |
+| `DELETE /api/dns/zones/:id` | DELETE | Delete a zone |
+| `GET /api/dns/records` | GET | List DNS records |
+| `POST /api/dns/records` | POST | Create a DNS record |
+| `GET /api/dns/records/:id` | GET | Get one DNS record |
+| `PUT /api/dns/records/:id` | PUT | Update a DNS record |
+| `DELETE /api/dns/records/:id` | DELETE | Delete a DNS record |
+| `GET /api/dns/logs` | GET | List DNS change logs |
+| `GET /api/dns/forward-zones` | GET | List forward zones |
+| `POST /api/dns/forward-zones` | POST | Create a forward zone |
+| `PUT /api/dns/forward-zones/:id` | PUT | Update a forward zone |
+| `DELETE /api/dns/forward-zones/:id` | DELETE | Delete a forward zone |
 
-### 管理工具
-| 路径 | 方法 | 说明 |
+### Admin Tools
+
+| Path | Method | Description |
 |------|------|------|
-| `POST /api/tools/ping` | POST | Ping 测试（参数：`host`、`count`） |
-| `POST /api/tools/tracert` | POST | Traceroute 路由追踪（参数：`host`） |
+| `POST /api/tools/ping` | POST | Ping test |
+| `POST /api/tools/tracert` | POST | Traceroute |
 
-## 默认账号
+## Default Account
 
-- 用户名: `admin`
-- 密码: `admin`
+- Username: `admin`
+- Password: `admin`
 
-## 主要功能
+## Main Features
 
-### 用户功能
+### User Features
 
-- **首页导航**: 所有站点按分类分组展示，左侧边栏分类筛选，支持全文搜索，显示服务器局域网 IP 地址；搜索区右侧常驻展示默认天气摘要，默认地点由服务端 `.env` 配置，点击可直接进入并加载对应天气详情
-- **站点品牌设置**: 后台可配置站点名称、左上角 Logo、版本号，以及浏览器标签页使用的站点图标（favicon）
-- **院内电话速查**: 首页搜索框旁提供「院内电话速查」按钮，输入关键词后按科室名/短码/长码搜索，支持一键复制号码
-- **行政区域查询**: 首页搜索框旁提供「行政区域查询」按钮，弹窗内支持"在线查询"与"本地查询"两种模式切换；在线模式按省份 + 关键词查询地点，详情页展示省/市/区/街道四级行政区划代码（由百度 v3 API `town_code` 直接推算），每级代码可一键复制；本地模式按关键词检索本地四级行政区，详情页可查看上级链路并继续点击下级区域
-- **软件下载**: 下载管理员上传的常用软件（支持大文件，按排序显示）
-- **二维码展示**: 公众号/小程序二维码以图片网格形式展示
-- **IE8+ 兼容**: 自动检测 IE8/9/10/11 并重定向到兼容页面（float 布局，无 Flexbox/Grid）
-- **响应式布局**: 侧边栏在移动设备（iPad/手机）上自动收起为图标模式
+- **Home navigation**: Category-based site navigation with full-text search and client IP display.
+- **Persistent weather summary**: The home page shows a persistent weather summary card. The default location is read from `.env`.
+- **Phonebook quick search**: Search internal departments by name, short code, or long code.
+- **Administrative region lookup**: Supports online search and local database search in the same modal.
+- **Software downloads**: Publish and download internal software packages.
+- **QR display**: Show QR assets in a grid layout.
+- **IE8+ compatibility**: Legacy fallback route for old IE browsers.
+- **Responsive layout**: Sidebar collapses automatically on smaller screens.
 
-### 工作区（管理员）
+### Admin Features
 
-- **站点管理**: 统一管理所有站点和二维码，支持上传 Logo，支持从已上传软件自动生成下载二维码
-- **分类管理**: 管理分类，支持三种类型（站点/二维码/软件）
-- **软件管理**: 上传、编辑、删除软件下载资源（单文件最大 4GB），支持自定义 Logo 或图标
-- **电话本管理**: 管理科室电话本，支持短码（3-4 位，可留空）和长码（1-13 位，可留空）维护、启用/停用与排序
-- **DNS 管理**: 管理 BIND9 的 Zone 与记录，支持 A/AAAA/CNAME/TXT/MX，支持条件转发区域（Forward Zone），同步状态追踪与变更日志审计
-- **管理工具**: 页面上执行 Ping 测试和 Traceroute 路由追踪，终端风格结果展示，支持跨平台
-- **站点设置**: 自定义站点名称、描述、Logo、版本号、页脚版权
-- **账号设置**: 修改管理员头像和密码
-- **统一消息提醒**: 后台增删改与状态操作统一使用全局 Message/Toast 提示，支持 success/error/warning/info，交互反馈更一致
-- **数据分析**: 查看点击统计、访问趋势和热门站点 Top 10 排行榜（支持 7 天/30 天切换）
-  - 支持总点击、独立访客、站点/软件下载点击、搜索上下文点击率
-  - 支持 24 小时分布、来源页面分布、热门分类
-  - 支持热门站点 Top 10、热门软件 Top 10、最近活动流（最近 20 条）
+- **Site management**: Manage sites and QR entries.
+- **Category management**: Manage `site`, `qrcode`, and `software` categories.
+- **Software management**: Upload and manage software packages up to 4 GB.
+- **Phonebook management**: Maintain department phonebook data.
+- **DNS management**: Manage BIND9 zones, records, forward zones, and audit logs.
+- **Admin tools**: Run Ping and Traceroute from the web UI.
+- **Site settings**: Configure site name, description, logo, version, footer text, and browser favicon.
+- **Profile settings**: Update avatar and password.
+- **Unified messages**: Global success/error/warning/info toasts for admin actions.
+- **Analytics dashboard**: Unified dashboard for clicks, queries, sources, and recent activity.
 
-### 图标选择器
+### Icon Picker
 
-系统内置了基于 Google Material Symbols 的图标选择器，支持：
-- 60+ 常用图标可选
-- 9 种背景颜色
-- 9 种图标颜色
-- 搜索过滤功能
+The built-in icon picker provides:
 
-## API 对接（外部系统）
+- 60+ common Material Symbols
+- 9 background colors
+- 9 icon colors
+- Search/filter support
 
-NavStation 支持通过 API Key 允许外部系统访问 API。
+## External API Integration
 
-### 创建 API 密钥
+NavStation supports API Key based access for external systems.
 
-1. 登录管理后台
-2. 进入「API 管理」页面
-3. 点击「创建密钥」
-4. 设置名称和权限（只读/读写）
-5. **立即保存显示的密钥**（密钥只显示一次）
+### Create an API Key
 
-### 权限说明
+1. Log in to the admin panel.
+2. Open the `API 管理` page.
+3. Click `创建密钥`.
+4. Set the key name and permission.
+5. Save the full key immediately. It is shown only once.
 
-| 权限 | 说明 |
+### Permission Levels
+
+| Permission | Description |
 |------|------|
-| `read` | 只读权限：读取站点、分类、软件、统计数据 |
-| `write` | 读写权限：包含只读 + 增删改站点、分类、软件 |
+| `read` | Read-only access |
+| `write` | Read + write access |
 
-### 认证方式
-
-支持两种 Header 认证方式：
+### Authentication Headers
 
 ```bash
-# 方式一：X-API-Key Header
+# Option 1: X-API-Key
 curl -H "X-API-Key: nav_sk_xxxx" https://your-domain/api/sites
 
-# 方式二：Authorization Bearer
+# Option 2: Authorization Bearer
 curl -H "Authorization: Bearer nav_sk_xxxx" https://your-domain/api/sites
 ```
 
-### 调用示例
+### Example Calls
 
 ```bash
-# 获取站点列表
+# List sites
 curl -H "X-API-Key: nav_sk_xxxx" https://your-domain/api/sites
 
-# 创建站点（需要 write 权限）
+# Create a site (write permission required)
 curl -X POST \
   -H "X-API-Key: nav_sk_xxxx" \
   -H "Content-Type: application/json" \
-  -d '{"name":"新站点","url":"https://example.com","category_id":1}' \
+  -d '{"name":"New Site","url":"https://example.com","category_id":1}' \
   https://your-domain/api/sites
 
-# 获取分类列表
+# List categories
 curl -H "X-API-Key: nav_sk_xxxx" https://your-domain/api/categories
 
-# 获取统计数据
+# Fetch analytics
 curl -H "X-API-Key: nav_sk_xxxx" https://your-domain/api/analytics?days=7
 ```
 
-### 错误响应
+### Error Responses
 
-| HTTP 状态码 | 错误码 | 说明 |
-|------------|--------|------|
-| 401 | `UNAUTHORIZED` | 未提供认证信息 |
-| 401 | `INVALID_API_KEY` | API Key 无效或已禁用 |
-| 403 | `PERMISSION_DENIED` | 权限不足 |
+| HTTP Status | Error Code | Description |
+|------|------|------|
+| 401 | `UNAUTHORIZED` | Missing authentication |
+| 401 | `INVALID_API_KEY` | Invalid or disabled key |
+| 403 | `PERMISSION_DENIED` | Insufficient permission |
 
-## 数据库迁移
+## Database Migrations
 
-如果从旧版本升级，需要按顺序运行迁移脚本：
+Run migrations in order when upgrading from an older version:
 
 ```bash
-# v1.1.0 - 分类图标字段
 psql -d your_database -f src/db/migrations/001_add_category_icons.sql
-
-# v1.2.0 - 软件下载表
 psql -d your_database -f src/db/migrations/002_add_software_table.sql
-
-# v2.0.0 - 统一站点架构（重要：会自动迁移旧数据）
 psql -d your_database -f src/db/migrations/003_unified_sites.sql
-
-# v2.1.0 - 软件排序字段
 psql -d your_database -f src/db/migrations/004_add_software_sort_order.sql
-
-# v2.3.0 - API 密钥表
 psql -d your_database -f src/db/migrations/005_add_api_keys.sql
-
-# v2.7.0 - 电话本条目表
 psql -d your_database -f src/db/migrations/006_add_phonebook_entries.sql
-
-# v2.7.1 - 放宽电话本短码/长码约束
 psql -d your_database -f src/db/migrations/007_relax_phonebook_constraints.sql
-
-# v2.8.0 - DNS 管理（BIND9 权威区域）
 psql -d your_database -f src/db/migrations/008_add_dns_management.sql
-
-# v2.9.0 - DNS 转发区域
 psql -d your_database -f src/db/migrations/009_add_dns_forward_zones.sql
-
-# v2.13.0 - 天气行政区映射与天气缓存
 psql -d your_database -f src/db/migrations/010_add_weather_districts_and_cache.sql
-
-# v2.14.0 - 本地四级行政区查询
 psql -d your_database -f src/db/migrations/011_add_admin_divisions.sql
+psql -d your_database -f src/db/migrations/012_add_analytics_events.sql
 ```
 
-若启用本地四级行政区查询，迁移后再执行：
+If you enable local administrative divisions, also run:
 
 ```bash
 psql -d your_database -f scripts/import-admin-divisions.sql
 ```
 
-对于全新部署，直接运行：
+For a fresh deployment:
+
 ```bash
 psql -d your_database -f src/db/schema.sql
 psql -d your_database -f src/db/seed.sql
