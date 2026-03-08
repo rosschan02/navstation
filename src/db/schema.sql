@@ -114,7 +114,8 @@ INSERT INTO site_settings (key, value) VALUES
     ('site_description', '综合导航门户与站点管理仪表板'),
     ('site_version', 'v2.0 中文版'),
     ('footer_text', '© 2024 通用站点导航。保留所有权利。'),
-    ('logo_url', '')
+    ('logo_url', ''),
+    ('site_icon_url', '')
 ON CONFLICT (key) DO NOTHING;
 
 -- API Keys for external system authentication

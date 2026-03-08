@@ -10,6 +10,7 @@ const DEFAULT_SETTINGS: SiteSettings = {
   site_version: 'v2.0 中文版',
   footer_text: '© 2024 通用站点导航。保留所有权利。',
   logo_url: '',
+  site_icon_url: '',
 };
 
 // GET /api/settings - Get all settings

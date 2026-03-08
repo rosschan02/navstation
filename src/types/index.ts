@@ -74,6 +74,7 @@ export interface SiteSettings {
   site_version: string;
   footer_text: string;
   logo_url: string;
+  site_icon_url: string;
 }
 
 // API Key for external system authentication

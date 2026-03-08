@@ -15,13 +15,19 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
   const [settings, setSettings] = useState<SiteSettings>(initialSettings);
   const [isSaving, setIsSaving] = useState(false);
   const [logoPreview, setLogoPreview] = useState<string>(initialSettings.logo_url || '');
+  const [iconPreview, setIconPreview] = useState<string>(initialSettings.site_icon_url || '');
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const iconInputRef = useRef<HTMLInputElement>(null);
 
   const handleChange = (key: keyof SiteSettings, value: string) => {
     setSettings(prev => ({ ...prev, [key]: value }));
   };
 
-  const handleLogoUpload = async (file: File) => {
+  const handleImageUpload = async (
+    file: File,
+    key: 'logo_url' | 'site_icon_url',
+    setPreview: (value: string) => void
+  ) => {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('type', 'logo');
@@ -35,8 +41,8 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
       if (res.ok) {
         const data = await res.json();
         const path = `/api/uploads/logos/${data.filename}`;
-        setLogoPreview(path);
-        setSettings(prev => ({ ...prev, logo_url: path }));
+        setPreview(path);
+        setSettings(prev => ({ ...prev, [key]: path }));
       } else {
         message.error('上传失败');
       }
@@ -46,9 +52,12 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
     }
   };
 
-  const handleRemoveLogo = () => {
-    setLogoPreview('');
-    setSettings(prev => ({ ...prev, logo_url: '' }));
+  const handleRemoveImage = (
+    key: 'logo_url' | 'site_icon_url',
+    setPreview: (value: string) => void
+  ) => {
+    setPreview('');
+    setSettings(prev => ({ ...prev, [key]: '' }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -184,7 +193,7 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
                     className="hidden"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
-                      if (file) handleLogoUpload(file);
+                      if (file) void handleImageUpload(file, 'logo_url', setLogoPreview);
                     }}
                   />
                   <div className="flex-1">
@@ -194,7 +203,7 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
                   {logoPreview && (
                     <button
                       type="button"
-                      onClick={handleRemoveLogo}
+                      onClick={() => handleRemoveImage('logo_url', setLogoPreview)}
                       className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                     >
                       <span className="material-symbols-outlined text-[20px]">delete</span>
@@ -202,6 +211,50 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
                   )}
                 </div>
                 <p className="text-xs text-slate-400 mt-2">留空则使用默认火箭图标</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  站点图标
+                </label>
+                <div className="flex items-center gap-4">
+                  <div
+                    onClick={() => iconInputRef.current?.click()}
+                    className={`size-16 rounded-lg border-2 border-dashed flex items-center justify-center cursor-pointer transition-colors ${
+                      iconPreview ? 'border-primary bg-primary/5' : 'border-slate-200 hover:border-primary/50'
+                    }`}
+                  >
+                    {iconPreview ? (
+                      <img src={iconPreview} alt="站点图标" className="size-12 object-contain" />
+                    ) : (
+                      <span className="material-symbols-outlined text-slate-400">tab</span>
+                    )}
+                  </div>
+                  <input
+                    ref={iconInputRef}
+                    type="file"
+                    accept=".ico,image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) void handleImageUpload(file, 'site_icon_url', setIconPreview);
+                    }}
+                  />
+                  <div className="flex-1">
+                    <p className="text-sm text-slate-600">点击上传浏览器站点图标</p>
+                    <p className="text-xs text-slate-400">支持 ICO、PNG、SVG，建议正方形图标；浏览器可能会缓存旧图标</p>
+                  </div>
+                  {iconPreview && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveImage('site_icon_url', setIconPreview)}
+                      className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-[20px]">delete</span>
+                    </button>
+                  )}
+                </div>
+                <p className="text-xs text-slate-400 mt-2">留空则继续使用默认 favicon.ico</p>
               </div>
             </div>
           </div>

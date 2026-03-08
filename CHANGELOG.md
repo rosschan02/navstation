@@ -29,6 +29,11 @@
 - 点击天气摘要卡可直接打开并加载英德市天气详情，首屏无需再额外进入天气查询
 - 首页自动天气摘要请求默认不写入 `weather_query` 行为统计，避免被动展示污染手动查询数据
 
+#### 站点图标设置
+- 后台“站点设置”新增 `站点图标` 上传项，用于配置浏览器标签页 favicon
+- 站点图标支持 `.ico`、PNG、SVG 等图片格式上传
+- 根布局动态读取 `site_icon_url`，浏览器 favicon 跟随后台设置生效，并追加版本参数减少缓存干扰
+
 #### 部署与文档
 - 新增迁移 `src/db/migrations/012_add_analytics_events.sql`
 - README、CHANGELOG 更新统一行为统计、首页天气摘要与升级迁移说明
@@ -51,6 +56,9 @@ src/app/page.tsx
 src/components/AdministrativeDivisionModal.tsx
 src/components/PhonebookQuickSearchModal.tsx
 src/components/WeatherQuickSearchModal.tsx
+src/app/admin/settings/SettingsClient.tsx
+src/app/layout.tsx
+src/app/api/upload/route.ts
 src/db/schema.sql
 src/db/migrations/012_add_analytics_events.sql
 src/lib/analyticsEvents.ts
@@ -58,6 +66,7 @@ src/lib/clientIp.ts
 src/types/index.ts
 tests/analytics-interactions.test.mjs
 tests/home-weather-summary.test.mjs
+tests/site-icon-settings.test.mjs
 README.md
 DEPLOY.md
 CHANGELOG.md

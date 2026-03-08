@@ -5,11 +5,26 @@ import path from 'path';
 
 export const dynamic = 'force-dynamic';
 
-// Max file size: 5MB for logos
+// Max file size: 5MB for uploaded brand assets
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 // Allowed image types
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+const ALLOWED_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'image/svg+xml',
+  'image/x-icon',
+  'image/vnd.microsoft.icon',
+];
+const ALLOWED_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.ico']);
+
+function isAllowedImage(file: File): boolean {
+  if (ALLOWED_TYPES.includes(file.type)) return true;
+  const ext = path.extname(file.name).toLowerCase();
+  return ALLOWED_EXTENSIONS.has(ext);
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,7 +36,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
 
-    if (!ALLOWED_TYPES.includes(file.type)) {
+    if (!isAllowedImage(file)) {
       return NextResponse.json({ error: 'Invalid file type. Only images are allowed.' }, { status: 400 });
     }
 
