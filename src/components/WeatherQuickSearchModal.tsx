@@ -6,6 +6,8 @@ interface WeatherQuickSearchModalProps {
   isOpen: boolean;
   onClose: () => void;
   visitorId: string;
+  autoLoadKeyword?: string;
+  autoLoadTrack?: boolean;
 }
 
 interface WeatherLocation {
@@ -280,13 +282,19 @@ function getWeatherIndexVisual(indexName?: string): {
   };
 }
 
-export function WeatherQuickSearchModal({ isOpen, onClose, visitorId }: WeatherQuickSearchModalProps) {
+export function WeatherQuickSearchModal({
+  isOpen,
+  onClose,
+  visitorId,
+  autoLoadKeyword,
+  autoLoadTrack = true,
+}: WeatherQuickSearchModalProps) {
   const [keyword, setKeyword] = useState(DEFAULT_DISTRICT_NAME);
   const [weather, setWeather] = useState<WeatherResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const queryWeather = useCallback(async (targetKeyword: string, forceRefresh = false) => {
+  const queryWeather = useCallback(async (targetKeyword: string, forceRefresh = false, track = true) => {
     const normalized = targetKeyword.trim();
     const params = new URLSearchParams();
     params.set('sid', visitorId);
@@ -300,6 +308,9 @@ export function WeatherQuickSearchModal({ isOpen, onClose, visitorId }: WeatherQ
     }
     if (forceRefresh) {
       params.set('force', '1');
+    }
+    if (!track) {
+      params.set('track', '0');
     }
 
     const queryString = params.toString();
@@ -343,6 +354,12 @@ export function WeatherQuickSearchModal({ isOpen, onClose, visitorId }: WeatherQ
       setError('');
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || !autoLoadKeyword) return;
+    setKeyword(autoLoadKeyword);
+    void queryWeather(autoLoadKeyword, false, autoLoadTrack);
+  }, [isOpen, autoLoadKeyword, autoLoadTrack, queryWeather]);
 
   if (!isOpen) return null;
 

@@ -390,6 +390,8 @@ export function HomeClient({ categories, sites, footerText, clientIP }: HomeClie
         isOpen={isWeatherModalOpen}
         onClose={() => setIsWeatherModalOpen(false)}
         visitorId={visitorId}
+        autoLoadKeyword={DEFAULT_HOME_WEATHER_LABEL}
+        autoLoadTrack={false}
       />
     </div>
   );

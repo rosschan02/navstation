@@ -38,6 +38,16 @@ test('home page weather summary auto-loads without polluting manual weather quer
     source.includes('void loadWeatherSummary();'),
     'HomeClient should automatically load the homepage weather summary on mount.',
   );
+
+  assert.ok(
+    source.includes('autoLoadKeyword={DEFAULT_HOME_WEATHER_LABEL}'),
+    'HomeClient should open the weather modal with the fixed Yingde keyword preloaded.',
+  );
+
+  assert.ok(
+    source.includes('autoLoadTrack={false}'),
+    'HomeClient should open the weather modal without recording an automatic weather query.',
+  );
 });
 
 test('weather api route supports opt-out analytics tracking for passive summary requests', () => {

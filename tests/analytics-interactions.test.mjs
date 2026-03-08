@@ -16,11 +16,16 @@ test('phonebook quick search requires explicit user action instead of debounced 
   );
 });
 
-test('weather quick search does not auto-query on modal open', () => {
+test('weather quick search stays manual by default but supports silent opt-in auto-load', () => {
   const source = readFileSync(new URL('../src/components/WeatherQuickSearchModal.tsx', import.meta.url), 'utf8');
 
   assert.ok(
-    !source.includes("void queryWeather('')"),
-    'WeatherQuickSearchModal should wait for an explicit search action instead of auto-querying on open.',
+    source.includes('if (!isOpen || !autoLoadKeyword) return;'),
+    'WeatherQuickSearchModal should only auto-load when an explicit autoLoadKeyword prop is provided.',
+  );
+
+  assert.ok(
+    source.includes("params.set('track', '0');"),
+    'WeatherQuickSearchModal should support silent auto-load requests that skip analytics tracking.',
   );
 });
