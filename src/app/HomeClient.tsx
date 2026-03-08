@@ -9,6 +9,54 @@ import { PhonebookQuickSearchModal } from '@/components/PhonebookQuickSearchModa
 import { AdministrativeDivisionModal } from '@/components/AdministrativeDivisionModal';
 import { WeatherQuickSearchModal } from '@/components/WeatherQuickSearchModal';
 
+const DEFAULT_HOME_WEATHER_DISTRICT_ID = '441881';
+const DEFAULT_HOME_WEATHER_LABEL = '英德市';
+
+interface HomeWeatherLocation {
+  province?: string;
+  city?: string;
+  name?: string;
+}
+
+interface HomeWeatherNow {
+  text?: string;
+  temp?: number;
+  uptime?: string;
+}
+
+interface HomeWeatherResult {
+  location?: HomeWeatherLocation;
+  now?: HomeWeatherNow;
+}
+
+interface HomeWeatherResponse {
+  error?: string;
+  result?: HomeWeatherResult;
+}
+
+function formatWeatherUpdateTime(value?: string): string {
+  if (!value) return '';
+  if (/^\d{14}$/.test(value)) {
+    return `${value.slice(8, 10)}:${value.slice(10, 12)}`;
+  }
+  const match = value.match(/(\d{2}:\d{2})/);
+  return match?.[1] || value;
+}
+
+function getWeatherIcon(text?: string): string {
+  const value = (text || '').toLowerCase();
+  if (!value) return 'partly_cloudy_day';
+  if (value.includes('雷')) return 'thunderstorm';
+  if (value.includes('雪')) return 'weather_snowy';
+  if (value.includes('雨')) return 'rainy';
+  if (value.includes('雾') || value.includes('霾')) return 'foggy';
+  if (value.includes('风')) return 'air';
+  if (value.includes('晴')) return 'wb_sunny';
+  if (value.includes('阴')) return 'cloud';
+  if (value.includes('云')) return 'partly_cloudy_day';
+  return 'partly_cloudy_day';
+}
+
 interface HomeClientProps {
   categories: Category[];
   sites: SiteData[];
@@ -23,11 +71,41 @@ export function HomeClient({ categories, sites, footerText, clientIP }: HomeClie
   const [isPhonebookModalOpen, setIsPhonebookModalOpen] = useState(false);
   const [isAdminDivisionModalOpen, setIsAdminDivisionModalOpen] = useState(false);
   const [isWeatherModalOpen, setIsWeatherModalOpen] = useState(false);
+  const [weatherSummary, setWeatherSummary] = useState<HomeWeatherResult | null>(null);
+  const [isWeatherSummaryLoading, setIsWeatherSummaryLoading] = useState(true);
+  const [weatherSummaryError, setWeatherSummaryError] = useState('');
   const selectedCategory = searchParams.get('category') || 'all';
 
   useEffect(() => {
     setVisitorId(getOrCreateVisitorId());
   }, []);
+
+  const loadWeatherSummary = useCallback(async () => {
+    const params = new URLSearchParams();
+    params.set('district_id', DEFAULT_HOME_WEATHER_DISTRICT_ID);
+    params.set('track', '0');
+
+    setIsWeatherSummaryLoading(true);
+    setWeatherSummaryError('');
+
+    try {
+      const res = await fetch(`/api/weather?${params.toString()}`, { cache: 'no-store' });
+      const data = (await res.json().catch(() => ({}))) as HomeWeatherResponse;
+      if (!res.ok || !data.result) {
+        throw new Error(data.error || '天气加载失败');
+      }
+      setWeatherSummary(data.result);
+    } catch (error) {
+      setWeatherSummary(null);
+      setWeatherSummaryError((error as Error).message || '天气加载失败');
+    } finally {
+      setIsWeatherSummaryLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadWeatherSummary();
+  }, [loadWeatherSummary]);
 
   // Filter sites based on search and category
   const filteredSites = useMemo(() => {
@@ -105,6 +183,19 @@ export function HomeClient({ categories, sites, footerText, clientIP }: HomeClie
     }
   }, [searchQuery, selectedCategory, visitorId]);
 
+  const weatherLocationLabel = useMemo(() => {
+    const location = weatherSummary?.location;
+    return location?.name || location?.city || location?.province || DEFAULT_HOME_WEATHER_LABEL;
+  }, [weatherSummary]);
+
+  const weatherTempLabel = useMemo(() => {
+    const temp = weatherSummary?.now?.temp;
+    return typeof temp === 'number' && Number.isFinite(temp) ? `${temp}°C` : '--';
+  }, [weatherSummary]);
+
+  const weatherTextLabel = weatherSummary?.now?.text || (weatherSummaryError ? '加载失败' : '天气摘要');
+  const weatherUpdateLabel = formatWeatherUpdateTime(weatherSummary?.now?.uptime);
+
   return (
     <div className="flex-1 overflow-y-auto w-full bg-background-light">
       <div className="max-w-[2200px] mr-auto w-full px-6 py-8 flex flex-col gap-6">
@@ -145,10 +236,33 @@ export function HomeClient({ categories, sites, footerText, clientIP }: HomeClie
           <button
             type="button"
             onClick={() => setIsWeatherModalOpen(true)}
-            className="shrink-0 h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-700 hover:text-primary hover:border-primary/30 hover:bg-primary/5 shadow-sm transition-colors flex items-center gap-2"
+            className="shrink-0 w-full sm:w-[220px] md:w-[240px] h-12 rounded-xl border border-sky-200 bg-gradient-to-r from-sky-50 via-cyan-50 to-white shadow-sm overflow-hidden flex items-center gap-3 px-4 text-left hover:bg-white/40 transition-colors"
+            aria-label="英德市天气详情"
           >
-            <span className="material-symbols-outlined text-[20px]">partly_cloudy_day</span>
-            <span className="hidden md:inline text-sm font-medium">天气速查</span>
+            <span className={`material-symbols-outlined text-[22px] shrink-0 ${weatherSummaryError ? 'text-rose-500' : 'text-sky-600'}`}>
+              {weatherSummaryError ? 'cloud_off' : getWeatherIcon(weatherSummary?.now?.text)}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="flex items-center gap-2 min-w-0">
+                <span className="truncate text-sm font-semibold text-slate-900">{weatherLocationLabel}</span>
+                <span className="shrink-0 text-sm font-bold text-sky-700">{weatherTempLabel}</span>
+              </span>
+              <span className="mt-0.5 flex items-center gap-1 text-xs text-slate-500">
+                {isWeatherSummaryLoading ? (
+                  <>
+                    <span className="material-symbols-outlined animate-spin text-[14px]">progress_activity</span>
+                    <span>天气加载中</span>
+                  </>
+                ) : weatherSummaryError ? (
+                  <span className="truncate">天气加载失败</span>
+                ) : (
+                  <span className="truncate">
+                    {weatherTextLabel}
+                    {weatherUpdateLabel ? ` · ${weatherUpdateLabel} 更新` : ''}
+                  </span>
+                )}
+              </span>
+            </span>
           </button>
           <button
             type="button"

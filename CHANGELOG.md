@@ -24,9 +24,14 @@
 - 天气速查弹窗改为手动查询，不再打开即自动请求
 - 行政区域查询继续保持显式查询，详情查看不计入搜索日志
 
+#### 首页英德市天气摘要
+- 首页搜索区右侧新增固定 `英德市` 常驻天气摘要卡，替代原独立“天气速查”按钮
+- 点击天气摘要卡可直接打开现有天气详情弹窗，首屏无需再额外进入天气查询
+- 首页自动天气摘要请求默认不写入 `weather_query` 行为统计，避免被动展示污染手动查询数据
+
 #### 部署与文档
 - 新增迁移 `src/db/migrations/012_add_analytics_events.sql`
-- README、DEPLOY 更新统一行为统计与升级迁移说明
+- README、CHANGELOG 更新统一行为统计、首页天气摘要与升级迁移说明
 - 新增回归测试，锁定“电话本显式查询”和“天气弹窗不自动查询”约束
 
 ### 修改文件
@@ -52,6 +57,7 @@ src/lib/analyticsEvents.ts
 src/lib/clientIp.ts
 src/types/index.ts
 tests/analytics-interactions.test.mjs
+tests/home-weather-summary.test.mjs
 README.md
 DEPLOY.md
 CHANGELOG.md

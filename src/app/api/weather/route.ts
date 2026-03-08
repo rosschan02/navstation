@@ -56,6 +56,11 @@ function isForceRefresh(value: string | null): boolean {
   return ['1', 'true', 'yes', 'y'].includes(value.toLowerCase());
 }
 
+function shouldTrackAnalytics(value: string | null): boolean {
+  if (!value) return true;
+  return !['0', 'false', 'no', 'n', 'off'].includes(value.toLowerCase());
+}
+
 function buildCacheKey(fingerprint: string): string {
   return createHash('sha1').update(fingerprint).digest('hex');
 }
@@ -240,6 +245,7 @@ export async function GET(request: NextRequest) {
   const district = districtFromQuery || quickQuery;
   const coordtype = normalizeCoordType(searchParams.get('coordtype'));
   const forceRefresh = isForceRefresh(searchParams.get('force'));
+  const shouldTrack = shouldTrackAnalytics(searchParams.get('track'));
   const clientIp = getClientIpFromRequest(request);
 
   const ak = process.env.BAIDU_WEATHER_AK || process.env.BAIDU_MAP_AK;
@@ -294,30 +300,32 @@ export async function GET(request: NextRequest) {
     if (!forceRefresh) {
       const cached = await getWeatherCache(cacheKey);
       if (cached) {
-        try {
-          await recordAnalyticsEvent({
-            eventType: 'weather_query',
-            targetType: 'tool',
-            targetName: '天气速查',
-            page,
-            visitorId,
-            clientIp,
-            searchQuery: searchIntent,
-            metadata: {
-              mode,
-              province,
-              city,
-              district,
-              district_id: params.get('district_id') || '',
-              location: params.get('location') || '',
-              coordtype: params.get('coordtype') || '',
-              cache_hit: true,
-              force_refresh: forceRefresh,
-              upstream_status: cached.status ?? 0,
-            },
-          });
-        } catch (analyticsError) {
-          console.error('Failed to record weather analytics event:', analyticsError);
+        if (shouldTrack) {
+          try {
+            await recordAnalyticsEvent({
+              eventType: 'weather_query',
+              targetType: 'tool',
+              targetName: '天气速查',
+              page,
+              visitorId,
+              clientIp,
+              searchQuery: searchIntent,
+              metadata: {
+                mode,
+                province,
+                city,
+                district,
+                district_id: params.get('district_id') || '',
+                location: params.get('location') || '',
+                coordtype: params.get('coordtype') || '',
+                cache_hit: true,
+                force_refresh: forceRefresh,
+                upstream_status: cached.status ?? 0,
+              },
+            });
+          } catch (analyticsError) {
+            console.error('Failed to record weather analytics event:', analyticsError);
+          }
         }
         return NextResponse.json(cached);
       }
@@ -343,30 +351,32 @@ export async function GET(request: NextRequest) {
 
     await saveWeatherCache(cacheKey, fingerprint, payload);
 
-    try {
-      await recordAnalyticsEvent({
-        eventType: 'weather_query',
-        targetType: 'tool',
-        targetName: '天气速查',
-        page,
-        visitorId,
-        clientIp,
-        searchQuery: searchIntent,
-        metadata: {
-          mode,
-          province,
-          city,
-          district,
-          district_id: params.get('district_id') || '',
-          location: params.get('location') || '',
-          coordtype: params.get('coordtype') || '',
-          cache_hit: false,
-          force_refresh: forceRefresh,
-          upstream_status: payload.status ?? 0,
-        },
-      });
-    } catch (analyticsError) {
-      console.error('Failed to record weather analytics event:', analyticsError);
+    if (shouldTrack) {
+      try {
+        await recordAnalyticsEvent({
+          eventType: 'weather_query',
+          targetType: 'tool',
+          targetName: '天气速查',
+          page,
+          visitorId,
+          clientIp,
+          searchQuery: searchIntent,
+          metadata: {
+            mode,
+            province,
+            city,
+            district,
+            district_id: params.get('district_id') || '',
+            location: params.get('location') || '',
+            coordtype: params.get('coordtype') || '',
+            cache_hit: false,
+            force_refresh: forceRefresh,
+            upstream_status: payload.status ?? 0,
+          },
+        });
+      } catch (analyticsError) {
+        console.error('Failed to record weather analytics event:', analyticsError);
+      }
     }
 
     return NextResponse.json(payload);
