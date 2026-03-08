@@ -2,6 +2,77 @@
 
 本文件记录 NavStation 导航站的所有重要更新。
 
+## [2.17.1] - 2026-03-09
+
+### 修复
+
+#### Docker 重建后首页卡死
+- 修复 `proxy` 在根路径跳转前读取默认语言配置时，对内部 `GET /api/settings/default-locale` 预取请求再次进入同一层代理导致的递归阻塞
+- 修复 `/fonts/*.woff2` 等静态资源被错误重定向到 `/{locale}/fonts/...`，从而触发字体 404 和首页渲染异常的问题
+- 调整 locale 代理放行顺序，优先跳过 API、内部预取请求、`_next` 资源、上传文件与静态资源
+
+### 文档
+- 更新 `README.md`，补充 Docker 场景下多语言路由由 Next.js 处理，以及代理跳过 API/静态资源的说明
+
+## [2.17.0] - 2026-03-09
+
+### 新增 / 变更
+
+#### 全站四语国际化
+- 新增基于 URL 前缀的多语言路由：`/en`、`/zh-CN`、`/ko`、`/ja`
+- 首页、软件下载页、后台管理页统一接入多语言上下文
+- 侧边栏新增全站语言切换器，切换后保留当前页面路径
+- 根路径 `/` 访问时按浏览器语言优先跳转，不命中时回退到站点默认语言
+
+#### 业务内容翻译模型
+- 新增翻译表：`category_translations`、`site_translations`、`software_translations`、`site_setting_translations`
+- 分类、站点、软件与站点设置支持四语内容录入
+- 新增默认回退链：当前语言 -> 后台配置的默认语言 -> 主表原始值
+
+#### 默认语言后台配置
+- 后台“站点设置”新增 `默认语言` 选项
+- 新增默认语言设置接口 `GET /api/settings/default-locale`
+- `proxy` 新增默认语言短缓存读取逻辑，保证根路径跳转可跟随后台配置
+- 新增迁移 `src/db/migrations/014_add_default_locale_setting.sql`
+
+#### 文档与测试
+- README 四语文档更新多语言路由、翻译表与升级迁移说明
+- 新增默认语言相关回归测试，锁定设置字段与 `proxy` 行为入口
+
+### 修改文件
+
+```
+src/app/[locale]/**
+src/app/admin/AdminClient.tsx
+src/app/admin/categories/CategoriesClient.tsx
+src/app/admin/settings/SettingsClient.tsx
+src/app/admin/software/SoftwareAdminClient.tsx
+src/app/api/categories/route.ts
+src/app/api/categories/[id]/route.ts
+src/app/api/settings/route.ts
+src/app/api/settings/default-locale/route.ts
+src/app/api/sites/route.ts
+src/app/api/sites/[id]/route.ts
+src/app/api/software/route.ts
+src/app/api/software/[id]/route.ts
+src/components/LocaleAutoTranslate.tsx
+src/components/LocaleSwitcher.tsx
+src/components/TranslationEditor.tsx
+src/contexts/LocaleContext.tsx
+src/lib/i18n/*
+src/db/migrations/013_add_i18n_translation_tables.sql
+src/db/migrations/014_add_default_locale_setting.sql
+src/db/schema.sql
+src/proxy.ts
+src/types/index.ts
+tests/default-locale-settings.test.mjs
+README.md
+README.zh-CN.md
+README.ko.md
+README.ja.md
+CHANGELOG.md
+```
+
 ## [2.16.0] - 2026-03-08
 
 ### 新增 / 变更

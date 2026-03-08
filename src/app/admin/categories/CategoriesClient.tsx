@@ -2,9 +2,11 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import type { Category } from '@/types';
+import type { Category, CategoryTranslationFields } from '@/types';
 import { IconPicker } from '@/components/IconPicker';
 import { useMessage } from '@/contexts/MessageContext';
+import { TranslationEditor } from '@/components/TranslationEditor';
+import type { Locale } from '@/lib/i18n/config';
 
 // Category type options
 const TYPE_OPTIONS = [
@@ -30,6 +32,16 @@ interface CategoriesClientProps {
   initialCategories: Category[];
 }
 
+function buildCategoryTranslations(category?: Category) {
+  return {
+    ...(category?.translations || {}),
+    en: {
+      name: category?.translations?.en?.name || category?.name || '',
+      label: category?.translations?.en?.label || category?.label || '',
+    },
+  };
+}
+
 export function CategoriesClient({ initialCategories }: CategoriesClientProps) {
   const router = useRouter();
   const message = useMessage();
@@ -49,6 +61,7 @@ export function CategoriesClient({ initialCategories }: CategoriesClientProps) {
     icon_bg: 'bg-blue-100',
     icon_color: 'text-blue-600',
     sort_order: 0,
+    translations: buildCategoryTranslations(),
   });
 
   const resetForm = () => {
@@ -61,6 +74,7 @@ export function CategoriesClient({ initialCategories }: CategoriesClientProps) {
       icon_bg: 'bg-blue-100',
       icon_color: 'text-blue-600',
       sort_order: 0,
+      translations: buildCategoryTranslations(),
     });
     setEditingCategory(null);
   };
@@ -81,8 +95,27 @@ export function CategoriesClient({ initialCategories }: CategoriesClientProps) {
       icon_bg: category.icon_bg || 'bg-blue-100',
       icon_color: category.icon_color || 'text-blue-600',
       sort_order: category.sort_order || 0,
+      translations: buildCategoryTranslations(category),
     });
     setIsModalOpen(true);
+  };
+
+  const handleTranslationChange = <K extends keyof CategoryTranslationFields>(
+    locale: Locale,
+    key: K,
+    value: CategoryTranslationFields[K]
+  ) => {
+    setFormData((prev) => ({
+      ...prev,
+      ...(locale === 'en' ? { [key]: value } : {}),
+      translations: {
+        ...prev.translations,
+        [locale]: {
+          ...prev.translations[locale],
+          [key]: value,
+        },
+      },
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -308,7 +341,17 @@ export function CategoriesClient({ initialCategories }: CategoriesClientProps) {
                         className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 placeholder-slate-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary text-sm"
                         placeholder="例如：dev, design"
                         value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          name: e.target.value,
+                          translations: {
+                            ...formData.translations,
+                            en: {
+                              ...formData.translations.en,
+                              name: e.target.value,
+                            },
+                          },
+                        })}
                       />
                       <p className="mt-1 text-xs text-slate-500">英文标识，用于系统识别（不可重复）</p>
                     </div>
@@ -324,9 +367,30 @@ export function CategoriesClient({ initialCategories }: CategoriesClientProps) {
                         className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 placeholder-slate-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary text-sm"
                         placeholder="例如：开发工具"
                         value={formData.label}
-                        onChange={(e) => setFormData({ ...formData, label: e.target.value })}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          label: e.target.value,
+                          translations: {
+                            ...formData.translations,
+                            en: {
+                              ...formData.translations.en,
+                              label: e.target.value,
+                            },
+                          },
+                        })}
                       />
                     </div>
+
+                    <TranslationEditor<CategoryTranslationFields>
+                      title="多语言内容"
+                      description="英文作为默认值；其余语言为空时会自动回退到英文。"
+                      translations={formData.translations}
+                      onChange={handleTranslationChange}
+                      fields={[
+                        { key: 'name', label: '分类名称', placeholder: 'development' },
+                        { key: 'label', label: '显示名称', placeholder: 'Development Tools' },
+                      ]}
+                    />
 
                     {/* Sort Order */}
                     <div>

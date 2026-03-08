@@ -6,6 +6,8 @@
 
 NavStation は、サイトナビゲーション、ソフトウェア配布、QR 表示、行動分析、BIND9 DNS 管理を統合したポータルおよび管理システムです。
 
+現在は `en`、`zh-CN`、`ko`、`ja` の 4 言語ルーティングと翻訳コンテンツ管理に対応し、管理画面からデフォルト言語を変更できます。
+
 ## 技術スタック
 
 - **フロントエンド**: Next.js 16 (App Router) + React 19 + Tailwind CSS 4 + TypeScript
@@ -19,7 +21,8 @@ NavStation は、サイトナビゲーション、ソフトウェア配布、QR 
 navstation/
 ├── src/
 │   ├── app/                    # Next.js App Router
-│   │   ├── page.tsx            # ホームページ
+│   │   ├── [locale]/           # 言語プレフィックス付きルート
+│   │   ├── page.tsx            # ホーム入口
 │   │   ├── HomeClient.tsx      # ホームのクライアントコンポーネント
 │   │   ├── legacy/             # IE10 互換ページ
 │   │   ├── admin/              # 管理画面
@@ -99,6 +102,8 @@ psql -h localhost -U username -d database -f scripts/import-admin-divisions.sql
 
 ```bash
 psql -h localhost -U username -d database -f src/db/migrations/012_add_analytics_events.sql
+psql -h localhost -U username -d database -f src/db/migrations/013_add_i18n_translation_tables.sql
+psql -h localhost -U username -d database -f src/db/migrations/014_add_default_locale_setting.sql
 ```
 
 ### 4. 開発サーバー起動
@@ -135,6 +140,10 @@ docker-compose up -d
 | `click_events` | 旧クリック統計テーブル |
 | `analytics_events` | 統合行動ログ |
 | `site_settings` | サイト全体設定 |
+| `category_translations` | カテゴリ翻訳テーブル |
+| `site_translations` | サイト名/説明/タグ翻訳 |
+| `software_translations` | ソフトウェア翻訳 |
+| `site_setting_translations` | サイト文言翻訳 |
 | `api_keys` | 外部連携用 API Key |
 | `phonebook_entries` | 内線電話帳 |
 | `weather_districts` | 天気行政区マッピング |
@@ -282,7 +291,15 @@ psql -d your_database -f src/db/migrations/009_add_dns_forward_zones.sql
 psql -d your_database -f src/db/migrations/010_add_weather_districts_and_cache.sql
 psql -d your_database -f src/db/migrations/011_add_admin_divisions.sql
 psql -d your_database -f src/db/migrations/012_add_analytics_events.sql
+psql -d your_database -f src/db/migrations/013_add_i18n_translation_tables.sql
+psql -d your_database -f src/db/migrations/014_add_default_locale_setting.sql
 ```
+
+## 多言語対応
+
+- 公開ページと管理画面は `/en`、`/zh-CN`、`/ko`、`/ja` のような言語プレフィックス付き URL で利用します。
+- デフォルト言語は管理画面の **サイト設定** から変更できます。
+- カテゴリ、サイト、ソフトウェア、主要なサイト設定文言は 4 言語で登録でき、未翻訳時はデフォルト言語へフォールバックします。
 
 新規導入時:
 

@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 test('site settings type and defaults include browser site icon support', () => {
   const typesSource = readFileSync(new URL('../src/types/index.ts', import.meta.url), 'utf8');
   const settingsApiSource = readFileSync(new URL('../src/app/api/settings/route.ts', import.meta.url), 'utf8');
-  const settingsPageSource = readFileSync(new URL('../src/app/admin/settings/page.tsx', import.meta.url), 'utf8');
+  const settingsContentSource = readFileSync(new URL('../src/lib/i18n/content.ts', import.meta.url), 'utf8');
 
   assert.ok(
     typesSource.includes('site_icon_url: string;'),
@@ -18,8 +18,8 @@ test('site settings type and defaults include browser site icon support', () => 
   );
 
   assert.ok(
-    settingsPageSource.includes("site_icon_url: '',"),
-    'Settings page should include a default empty site_icon_url value.',
+    settingsContentSource.includes("site_icon_url: '',"),
+    'Localized settings defaults should include a default empty site_icon_url value.',
   );
 });
 
@@ -39,7 +39,7 @@ test('settings client exposes a dedicated site icon upload control', () => {
 
 test('upload route accepts ico-based brand assets and layout emits configured favicon metadata', () => {
   const uploadSource = readFileSync(new URL('../src/app/api/upload/route.ts', import.meta.url), 'utf8');
-  const layoutSource = readFileSync(new URL('../src/app/layout.tsx', import.meta.url), 'utf8');
+  const layoutSource = readFileSync(new URL('../src/app/[locale]/layout.tsx', import.meta.url), 'utf8');
 
   assert.ok(
     uploadSource.includes("'image/x-icon'") && uploadSource.includes("'image/vnd.microsoft.icon'"),
@@ -52,8 +52,8 @@ test('upload route accepts ico-based brand assets and layout emits configured fa
   );
 
   assert.ok(
-    layoutSource.includes("['site_name', 'site_description', 'site_icon_url']"),
-    'Root layout should load the site_icon_url setting.',
+    layoutSource.includes('getLocalizedSettings(locale)'),
+    'Locale layout should load localized site settings.',
   );
 
   assert.ok(

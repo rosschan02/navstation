@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/db';
 import { authenticate, hasPermission, createAuthErrorResponse, extractApiKey } from '@/lib/apiAuth';
+import { getLocalizedSites, upsertSiteTranslations } from '@/lib/i18n/content';
+import { getRequestLocale } from '@/lib/i18n/request';
+import type { LocaleMap, SiteTranslationFields } from '@/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,42 +25,23 @@ export async function GET(request: NextRequest) {
   const type = searchParams.get('type');
   const category = searchParams.get('category');
   const search = searchParams.get('search');
-
-  let query = `
-    SELECT s.*,
-           c.name as category_name,
-           c.label as category_label,
-           c.type as category_type,
-           c.css_class as category_class
-    FROM sites s
-    LEFT JOIN categories c ON s.category_id = c.id
-    WHERE s.status = 'active'
-  `;
-  const params: (string | number)[] = [];
-  let paramIndex = 1;
-
+  const locale = getRequestLocale(request);
+  let sites = await getLocalizedSites(locale, false, true);
   if (type) {
-    query += ` AND c.type = $${paramIndex}`;
-    params.push(type);
-    paramIndex++;
+    sites = sites.filter((site) => site.category_type === type);
   }
-
   if (category) {
-    query += ` AND c.name = $${paramIndex}`;
-    params.push(category);
-    paramIndex++;
+    sites = sites.filter((site) => site.category_name === category);
   }
-
   if (search) {
-    query += ` AND (s.name ILIKE $${paramIndex} OR s.description ILIKE $${paramIndex})`;
-    params.push(`%${search}%`);
-    paramIndex++;
+    const query = search.toLowerCase();
+    sites = sites.filter((site) =>
+      site.name.toLowerCase().includes(query)
+      || site.description?.toLowerCase().includes(query)
+      || site.tags?.some((tag) => tag.toLowerCase().includes(query))
+    );
   }
-
-  query += ` ORDER BY c.sort_order ASC, s.sort_order ASC, s.created_at DESC`;
-
-  const { rows } = await pool.query(query, params);
-  return NextResponse.json(rows);
+  return NextResponse.json(sites);
 }
 
 // POST /api/sites - create a new site
@@ -88,34 +72,51 @@ export async function POST(request: NextRequest) {
       qr_image,
       tags,
       sort_order,
-      status
+      status,
+      translations,
     } = body;
 
-    if (!name) {
+    const normalizedTranslations = translations as LocaleMap<SiteTranslationFields> | undefined;
+    const baseName = normalizedTranslations?.en?.name || name;
+    const baseDescription = normalizedTranslations?.en?.description || description || '';
+    const baseTags = normalizedTranslations?.en?.tags || tags || [];
+
+    if (!baseName) {
       return NextResponse.json({ error: 'name is required' }, { status: 400 });
     }
 
-    const { rows } = await pool.query(
-      `INSERT INTO sites (name, description, url, category_id, logo, icon, icon_bg, icon_color, qr_image, tags, sort_order, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-       RETURNING *`,
-      [
-        name,
-        description || '',
-        url || '',
-        category_id || null,
-        logo || '',
-        icon || 'link',
-        icon_bg || 'bg-slate-100',
-        icon_color || 'text-slate-600',
-        qr_image || '',
-        tags || [],
-        sort_order || 0,
-        status || 'active'
-      ]
-    );
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      const { rows } = await client.query(
+        `INSERT INTO sites (name, description, url, category_id, logo, icon, icon_bg, icon_color, qr_image, tags, sort_order, status)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+         RETURNING *`,
+        [
+          baseName,
+          baseDescription,
+          url || '',
+          category_id || null,
+          logo || '',
+          icon || 'link',
+          icon_bg || 'bg-slate-100',
+          icon_color || 'text-slate-600',
+          qr_image || '',
+          baseTags,
+          sort_order || 0,
+          status || 'active'
+        ]
+      );
 
-    return NextResponse.json(rows[0], { status: 201 });
+      await upsertSiteTranslations(client, rows[0].id, normalizedTranslations);
+      await client.query('COMMIT');
+      return NextResponse.json(rows[0], { status: 201 });
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   } catch (error) {
     console.error('Failed to create site:', error);
     return NextResponse.json({ error: 'Failed to create site' }, { status: 500 });

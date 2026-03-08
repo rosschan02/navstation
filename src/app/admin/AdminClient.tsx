@@ -2,14 +2,27 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import type { SiteData, Category, SoftwareItem } from '@/types';
+import type { SiteData, Category, SoftwareItem, SiteTranslationFields } from '@/types';
 import { IconPicker } from '@/components/IconPicker';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { useMessage } from '@/contexts/MessageContext';
+import { TranslationEditor } from '@/components/TranslationEditor';
+import type { Locale } from '@/lib/i18n/config';
 
 interface AdminClientProps {
   initialSites: SiteData[];
   categories: Category[];
+}
+
+function buildSiteTranslations(site?: SiteData) {
+  return {
+    ...(site?.translations || {}),
+    en: {
+      name: site?.translations?.en?.name || site?.name || '',
+      description: site?.translations?.en?.description || site?.description || '',
+      tags: site?.translations?.en?.tags || site?.tags || [],
+    },
+  };
 }
 
 export function AdminClient({ initialSites, categories }: AdminClientProps) {
@@ -41,6 +54,7 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
     tags: [] as string[],
     sort_order: 0,
     status: 'active' as 'active' | 'inactive',
+    translations: buildSiteTranslations(),
   });
 
   const [tagInput, setTagInput] = useState('');
@@ -68,6 +82,7 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
       tags: [],
       sort_order: 0,
       status: 'active',
+      translations: buildSiteTranslations(),
     });
     setLogoPreview('');
     setQrPreview('');
@@ -98,10 +113,29 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
       tags: site.tags || [],
       sort_order: site.sort_order || 0,
       status: site.status || 'active',
+      translations: buildSiteTranslations(site),
     });
     setLogoPreview(site.logo || '');
     setQrPreview(site.qr_image || '');
     setIsModalOpen(true);
+  };
+
+  const handleTranslationChange = <K extends keyof SiteTranslationFields>(
+    locale: Locale,
+    key: K,
+    value: SiteTranslationFields[K]
+  ) => {
+    setFormData((prev) => ({
+      ...prev,
+      ...(locale === 'en' ? { [key]: value } : {}),
+      translations: {
+        ...prev.translations,
+        [locale]: {
+          ...prev.translations[locale],
+          [key]: value,
+        },
+      },
+    }));
   };
 
   const handleFileUpload = async (file: File, type: 'logo' | 'qr') => {
@@ -194,13 +228,39 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
 
   const addTag = () => {
     if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
-      setFormData(prev => ({ ...prev, tags: [...prev.tags, tagInput.trim()] }));
+      setFormData(prev => {
+        const nextTags = [...prev.tags, tagInput.trim()];
+        return {
+          ...prev,
+          tags: nextTags,
+          translations: {
+            ...prev.translations,
+            en: {
+              ...prev.translations.en,
+              tags: nextTags,
+            },
+          },
+        };
+      });
       setTagInput('');
     }
   };
 
   const removeTag = (tag: string) => {
-    setFormData(prev => ({ ...prev, tags: prev.tags.filter(t => t !== tag) }));
+    setFormData(prev => {
+      const nextTags = prev.tags.filter(t => t !== tag);
+      return {
+        ...prev,
+        tags: nextTags,
+        translations: {
+          ...prev.translations,
+          en: {
+            ...prev.translations.en,
+            tags: nextTags,
+          },
+        },
+      };
+    });
   };
 
   // Filter sites
@@ -274,6 +334,15 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
           name: prev.name || software.name,
           description: prev.description || software.description || '',
           url: downloadUrl,
+          translations: {
+            ...prev.translations,
+            en: {
+              ...prev.translations.en,
+              name: prev.name || software.name,
+              description: prev.description || software.description || '',
+              tags: prev.translations.en?.tags || prev.tags,
+            },
+          },
         }));
         message.success('二维码生成成功');
       } else {
@@ -491,7 +560,17 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
                       type="text"
                       required
                       value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        name: e.target.value,
+                        translations: {
+                          ...formData.translations,
+                          en: {
+                            ...formData.translations.en,
+                            name: e.target.value,
+                          },
+                        },
+                      })}
                       className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
                       placeholder="站点名称"
                     />
@@ -502,7 +581,17 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
                     <label className="block text-sm font-medium text-slate-700 mb-1">描述</label>
                     <textarea
                       value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        description: e.target.value,
+                        translations: {
+                          ...formData.translations,
+                          en: {
+                            ...formData.translations.en,
+                            description: e.target.value,
+                          },
+                        },
+                      })}
                       className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
                       rows={2}
                       placeholder="简短描述"
@@ -709,6 +798,18 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
                       </div>
                     )}
                   </div>
+
+                  <TranslationEditor<SiteTranslationFields>
+                    title="多语言内容"
+                    description="英文作为默认值；站点名称、描述和标签均可按语言维护。标签使用英文逗号分隔。"
+                    translations={formData.translations}
+                    onChange={handleTranslationChange}
+                    fields={[
+                      { key: 'name', label: '名称', placeholder: 'Site name' },
+                      { key: 'description', label: '描述', placeholder: 'Short description', multiline: true },
+                      { key: 'tags', label: '标签', placeholder: 'vpn, intranet, docs', tags: true },
+                    ]}
+                  />
 
                   {/* Sort Order & Status */}
                   <div className="grid grid-cols-2 gap-4">

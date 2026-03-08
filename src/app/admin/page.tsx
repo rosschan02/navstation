@@ -1,30 +1,20 @@
-import pool from '@/db';
 import { AdminClient } from './AdminClient';
+import { getLocalizedCategories, getLocalizedSites } from '@/lib/i18n/content';
+import { getServerLocale } from '@/lib/i18n/request';
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminPage() {
-  const [sitesResult, categoriesResult] = await Promise.all([
-    pool.query(`
-      SELECT s.*,
-             c.name as category_name,
-             c.label as category_label,
-             c.type as category_type,
-             c.css_class as category_class
-      FROM sites s
-      LEFT JOIN categories c ON s.category_id = c.id
-      ORDER BY c.sort_order ASC, s.sort_order ASC, s.created_at DESC
-    `),
-    pool.query(`
-      SELECT * FROM categories
-      ORDER BY sort_order ASC, id ASC
-    `),
+  const locale = await getServerLocale();
+  const [sites, categories] = await Promise.all([
+    getLocalizedSites(locale, true, true),
+    getLocalizedCategories(locale, true),
   ]);
 
   return (
     <AdminClient
-      initialSites={sitesResult.rows}
-      categories={categoriesResult.rows}
+      initialSites={sites}
+      categories={categories}
     />
   );
 }

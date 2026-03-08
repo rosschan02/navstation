@@ -5,6 +5,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { MessageProvider } from '@/contexts/MessageContext';
 import { Sidebar } from './Sidebar';
 import { LoginModal } from './LoginModal';
+import { LocaleAutoTranslate } from './LocaleAutoTranslate';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
@@ -12,6 +13,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <AuthProvider>
       <MessageProvider>
+        <LocaleAutoTranslate />
         <div className="flex h-screen w-full overflow-hidden bg-background-light">
           <Suspense fallback={<div className="w-64 h-full bg-white border-r border-slate-200 shrink-0" />}>
             <Sidebar onLoginClick={() => setIsLoginModalOpen(true)} />

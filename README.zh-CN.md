@@ -6,6 +6,8 @@
 
 综合导航门户与站点管理系统，提供统一的站点导航、软件下载、二维码展示、统一行为分析与 BIND9 DNS 管理功能。
 
+当前已支持 `en`、`zh-CN`、`ko`、`ja` 四国语言路由与内容管理，并可在后台“站点设置”中配置站点默认语言。
+
 ## 技术栈
 
 - **前端**: Next.js 16 (App Router) + React 19 + Tailwind CSS 4 + TypeScript
@@ -19,7 +21,8 @@
 navstation/
 ├── src/
 │   ├── app/                    # Next.js App Router
-│   │   ├── page.tsx            # 首页（所有站点按分类展示）
+│   │   ├── [locale]/           # 带语言前缀的页面路由
+│   │   ├── page.tsx            # 首页入口（自动跳转）
 │   │   ├── HomeClient.tsx      # 首页客户端组件（搜索/过滤）
 │   │   ├── legacy/             # IE10 兼容页面（纯 HTML）
 │   │   ├── admin/              # 后台管理
@@ -107,6 +110,8 @@ psql -h localhost -U 用户名 -d 数据库名 -f scripts/import-admin-divisions
 
 ```bash
 psql -h localhost -U 用户名 -d 数据库名 -f src/db/migrations/012_add_analytics_events.sql
+psql -h localhost -U 用户名 -d 数据库名 -f src/db/migrations/013_add_i18n_translation_tables.sql
+psql -h localhost -U 用户名 -d 数据库名 -f src/db/migrations/014_add_default_locale_setting.sql
 ```
 
 ### 4. 启动开发服务器
@@ -143,6 +148,10 @@ docker-compose up -d
 | `click_events` | 历史点击统计表 |
 | `analytics_events` | 统一行为日志表 |
 | `site_settings` | 站点全局设置 |
+| `category_translations` | 分类多语言翻译表 |
+| `site_translations` | 站点名称/描述/标签翻译表 |
+| `software_translations` | 软件多语言翻译表 |
+| `site_setting_translations` | 站点文案多语言翻译表 |
 | `api_keys` | API Key |
 | `phonebook_entries` | 电话本条目 |
 | `weather_districts` | 天气行政区映射 |
@@ -387,7 +396,15 @@ psql -d your_database -f src/db/migrations/009_add_dns_forward_zones.sql
 psql -d your_database -f src/db/migrations/010_add_weather_districts_and_cache.sql
 psql -d your_database -f src/db/migrations/011_add_admin_divisions.sql
 psql -d your_database -f src/db/migrations/012_add_analytics_events.sql
+psql -d your_database -f src/db/migrations/013_add_i18n_translation_tables.sql
+psql -d your_database -f src/db/migrations/014_add_default_locale_setting.sql
 ```
+
+## 多语言说明
+
+- 前台与后台统一使用语言前缀路由，例如 `/en`、`/zh-CN`、`/ko`、`/ja`。
+- 默认语言可在后台“站点设置”中修改。
+- 分类、站点、软件以及站点名称/描述/页脚等文案支持四语录入，缺失翻译时会回退到默认语言。
 
 若启用本地四级行政区，还需执行：
 

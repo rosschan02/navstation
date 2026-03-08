@@ -4,6 +4,8 @@ import { unlink } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
 import { authenticate, hasPermission, createAuthErrorResponse } from '@/lib/apiAuth';
+import { upsertSoftwareTranslations } from '@/lib/i18n/content';
+import type { LocaleMap, SoftwareTranslationFields } from '@/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,7 +29,17 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { name, description, version, category_id, logo, icon, icon_bg, icon_color } = body;
+    const { name, description, version, category_id, logo, icon, icon_bg, icon_color, translations } = body as {
+      name?: string;
+      description?: string;
+      version?: string;
+      category_id?: number | null;
+      logo?: string;
+      icon?: string;
+      icon_bg?: string;
+      icon_color?: string;
+      translations?: LocaleMap<SoftwareTranslationFields>;
+    };
 
     // Check if software exists
     const { rows: existing } = await pool.query(
@@ -40,23 +52,36 @@ export async function PUT(
     }
 
     // Update software
-    const { rows } = await pool.query(
-      `UPDATE software SET
-        name = COALESCE($1, name),
-        description = COALESCE($2, description),
-        version = COALESCE($3, version),
-        category_id = $4,
-        logo = COALESCE($5, logo),
-        icon = COALESCE($6, icon),
-        icon_bg = COALESCE($7, icon_bg),
-        icon_color = COALESCE($8, icon_color),
-        updated_at = NOW()
-      WHERE id = $9
-      RETURNING *`,
-      [name, description, version, category_id || null, logo, icon, icon_bg, icon_color, id]
-    );
+    const baseName = translations?.en?.name || name;
+    const baseDescription = translations?.en?.description || description;
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      const { rows } = await client.query(
+        `UPDATE software SET
+          name = COALESCE($1, name),
+          description = COALESCE($2, description),
+          version = COALESCE($3, version),
+          category_id = $4,
+          logo = COALESCE($5, logo),
+          icon = COALESCE($6, icon),
+          icon_bg = COALESCE($7, icon_bg),
+          icon_color = COALESCE($8, icon_color),
+          updated_at = NOW()
+        WHERE id = $9
+        RETURNING *`,
+        [baseName, baseDescription, version, category_id || null, logo, icon, icon_bg, icon_color, id]
+      );
 
-    return NextResponse.json(rows[0]);
+      await upsertSoftwareTranslations(client, Number(id), translations);
+      await client.query('COMMIT');
+      return NextResponse.json(rows[0]);
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   } catch (error) {
     console.error('Failed to update software:', error);
     return NextResponse.json({ error: 'Failed to update software' }, { status: 500 });
@@ -94,6 +119,7 @@ export async function DELETE(
     }
 
     // Delete from database
+    await pool.query('DELETE FROM software_translations WHERE software_id = $1', [id]);
     await pool.query('DELETE FROM software WHERE id = $1', [id]);
 
     // Delete file from disk (file_path includes subdirectory like 'software/filename')

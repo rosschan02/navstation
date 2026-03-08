@@ -12,6 +12,7 @@ const DEFAULT_SETTINGS: SiteSettings = {
   footer_text: '© 2024 通用站点导航。保留所有权利。',
   logo_url: '',
   site_icon_url: '',
+  default_locale: 'en',
 };
 
 async function getSettings(): Promise<SiteSettings> {

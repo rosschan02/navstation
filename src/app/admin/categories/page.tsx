@@ -1,13 +1,12 @@
-import pool from '@/db';
-import type { Category } from '@/types';
 import { CategoriesClient } from './CategoriesClient';
+import { getLocalizedCategories } from '@/lib/i18n/content';
+import { getServerLocale } from '@/lib/i18n/request';
 
 export const dynamic = 'force-dynamic';
 
 export default async function CategoriesPage() {
-  const { rows: categories } = await pool.query<Category>(
-    'SELECT * FROM categories ORDER BY id ASC'
-  );
+  const locale = await getServerLocale();
+  const categories = await getLocalizedCategories(locale, true);
 
   return <CategoriesClient initialCategories={categories} />;
 }

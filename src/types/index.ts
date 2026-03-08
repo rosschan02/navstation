@@ -1,3 +1,30 @@
+import type { Locale } from '@/lib/i18n/config';
+
+export type LocaleMap<T> = Partial<Record<Locale, T>>;
+
+export interface CategoryTranslationFields {
+  name: string;
+  label: string;
+}
+
+export interface SiteTranslationFields {
+  name: string;
+  description: string;
+  tags: string[];
+}
+
+export interface SoftwareTranslationFields {
+  name: string;
+  description: string;
+}
+
+export interface LocalizedSettingFields {
+  site_name: string;
+  site_description: string;
+  site_version: string;
+  footer_text: string;
+}
+
 export interface Category {
   id: number;
   name: string;
@@ -9,6 +36,7 @@ export interface Category {
   icon_color: string;
   sort_order: number;
   created_at?: string;
+  translations?: LocaleMap<CategoryTranslationFields>;
 }
 
 export interface SiteData {
@@ -31,6 +59,7 @@ export interface SiteData {
   category_name?: string;
   category_label?: string;
   category_type?: 'site' | 'qrcode' | 'software';
+  translations?: LocaleMap<SiteTranslationFields>;
 }
 
 export interface SoftwareItem {
@@ -53,6 +82,7 @@ export interface SoftwareItem {
   // joined fields
   category_name?: string;
   category_label?: string;
+  translations?: LocaleMap<SoftwareTranslationFields>;
 }
 
 export interface User {
@@ -75,6 +105,8 @@ export interface SiteSettings {
   footer_text: string;
   logo_url: string;
   site_icon_url: string;
+  default_locale: Locale;
+  translations?: LocaleMap<Partial<LocalizedSettingFields>>;
 }
 
 // API Key for external system authentication

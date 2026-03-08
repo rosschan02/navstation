@@ -4,6 +4,9 @@ import { writeFile, mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
 import { authenticate, hasPermission, createAuthErrorResponse, extractApiKey } from '@/lib/apiAuth';
+import { getLocalizedSoftware, upsertSoftwareTranslations } from '@/lib/i18n/content';
+import { getRequestLocale } from '@/lib/i18n/request';
+import type { LocaleMap, SoftwareTranslationFields } from '@/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,25 +27,9 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const categoryId = searchParams.get('category_id');
-
-    let query = `
-      SELECT s.*,
-             c.name as category_name,
-             c.label as category_label
-      FROM software s
-      LEFT JOIN categories c ON s.category_id = c.id
-    `;
-    const params: (string | number)[] = [];
-
-    if (categoryId) {
-      query += ' WHERE s.category_id = $1';
-      params.push(categoryId);
-    }
-
-    query += ' ORDER BY s.sort_order ASC, s.created_at DESC';
-
-    const { rows } = await pool.query(query, params);
-    return NextResponse.json(rows);
+    const locale = getRequestLocale(request);
+    const software = await getLocalizedSoftware(locale, true);
+    return NextResponse.json(categoryId ? software.filter((item) => item.category_id?.toString() === categoryId) : software);
   } catch (error) {
     console.error('Failed to fetch software:', error);
     return NextResponse.json({ error: 'Failed to fetch software' }, { status: 500 });
@@ -76,8 +63,11 @@ export async function POST(request: NextRequest) {
     const icon_color = formData.get('icon_color') as string || 'text-blue-600';
     const sort_order = parseInt(formData.get('sort_order') as string || '0', 10);
     const file = formData.get('file') as File | null;
+    const translations = JSON.parse((formData.get('translations') as string) || '{}') as LocaleMap<SoftwareTranslationFields>;
+    const baseName = translations.en?.name || name;
+    const baseDescription = translations.en?.description || description;
 
-    if (!name) {
+    if (!baseName) {
       return NextResponse.json({ error: 'Name is required' }, { status: 400 });
     }
 
@@ -118,14 +108,25 @@ export async function POST(request: NextRequest) {
     }
 
     // Insert into database
-    const { rows } = await pool.query(
-      `INSERT INTO software (name, description, version, category_id, file_name, file_path, file_size, logo, icon, icon_bg, icon_color, sort_order)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-       RETURNING *`,
-      [name, description, version, finalCategoryId, file.name, `software/${fileName}`, file.size, logo, icon, icon_bg, icon_color, sort_order]
-    );
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      const { rows } = await client.query(
+        `INSERT INTO software (name, description, version, category_id, file_name, file_path, file_size, logo, icon, icon_bg, icon_color, sort_order)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+         RETURNING *`,
+        [baseName, baseDescription, version, finalCategoryId, file.name, `software/${fileName}`, file.size, logo, icon, icon_bg, icon_color, sort_order]
+      );
 
-    return NextResponse.json(rows[0], { status: 201 });
+      await upsertSoftwareTranslations(client, rows[0].id, translations);
+      await client.query('COMMIT');
+      return NextResponse.json(rows[0], { status: 201 });
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   } catch (error) {
     console.error('Failed to upload software:', error);
     return NextResponse.json({ error: 'Failed to upload software' }, { status: 500 });

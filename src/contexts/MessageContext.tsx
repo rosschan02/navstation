@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { useLocaleContext } from './LocaleContext';
 
 type MessageType = 'success' | 'error' | 'info' | 'warning';
 
@@ -44,6 +45,7 @@ function toastIcon(type: MessageType) {
 
 export function MessageProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const { t } = useLocaleContext();
 
   const removeToast = useCallback((id: number) => {
     setToasts((prev) => prev.filter((item) => item.id !== id));
@@ -51,9 +53,9 @@ export function MessageProvider({ children }: { children: React.ReactNode }) {
 
   const showMessage = useCallback((type: MessageType, text: string) => {
     const id = Date.now() + Math.floor(Math.random() * 1000);
-    setToasts((prev) => [...prev, { id, type, text }]);
+    setToasts((prev) => [...prev, { id, type, text: t(text) }]);
     window.setTimeout(() => removeToast(id), AUTO_DISMISS_MS);
-  }, [removeToast]);
+  }, [removeToast, t]);
 
   const value = useMemo<MessageContextValue>(() => ({
     showMessage,
@@ -83,7 +85,7 @@ export function MessageProvider({ children }: { children: React.ReactNode }) {
                   type="button"
                   onClick={() => removeToast(toast.id)}
                   className="rounded-md p-0.5 opacity-70 transition-opacity hover:opacity-100"
-                  aria-label="关闭消息"
+                  aria-label={t('关闭消息')}
                 >
                   <span className="material-symbols-outlined text-[18px]">close</span>
                 </button>

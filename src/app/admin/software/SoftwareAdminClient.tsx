@@ -4,12 +4,24 @@ import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { IconPicker } from '@/components/IconPicker';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
-import type { SoftwareItem, Category } from '@/types';
+import type { SoftwareItem, Category, SoftwareTranslationFields } from '@/types';
 import { useMessage } from '@/contexts/MessageContext';
+import { TranslationEditor } from '@/components/TranslationEditor';
+import type { Locale } from '@/lib/i18n/config';
 
 interface SoftwareAdminClientProps {
   initialSoftware: SoftwareItem[];
   categories: Category[];
+}
+
+function buildSoftwareTranslations(item?: SoftwareItem) {
+  return {
+    ...(item?.translations || {}),
+    en: {
+      name: item?.translations?.en?.name || item?.name || '',
+      description: item?.translations?.en?.description || item?.description || '',
+    },
+  };
 }
 
 function formatFileSize(bytes: number): string {
@@ -41,6 +53,7 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
     icon: 'download',
     icon_bg: 'bg-blue-100',
     icon_color: 'text-blue-600',
+    translations: buildSoftwareTranslations(),
   });
   const [editFormData, setEditFormData] = useState({
     name: '',
@@ -51,6 +64,7 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
     icon: 'download',
     icon_bg: 'bg-blue-100',
     icon_color: 'text-blue-600',
+    translations: buildSoftwareTranslations(),
   });
   const [logoPreview, setLogoPreview] = useState('');
   const [editLogoPreview, setEditLogoPreview] = useState('');
@@ -58,6 +72,26 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
   const logoInputRef = useRef<HTMLInputElement>(null);
   const editLogoInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+
+  const handleTranslationChange = <K extends keyof SoftwareTranslationFields>(
+    target: 'create' | 'edit',
+    locale: Locale,
+    key: K,
+    value: SoftwareTranslationFields[K]
+  ) => {
+    const setter = target === 'create' ? setFormData : setEditFormData;
+    setter((prev) => ({
+      ...prev,
+      ...(locale === 'en' ? { [key]: value } : {}),
+      translations: {
+        ...prev.translations,
+        [locale]: {
+          ...prev.translations[locale],
+          [key]: value,
+        },
+      },
+    }));
+  };
 
   const handleLogoUpload = async (file: File, isEdit: boolean = false) => {
     const uploadData = new FormData();
@@ -104,7 +138,17 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
       // Auto-fill name from filename if empty
       if (!formData.name) {
         const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
-        setFormData(prev => ({ ...prev, name: nameWithoutExt }));
+        setFormData(prev => ({
+          ...prev,
+          name: nameWithoutExt,
+          translations: {
+            ...prev.translations,
+            en: {
+              ...prev.translations.en,
+              name: nameWithoutExt,
+            },
+          },
+        }));
       }
     }
   };
@@ -135,6 +179,7 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
       data.append('icon', formData.icon);
       data.append('icon_bg', formData.icon_bg);
       data.append('icon_color', formData.icon_color);
+      data.append('translations', JSON.stringify(formData.translations));
       data.append('file', selectedFile);
 
       // Use XMLHttpRequest for progress tracking
@@ -218,6 +263,7 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
       icon: item.icon || 'download',
       icon_bg: item.icon_bg || 'bg-blue-100',
       icon_color: item.icon_color || 'text-blue-600',
+      translations: buildSoftwareTranslations(item),
     });
     setEditLogoPreview(item.logo || '');
     setIsEditModalOpen(true);
@@ -267,6 +313,7 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
       icon: 'download',
       icon_bg: 'bg-blue-100',
       icon_color: 'text-blue-600',
+      translations: buildSoftwareTranslations(),
     });
     setSelectedFile(null);
     setUploadProgress(0);
@@ -495,7 +542,17 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
                 <input
                   type="text"
                   value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    name: e.target.value,
+                    translations: {
+                      ...prev.translations,
+                      en: {
+                        ...prev.translations.en,
+                        name: e.target.value,
+                      },
+                    },
+                  }))}
                   className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                   placeholder="例如：Visual Studio Code"
                 />
@@ -536,12 +593,33 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
                 <label className="block text-sm font-medium text-slate-700 mb-2">软件说明</label>
                 <textarea
                   value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    description: e.target.value,
+                    translations: {
+                      ...prev.translations,
+                      en: {
+                        ...prev.translations.en,
+                        description: e.target.value,
+                      },
+                    },
+                  }))}
                   rows={2}
                   className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none"
                   placeholder="简要描述软件用途..."
                 />
               </div>
+
+              <TranslationEditor<SoftwareTranslationFields>
+                title="多语言内容"
+                description="英文作为默认值；其他语言为空时会自动回退到英文。"
+                translations={formData.translations}
+                onChange={(locale, key, value) => handleTranslationChange('create', locale, key, value)}
+                fields={[
+                  { key: 'name', label: '软件名称', placeholder: 'Visual Studio Code' },
+                  { key: 'description', label: '软件说明', placeholder: 'Describe the software', multiline: true },
+                ]}
+              />
 
               {/* Logo Upload */}
               <div>
@@ -686,7 +764,17 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
                 <input
                   type="text"
                   value={editFormData.name}
-                  onChange={(e) => setEditFormData(prev => ({ ...prev, name: e.target.value }))}
+                  onChange={(e) => setEditFormData(prev => ({
+                    ...prev,
+                    name: e.target.value,
+                    translations: {
+                      ...prev.translations,
+                      en: {
+                        ...prev.translations.en,
+                        name: e.target.value,
+                      },
+                    },
+                  }))}
                   className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                   placeholder="例如：Visual Studio Code"
                 />
@@ -728,12 +816,33 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
                 <label className="block text-sm font-medium text-slate-700 mb-2">软件说明</label>
                 <textarea
                   value={editFormData.description}
-                  onChange={(e) => setEditFormData(prev => ({ ...prev, description: e.target.value }))}
+                  onChange={(e) => setEditFormData(prev => ({
+                    ...prev,
+                    description: e.target.value,
+                    translations: {
+                      ...prev.translations,
+                      en: {
+                        ...prev.translations.en,
+                        description: e.target.value,
+                      },
+                    },
+                  }))}
                   rows={2}
                   className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none"
                   placeholder="简要描述软件用途..."
                 />
               </div>
+
+              <TranslationEditor<SoftwareTranslationFields>
+                title="多语言内容"
+                description="在当前页面维护四种语言的软件名称与说明。"
+                translations={editFormData.translations}
+                onChange={(locale, key, value) => handleTranslationChange('edit', locale, key, value)}
+                fields={[
+                  { key: 'name', label: '软件名称', placeholder: 'Visual Studio Code' },
+                  { key: 'description', label: '软件说明', placeholder: 'Describe the software', multiline: true },
+                ]}
+              />
 
               {/* Logo Upload */}
               <div>

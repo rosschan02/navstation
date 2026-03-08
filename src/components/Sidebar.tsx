@@ -4,7 +4,9 @@ import React, { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLocaleContext } from '@/contexts/LocaleContext';
 import type { Category, SiteSettings } from '@/types';
+import { LocaleSwitcher } from './LocaleSwitcher';
 
 
 interface NavItem {
@@ -39,6 +41,7 @@ const DEFAULT_SETTINGS: SiteSettings = {
   footer_text: '© 2024 通用站点导航。保留所有权利。',
   logo_url: '',
   site_icon_url: '',
+  default_locale: 'en',
 };
 
 // 断点：小于此宽度默认收起
@@ -48,6 +51,7 @@ export function Sidebar({ onLoginClick }: SidebarProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { user, isLoggedIn, logout } = useAuth();
+  const { withLocalePath } = useLocaleContext();
   const [categories, setCategories] = useState<Category[]>([]);
   const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SETTINGS);
   const [collapsed, setCollapsed] = useState(false);
@@ -83,9 +87,12 @@ export function Sidebar({ onLoginClick }: SidebarProps) {
   }, []);
 
   const isActive = (href: string) => {
-    if (href === '/') return pathname === '/';
-    if (href === '/admin') return pathname === '/admin';
-    return pathname.startsWith(href);
+    const localizedHref = withLocalePath(href);
+    if (localizedHref === pathname) return true;
+    if (localizedHref === withLocalePath('/')) {
+      return pathname === localizedHref;
+    }
+    return pathname.startsWith(localizedHref);
   };
 
   const getLinkClass = (href: string) => {
@@ -129,11 +136,11 @@ export function Sidebar({ onLoginClick }: SidebarProps) {
         {/* Navigation */}
         <nav className="flex flex-col gap-1 flex-1 overflow-y-auto py-2 no-scrollbar">
           {/* 首页（全部） */}
-          <Link href="/" className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'} px-3 py-2.5 rounded-lg transition-colors group cursor-pointer ${pathname === '/' && selectedCategory === 'all'
+          <Link href={withLocalePath('/')} className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'} px-3 py-2.5 rounded-lg transition-colors group cursor-pointer ${pathname === withLocalePath('/') && selectedCategory === 'all'
               ? 'bg-primary/10 text-primary font-semibold'
               : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium'
             }`} title={collapsed ? '首页' : undefined}>
-            <span className={`material-symbols-outlined text-[20px] shrink-0 ${pathname === '/' && selectedCategory === 'all' ? 'filled text-primary' : 'group-hover:text-primary'
+            <span className={`material-symbols-outlined text-[20px] shrink-0 ${pathname === withLocalePath('/') && selectedCategory === 'all' ? 'filled text-primary' : 'group-hover:text-primary'
               }`}>home</span>
             {!collapsed && <span className="text-sm">首页</span>}
           </Link>
@@ -142,21 +149,21 @@ export function Sidebar({ onLoginClick }: SidebarProps) {
           {categories.map((category) => (
             <Link
               key={category.id}
-              href={`/?category=${category.id}`}
-              className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'} px-3 py-2 rounded-lg transition-colors group cursor-pointer ${pathname === '/' && selectedCategory === category.id.toString()
+              href={`${withLocalePath('/')}?category=${category.id}`}
+              className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'} px-3 py-2 rounded-lg transition-colors group cursor-pointer ${pathname === withLocalePath('/') && selectedCategory === category.id.toString()
                   ? 'bg-primary/10 text-primary font-semibold'
                   : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium'
                 }`}
               title={collapsed ? category.label : undefined}
             >
-              <span className={`material-symbols-outlined text-[20px] shrink-0 ${pathname === '/' && selectedCategory === category.id.toString() ? 'text-primary' : category.icon_color + ' group-hover:text-primary'
+              <span className={`material-symbols-outlined text-[20px] shrink-0 ${pathname === withLocalePath('/') && selectedCategory === category.id.toString() ? 'text-primary' : category.icon_color + ' group-hover:text-primary'
                 }`}>{category.icon}</span>
               {!collapsed && <span className="text-sm">{category.label}</span>}
             </Link>
           ))}
 
           {/* 软件下载 */}
-          <Link href="/software" className={getLinkClass('/software')} title={collapsed ? '软件下载' : undefined}>
+          <Link href={withLocalePath('/software')} className={getLinkClass('/software')} title={collapsed ? '软件下载' : undefined}>
             <span className={`${getIconClass('/software')} shrink-0`}>download</span>
             {!collapsed && <span className="text-sm">软件下载</span>}
           </Link>
@@ -167,7 +174,7 @@ export function Sidebar({ onLoginClick }: SidebarProps) {
             <>
               {!collapsed && <p className="px-3 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">工作区</p>}
               {ADMIN_ITEMS.map((item) => (
-                <Link key={item.href} href={item.href} className={getLinkClass(item.href)} title={collapsed ? item.label : undefined}>
+                <Link key={item.href} href={withLocalePath(item.href)} className={getLinkClass(item.href)} title={collapsed ? item.label : undefined}>
                   <span className={`${getIconClass(item.href)} shrink-0`}>{item.icon}</span>
                   {!collapsed && <span className="text-sm">{item.label}</span>}
                 </Link>
@@ -187,6 +194,8 @@ export function Sidebar({ onLoginClick }: SidebarProps) {
 
         {/* Footer */}
         <div className="mt-auto pt-4 space-y-2">
+          {!collapsed && <LocaleSwitcher />}
+
           {/* 收起/展开按钮 */}
           <button
             onClick={() => setCollapsed(!collapsed)}

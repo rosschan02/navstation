@@ -6,6 +6,9 @@ For release history and change details, see [CHANGELOG.md](./CHANGELOG.md).
 
 NavStation is a unified navigation portal and site management system that combines site navigation, software distribution, QR display, behavior analytics, and BIND9 DNS management in one application.
 
+It now supports multilingual site routing and content management for `en`, `zh-CN`, `ko`, and `ja`, including a configurable default language in the admin settings page.
+The locale proxy also skips API routes, internal prefetch requests, and static assets such as `/fonts` to prevent redirect loops or broken asset loads after Docker rebuilds.
+
 ## Tech Stack
 
 - **Frontend**: Next.js 16 (App Router) + React 19 + Tailwind CSS 4 + TypeScript
@@ -19,7 +22,8 @@ NavStation is a unified navigation portal and site management system that combin
 navstation/
 ├── src/
 │   ├── app/                    # Next.js App Router
-│   │   ├── page.tsx            # Home page
+│   │   ├── [locale]/           # Locale-prefixed routes
+│   │   ├── page.tsx            # Home page entry
 │   │   ├── HomeClient.tsx      # Home page client component
 │   │   ├── legacy/             # IE10-compatible page
 │   │   ├── admin/              # Admin workspace
@@ -111,6 +115,8 @@ If you are upgrading from an older version, also run:
 
 ```bash
 psql -h localhost -U username -d database -f src/db/migrations/012_add_analytics_events.sql
+psql -h localhost -U username -d database -f src/db/migrations/013_add_i18n_translation_tables.sql
+psql -h localhost -U username -d database -f src/db/migrations/014_add_default_locale_setting.sql
 ```
 
 ### 4. Start the Development Server
@@ -134,6 +140,8 @@ npm run start
 docker-compose up -d
 ```
 
+Locale routing is handled inside Next.js. The bundled `nginx` reverse proxy does not need extra rewrite rules for `/en`, `/zh-CN`, `/ko`, or `/ja`.
+
 See [DEPLOY.md](./DEPLOY.md) for full deployment details.
 
 ## Database Tables
@@ -147,6 +155,10 @@ See [DEPLOY.md](./DEPLOY.md) for full deployment details.
 | `click_events` | Legacy click-event table kept for compatibility |
 | `analytics_events` | Unified behavior log table |
 | `site_settings` | Global site settings |
+| `category_translations` | Category translations for `en/zh-CN/ko/ja` |
+| `site_translations` | Site name/description/tag translations |
+| `software_translations` | Software translations |
+| `site_setting_translations` | Translated global site text |
 | `api_keys` | API keys for external integrations |
 | `phonebook_entries` | Internal phonebook entries |
 | `weather_districts` | Weather district lookup table |
@@ -399,7 +411,15 @@ psql -d your_database -f src/db/migrations/009_add_dns_forward_zones.sql
 psql -d your_database -f src/db/migrations/010_add_weather_districts_and_cache.sql
 psql -d your_database -f src/db/migrations/011_add_admin_divisions.sql
 psql -d your_database -f src/db/migrations/012_add_analytics_events.sql
+psql -d your_database -f src/db/migrations/013_add_i18n_translation_tables.sql
+psql -d your_database -f src/db/migrations/014_add_default_locale_setting.sql
 ```
+
+## Internationalization
+
+- Public pages and admin pages are available under locale-prefixed routes such as `/en`, `/zh-CN`, `/ko`, and `/ja`.
+- The default site language is configurable in **Admin > Site Settings**.
+- Categories, sites, software, and selected site settings support translated content stored in dedicated translation tables.
 
 If you enable local administrative divisions, also run:
 

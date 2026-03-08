@@ -2,17 +2,41 @@
 
 import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import type { SiteSettings } from '@/types';
+import type { LocalizedSettingFields, SiteSettings } from '@/types';
 import { useMessage } from '@/contexts/MessageContext';
+import { TranslationEditor } from '@/components/TranslationEditor';
+import { SUPPORTED_LOCALES, getLocaleDisplayName, type Locale } from '@/lib/i18n/config';
 
 interface SettingsClientProps {
   initialSettings: SiteSettings;
 }
 
+function normalizeSettings(initialSettings: SiteSettings): SiteSettings {
+  const translations = initialSettings.translations || {};
+  const en = translations.en || {};
+
+  return {
+    ...initialSettings,
+    site_name: en.site_name || initialSettings.site_name,
+    site_description: en.site_description || initialSettings.site_description,
+    site_version: en.site_version || initialSettings.site_version,
+    footer_text: en.footer_text || initialSettings.footer_text,
+    translations: {
+      ...translations,
+      en: {
+        site_name: en.site_name || initialSettings.site_name,
+        site_description: en.site_description || initialSettings.site_description,
+        site_version: en.site_version || initialSettings.site_version,
+        footer_text: en.footer_text || initialSettings.footer_text,
+      },
+    },
+  };
+}
+
 export function SettingsClient({ initialSettings }: SettingsClientProps) {
   const router = useRouter();
   const message = useMessage();
-  const [settings, setSettings] = useState<SiteSettings>(initialSettings);
+  const [settings, setSettings] = useState<SiteSettings>(() => normalizeSettings(initialSettings));
   const [isSaving, setIsSaving] = useState(false);
   const [logoPreview, setLogoPreview] = useState<string>(initialSettings.logo_url || '');
   const [iconPreview, setIconPreview] = useState<string>(initialSettings.site_icon_url || '');
@@ -20,7 +44,37 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
   const iconInputRef = useRef<HTMLInputElement>(null);
 
   const handleChange = (key: keyof SiteSettings, value: string) => {
-    setSettings(prev => ({ ...prev, [key]: value }));
+    setSettings((prev) => ({
+      ...prev,
+      [key]: value,
+      translations: key === 'logo_url' || key === 'site_icon_url'
+        ? prev.translations
+        : {
+            ...prev.translations,
+            en: {
+              ...prev.translations?.en,
+              [key]: value,
+            },
+          },
+    }));
+  };
+
+  const handleTranslationChange = <K extends keyof LocalizedSettingFields>(
+    locale: Locale,
+    key: K,
+    value: LocalizedSettingFields[K]
+  ) => {
+    setSettings((prev) => ({
+      ...prev,
+      ...(locale === 'en' ? { [key]: value } : {}),
+      translations: {
+        ...prev.translations,
+        [locale]: {
+          ...prev.translations?.[locale],
+          [key]: value,
+        },
+      },
+    }));
   };
 
   const handleImageUpload = async (
@@ -95,7 +149,7 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
           <p className="text-slate-500 mt-1">自定义站点名称、描述、Logo 等全局配置</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="max-w-2xl">
+        <form onSubmit={handleSubmit} className="max-w-4xl">
           {/* 基础信息 */}
           <div className="bg-white rounded-xl border border-slate-200 p-6 mb-6">
             <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
@@ -144,6 +198,40 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
                   placeholder="© 2024 通用站点导航。保留所有权利。"
                 />
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  默认语言
+                </label>
+                <select
+                  value={settings.default_locale}
+                  onChange={(e) => setSettings((prev) => ({
+                    ...prev,
+                    default_locale: e.target.value as Locale,
+                  }))}
+                  className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white"
+                >
+                  {SUPPORTED_LOCALES.map((locale) => (
+                    <option key={locale} value={locale}>
+                      {getLocaleDisplayName(locale)} ({locale})
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-slate-400 mt-1">访问根路径时，未命中浏览器语言或历史选择时会回退到这里。</p>
+              </div>
+
+              <TranslationEditor<LocalizedSettingFields>
+                title="多语言内容"
+                description="在同一页维护英文、中文、韩文、日文内容。英文字段会同步到默认值。"
+                translations={settings.translations || {}}
+                onChange={handleTranslationChange}
+                fields={[
+                  { key: 'site_name', label: '站点名称', placeholder: 'NavStation' },
+                  { key: 'site_description', label: '站点描述', placeholder: 'Navigation portal', multiline: true },
+                  { key: 'site_version', label: '版本号', placeholder: 'v2.0' },
+                  { key: 'footer_text', label: '页脚版权', placeholder: '© 2024 NavStation. All rights reserved.' },
+                ]}
+              />
             </div>
           </div>
 

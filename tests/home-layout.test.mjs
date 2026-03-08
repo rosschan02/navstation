@@ -49,7 +49,7 @@ test('next request interception uses proxy.ts instead of deprecated middleware.t
   const proxySource = readFileSync(proxyPath, 'utf8');
 
   assert.ok(
-    proxySource.includes('export function proxy('),
+    proxySource.includes('export async function proxy(') || proxySource.includes('export function proxy('),
     'src/proxy.ts should export a proxy function.',
   );
 });
