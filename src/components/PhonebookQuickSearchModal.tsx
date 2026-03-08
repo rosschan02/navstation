@@ -7,12 +7,15 @@ import { useMessage } from '@/contexts/MessageContext';
 interface PhonebookQuickSearchModalProps {
   isOpen: boolean;
   onClose: () => void;
+  visitorId: string;
 }
 
-function buildQueryUrl(keyword: string): string {
+function buildQueryUrl(keyword: string, visitorId: string): string {
   const search = keyword.trim();
   const params = new URLSearchParams();
   params.set('limit', '30');
+  params.set('sid', visitorId);
+  params.set('page', 'home');
   if (search) params.set('search', search);
   return `/api/phonebook?${params.toString()}`;
 }
@@ -34,7 +37,7 @@ async function copyText(text: string): Promise<void> {
   document.body.removeChild(textarea);
 }
 
-export function PhonebookQuickSearchModal({ isOpen, onClose }: PhonebookQuickSearchModalProps) {
+export function PhonebookQuickSearchModal({ isOpen, onClose, visitorId }: PhonebookQuickSearchModalProps) {
   const message = useMessage();
   const [keyword, setKeyword] = useState('');
   const [items, setItems] = useState<PhonebookEntry[]>([]);
@@ -54,49 +57,42 @@ export function PhonebookQuickSearchModal({ isOpen, onClose }: PhonebookQuickSea
   }, [isOpen, onClose]);
 
   useEffect(() => {
-    if (!isOpen) {
-      setKeyword('');
-      setItems([]);
-      setError('');
-      setCopiedKey('');
-      setHasSearched(false);
-      return;
-    }
+    if (isOpen) return;
+    setKeyword('');
+    setItems([]);
+    setError('');
+    setCopiedKey('');
+    setHasSearched(false);
+    setIsLoading(false);
+  }, [isOpen]);
 
+  const handleSearch = async () => {
     const trimmed = keyword.trim();
+    setHasSearched(true);
+
     if (!trimmed) {
       setItems([]);
-      setHasSearched(false);
+      setError('请输入关键词');
       return;
     }
 
-    setHasSearched(true);
-    const controller = new AbortController();
-    const timer = setTimeout(async () => {
-      setIsLoading(true);
-      setError('');
-      try {
-        const res = await fetch(buildQueryUrl(trimmed), { signal: controller.signal });
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          throw new Error(data.error || '查询失败');
-        }
-        const data = await res.json();
-        setItems(Array.isArray(data) ? data : []);
-      } catch (err) {
-        if ((err as Error).name === 'AbortError') return;
-        setItems([]);
-        setError('查询失败，请稍后重试');
-      } finally {
-        setIsLoading(false);
+    setIsLoading(true);
+    setError('');
+    try {
+      const res = await fetch(buildQueryUrl(trimmed, visitorId), { cache: 'no-store' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || '查询失败');
       }
-    }, 180);
-
-    return () => {
-      controller.abort();
-      clearTimeout(timer);
-    };
-  }, [isOpen, keyword]);
+      const data = await res.json();
+      setItems(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setItems([]);
+      setError((err as Error).message || '查询失败，请稍后重试');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleCopy = async (value: string, key: string) => {
     try {
@@ -248,9 +244,23 @@ export function PhonebookQuickSearchModal({ isOpen, onClose }: PhonebookQuickSea
                 autoFocus
                 value={keyword}
                 onChange={(e) => setKeyword(e.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault();
+                    void handleSearch();
+                  }
+                }}
                 placeholder="搜索科室名称、短码或长码..."
-                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-base focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white transition-colors"
+                className="w-full pl-10 pr-24 py-3 bg-slate-50 border border-slate-200 rounded-xl text-base focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white transition-colors"
               />
+              <button
+                type="button"
+                onClick={() => void handleSearch()}
+                disabled={isLoading}
+                className="absolute right-2 top-1/2 -translate-y-1/2 h-9 px-3 rounded-lg bg-primary text-white text-sm font-medium hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed transition-opacity"
+              >
+                {isLoading ? '查询中' : '查询'}
+              </button>
             </div>
           </div>
 

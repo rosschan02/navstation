@@ -163,3 +163,11 @@ export interface DnsChangeLog {
   record_name?: string;
   record_type?: DnsRecordType;
 }
+
+export type AnalyticsEventType =
+  | 'nav_click'
+  | 'software_download'
+  | 'weather_query'
+  | 'phonebook_query'
+  | 'region_online_query'
+  | 'admin_division_query';

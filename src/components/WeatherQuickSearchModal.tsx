@@ -5,6 +5,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 interface WeatherQuickSearchModalProps {
   isOpen: boolean;
   onClose: () => void;
+  visitorId: string;
 }
 
 interface WeatherLocation {
@@ -279,7 +280,7 @@ function getWeatherIndexVisual(indexName?: string): {
   };
 }
 
-export function WeatherQuickSearchModal({ isOpen, onClose }: WeatherQuickSearchModalProps) {
+export function WeatherQuickSearchModal({ isOpen, onClose, visitorId }: WeatherQuickSearchModalProps) {
   const [keyword, setKeyword] = useState(DEFAULT_DISTRICT_NAME);
   const [weather, setWeather] = useState<WeatherResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -288,6 +289,8 @@ export function WeatherQuickSearchModal({ isOpen, onClose }: WeatherQuickSearchM
   const queryWeather = useCallback(async (targetKeyword: string, forceRefresh = false) => {
     const normalized = targetKeyword.trim();
     const params = new URLSearchParams();
+    params.set('sid', visitorId);
+    params.set('page', 'home');
     if (normalized) {
       if (DISTRICT_ID_PATTERN.test(normalized)) {
         params.set('district_id', normalized);
@@ -321,7 +324,7 @@ export function WeatherQuickSearchModal({ isOpen, onClose }: WeatherQuickSearchM
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [visitorId]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -338,10 +341,8 @@ export function WeatherQuickSearchModal({ isOpen, onClose }: WeatherQuickSearchM
       setWeather(null);
       setIsLoading(false);
       setError('');
-      return;
     }
-    void queryWeather('');
-  }, [isOpen, queryWeather]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 

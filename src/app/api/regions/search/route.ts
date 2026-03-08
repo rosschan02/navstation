@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { recordAnalyticsEvent } from '@/lib/analyticsEvents';
+import { getClientIpFromRequest } from '@/lib/clientIp';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,6 +42,8 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const query = safeTrim(searchParams.get('query'), 80);
   const region = safeTrim(searchParams.get('region'), 40);
+  const visitorId = safeTrim(searchParams.get('sid'), 64) || 'anon';
+  const page = safeTrim(searchParams.get('page'), 32) || 'home';
 
   if (!query) {
     return NextResponse.json({ error: '查询关键词不能为空' }, { status: 400 });
@@ -94,6 +98,26 @@ export async function GET(request: NextRequest) {
           address: item.address || '',
         }))
       : [];
+
+    try {
+      await recordAnalyticsEvent({
+        eventType: 'region_online_query',
+        targetType: 'tool',
+        targetName: '行政区域查询',
+        page,
+        visitorId,
+        clientIp: getClientIpFromRequest(request),
+        searchQuery: query,
+        metadata: {
+          region,
+          total: Number(payload.total) || items.length,
+          result_type: payload.result_type || '',
+          query_type: payload.query_type || '',
+        },
+      });
+    } catch (analyticsError) {
+      console.error('Failed to record region analytics event:', analyticsError);
+    }
 
     return NextResponse.json({
       status: payload.status ?? 0,

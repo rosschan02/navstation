@@ -1,11 +1,14 @@
 import { createHash } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/db';
+import { recordAnalyticsEvent } from '@/lib/analyticsEvents';
+import { getClientIpFromRequest } from '@/lib/clientIp';
 
 export const dynamic = 'force-dynamic';
 
 const BAIDU_WEATHER_ENDPOINT = 'https://api.map.baidu.com/weather/v1/';
 const DEFAULT_DISTRICT_ID = '441881';
+const DEFAULT_DISTRICT_NAME = '英德市';
 const DISTRICT_ID_PATTERN = /^\d{6,12}$/;
 const LOCATION_PATTERN = /^-?\d+(?:\.\d+)?,-?\d+(?:\.\d+)?$/;
 const ALLOWED_COORD_TYPES = new Set(['wgs84', 'bd09ll', 'bd09mc', 'gcj02']);
@@ -226,6 +229,8 @@ async function saveWeatherCache(cacheKey: string, fingerprint: string, payload: 
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
+  const visitorId = normalizeText(searchParams.get('sid'), 64) || 'anon';
+  const page = normalizeText(searchParams.get('page'), 32) || 'home';
   const districtIdParam = normalizeText(searchParams.get('district_id'), 20);
   const locationParam = normalizeLocation(searchParams.get('location'));
   const province = normalizeText(searchParams.get('province'), 24);
@@ -235,6 +240,7 @@ export async function GET(request: NextRequest) {
   const district = districtFromQuery || quickQuery;
   const coordtype = normalizeCoordType(searchParams.get('coordtype'));
   const forceRefresh = isForceRefresh(searchParams.get('force'));
+  const clientIp = getClientIpFromRequest(request);
 
   const ak = process.env.BAIDU_WEATHER_AK || process.env.BAIDU_MAP_AK;
   if (!ak) {
@@ -282,11 +288,39 @@ export async function GET(request: NextRequest) {
     return `province=${params.get('province') || ''}&city=${params.get('city') || ''}&district=${params.get('district') || ''}&data_type=all`;
   })();
   const cacheKey = buildCacheKey(fingerprint);
+  const searchIntent = districtIdParam || district || locationParam || DEFAULT_DISTRICT_NAME;
 
   try {
     if (!forceRefresh) {
       const cached = await getWeatherCache(cacheKey);
-      if (cached) return NextResponse.json(cached);
+      if (cached) {
+        try {
+          await recordAnalyticsEvent({
+            eventType: 'weather_query',
+            targetType: 'tool',
+            targetName: '天气速查',
+            page,
+            visitorId,
+            clientIp,
+            searchQuery: searchIntent,
+            metadata: {
+              mode,
+              province,
+              city,
+              district,
+              district_id: params.get('district_id') || '',
+              location: params.get('location') || '',
+              coordtype: params.get('coordtype') || '',
+              cache_hit: true,
+              force_refresh: forceRefresh,
+              upstream_status: cached.status ?? 0,
+            },
+          });
+        } catch (analyticsError) {
+          console.error('Failed to record weather analytics event:', analyticsError);
+        }
+        return NextResponse.json(cached);
+      }
     }
 
     params.set('ak', ak);
@@ -308,6 +342,33 @@ export async function GET(request: NextRequest) {
     }
 
     await saveWeatherCache(cacheKey, fingerprint, payload);
+
+    try {
+      await recordAnalyticsEvent({
+        eventType: 'weather_query',
+        targetType: 'tool',
+        targetName: '天气速查',
+        page,
+        visitorId,
+        clientIp,
+        searchQuery: searchIntent,
+        metadata: {
+          mode,
+          province,
+          city,
+          district,
+          district_id: params.get('district_id') || '',
+          location: params.get('location') || '',
+          coordtype: params.get('coordtype') || '',
+          cache_hit: false,
+          force_refresh: forceRefresh,
+          upstream_status: payload.status ?? 0,
+        },
+      });
+    } catch (analyticsError) {
+      console.error('Failed to record weather analytics event:', analyticsError);
+    }
+
     return NextResponse.json(payload);
   } catch (error) {
     console.error('Baidu weather query failed:', error);

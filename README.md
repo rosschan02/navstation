@@ -1,6 +1,13 @@
 # NavStation 导航站
 
-综合导航门户与站点管理系统，提供统一的站点导航、软件下载、二维码展示、数据分析与 BIND9 DNS 管理功能。
+综合导航门户与站点管理系统，提供统一的站点导航、软件下载、二维码展示、统一行为分析与 BIND9 DNS 管理功能。
+
+## 最近更新（2026-03-08）
+
+- 新增统一行为日志表 `analytics_events`，统一记录导航点击、软件下载、天气查询、电话查询、行政区域查询
+- 新增客户端 IP 提取与统一事件写入工具，日志统一保存 `client_ip`、`visitor_id`、`search_query`、`page`、`metadata`
+- 后台数据分析页升级为统一行为统计，新增总行为量、总查询量、热门查询词、最近活动客户端 IP 展示
+- 电话本速查改为显式点击查询 / 回车查询，天气速查改为手动查询，不再在弹窗打开时自动请求
 
 ## 最近更新（2026-03-06）
 
@@ -59,7 +66,7 @@ navstation/
 │   │       ├── upload/         # 图片上传
 │   │       ├── uploads/        # 图片服务
 │   │       ├── auth/           # 登录/登出/当前用户
-│   │       ├── analytics/      # 统计查询 + 点击记录
+│   │       ├── analytics/      # 统一行为统计与事件记录
 │   │       ├── phonebook/      # 电话本查询与管理
 │   │       ├── regions/        # 行政区域速查（百度 Place API v3 代理）
 │   │       ├── admin-divisions/ # 本地行政区查询（搜索/详情/下级）
@@ -80,7 +87,9 @@ navstation/
 │   │   └── MessageContext.tsx  # 全局消息提示（Toast）
 │   ├── lib/
 │   │   ├── apiAuth.ts          # API Key 认证工具
-│   │   ├── analyticsSource.ts  # 分析埋点 source 构建/解析工具
+│   │   ├── analyticsEvents.ts  # 统一行为日志写入工具
+│   │   ├── analyticsSource.ts  # 分析埋点 source 构建/解析工具（兼容旧点击数据）
+│   │   ├── clientIp.ts         # 客户端 IP 提取工具
 │   │   ├── dns/bind9.ts        # BIND9 nsupdate 封装
 │   │   ├── dns/bind9-forward.ts # BIND9 转发区域配置生成与同步
 │   │   └── visitorId.ts        # 匿名访客 ID 生成与读取
@@ -170,6 +179,12 @@ psql -h localhost -U 用户名 -d 数据库名 -f scripts/import-admin-divisions
 
 完整导入说明见：`add_import-admin-divisions.md`
 
+如果是从旧版本升级，需额外执行统一行为统计迁移：
+
+```bash
+psql -h localhost -U 用户名 -d 数据库名 -f src/db/migrations/012_add_analytics_events.sql
+```
+
 ### 4. 启动开发服务器
 
 ```bash
@@ -201,7 +216,8 @@ docker-compose up -d
 | `sites` | 统一站点表（含普通站点和二维码） |
 | `software` | 软件下载资源（支持 4GB 文件） |
 | `users` | 管理员账号（默认 admin/admin） |
-| `click_events` | 点击事件统计 |
+| `click_events` | 历史点击事件统计（兼容旧数据） |
+| `analytics_events` | 统一行为日志（点击/下载/天气/电话/行政区域查询） |
 | `site_settings` | 站点全局设置（名称、描述、Logo等） |
 | `api_keys` | API 密钥（外部系统对接认证） |
 | `phonebook_entries` | 电话本条目（科室名、长码、短码） |
@@ -272,8 +288,8 @@ docker-compose up -d
 ### 数据分析
 | 路径 | 方法 | 说明 |
 |------|------|------|
-| `GET /api/analytics?days=7` | GET | 返回统计仪表盘数据（KPI、趋势、来源、分类、Top、最近活动） |
-| `POST /api/analytics/click` | POST | 记录点击事件（支持 `site` / `software`） |
+| `GET /api/analytics?days=7` | GET | 返回统一行为统计仪表盘数据（点击、查询、来源、热词、最近活动） |
+| `POST /api/analytics/click` | POST | 记录导航点击事件（统一写入 `analytics_events`） |
 
 ### 站点设置
 | 路径 | 方法 | 说明 |

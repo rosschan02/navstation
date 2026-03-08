@@ -1,23 +1,24 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import type { AnalyticsEventType } from '@/types';
 
 interface DailyItem {
   day: string;
+  events: number;
   clicks: number;
-  site_clicks: number;
-  software_clicks: number;
+  queries: number;
   unique_visitors: number;
 }
 
 interface HourlyItem {
   hour: number;
-  clicks: number;
+  events: number;
 }
 
 interface SourcePageItem {
   page: string;
-  clicks: number;
+  events: number;
   ratio: number;
 }
 
@@ -25,8 +26,8 @@ interface CategoryItem {
   category_id: number | null;
   label: string;
   clicks: number;
-  site_clicks: number;
-  software_clicks: number;
+  nav_clicks: number;
+  software_downloads: number;
 }
 
 interface TopItem {
@@ -40,30 +41,47 @@ interface TopItem {
   icon_color: string | null;
 }
 
+interface SearchItem {
+  query: string;
+  count: number;
+}
+
 interface RecentItem {
-  id: number;
+  id: string;
   created_at: string;
-  target_type: 'site' | 'software';
-  target_id: number;
+  event_type: AnalyticsEventType;
+  target_type: 'site' | 'software' | 'tool' | null;
+  target_id: number | null;
   target_name: string;
   page: string;
   has_search: boolean;
   category_label: string;
+  search_query: string;
+  client_ip: string;
 }
 
 interface AnalyticsData {
   days: number;
   summary: {
+    total_events: number;
     total_clicks: number;
+    total_queries: number;
     unique_visitors: number;
+    nav_clicks: number;
     site_clicks: number;
+    software_downloads: number;
     software_clicks: number;
-    search_context_clicks: number;
+    weather_queries: number;
+    phonebook_queries: number;
+    region_online_queries: number;
+    admin_division_queries: number;
+    region_queries: number;
+    search_context_events: number;
     search_context_rate: number;
-    avg_daily_clicks: number;
+    avg_daily_events: number;
     active_days: number;
-    today_clicks: number;
-    yesterday_clicks: number;
+    today_events: number;
+    yesterday_events: number;
     day_over_day_change: number;
     period_change: number;
   };
@@ -73,6 +91,11 @@ interface AnalyticsData {
   categories: CategoryItem[];
   top_sites: TopItem[];
   top_software: TopItem[];
+  top_searches: {
+    weather: SearchItem[];
+    phonebook: SearchItem[];
+    regions: SearchItem[];
+  };
   recent: RecentItem[];
 }
 
@@ -103,12 +126,73 @@ function parseLocalDay(day: string): Date {
   return new Date(year, (month || 1) - 1, date || 1);
 }
 
+function eventTypeLabel(type: AnalyticsEventType): string {
+  switch (type) {
+    case 'nav_click':
+      return '导航点击';
+    case 'software_download':
+      return '软件下载';
+    case 'weather_query':
+      return '天气查询';
+    case 'phonebook_query':
+      return '电话查询';
+    case 'region_online_query':
+      return '在线行政区';
+    case 'admin_division_query':
+      return '本地行政区';
+    default:
+      return type;
+  }
+}
+
+function eventTypeClass(type: AnalyticsEventType): string {
+  switch (type) {
+    case 'nav_click':
+      return 'bg-blue-100 text-blue-700';
+    case 'software_download':
+      return 'bg-teal-100 text-teal-700';
+    case 'weather_query':
+      return 'bg-cyan-100 text-cyan-700';
+    case 'phonebook_query':
+      return 'bg-amber-100 text-amber-700';
+    case 'region_online_query':
+      return 'bg-violet-100 text-violet-700';
+    case 'admin_division_query':
+      return 'bg-emerald-100 text-emerald-700';
+    default:
+      return 'bg-slate-100 text-slate-700';
+  }
+}
+
+function EventBadge({ type }: { type: AnalyticsEventType }) {
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ${eventTypeClass(type)}`}>
+      {eventTypeLabel(type)}
+    </span>
+  );
+}
+
 function SourceBadge({ page }: { page: string }) {
-  const label = sourcePageLabel(page);
   return (
     <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-xs">
-      {label}
+      {sourcePageLabel(page)}
     </span>
+  );
+}
+
+function SummaryCard({ title, value, hint, tone = 'neutral' }: { title: string; value: string; hint: string; tone?: 'neutral' | 'positive' | 'warning' }) {
+  const hintClass = tone === 'positive'
+    ? 'text-emerald-600'
+    : tone === 'warning'
+      ? 'text-amber-600'
+      : 'text-slate-400';
+
+  return (
+    <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+      <p className="text-sm text-slate-500">{title}</p>
+      <p className="text-2xl font-bold text-slate-900 mt-1">{value}</p>
+      <p className={`text-xs mt-2 ${hintClass}`}>{hint}</p>
+    </div>
   );
 }
 
@@ -157,6 +241,26 @@ function TopList({ title, items, emptyText }: { title: string; items: TopItem[];
   );
 }
 
+function SearchList({ title, items, emptyText }: { title: string; items: SearchItem[]; emptyText: string }) {
+  return (
+    <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+      <h3 className="text-lg font-bold text-slate-900 mb-4">{title}</h3>
+      {items.length === 0 ? (
+        <p className="text-sm text-slate-400 py-10 text-center">{emptyText}</p>
+      ) : (
+        <div className="space-y-3">
+          {items.map((item, index) => (
+            <div key={`${item.query}-${index}`} className="flex items-start justify-between gap-3">
+              <span className="text-sm text-slate-700 break-all">{item.query}</span>
+              <span className="shrink-0 text-xs text-slate-500 bg-slate-100 rounded-full px-2 py-0.5">{item.count}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AnalyticsPage() {
   const [days, setDays] = useState(7);
   const [data, setData] = useState<AnalyticsData | null>(null);
@@ -165,7 +269,7 @@ export default function AnalyticsPage() {
   useEffect(() => {
     setLoading(true);
     fetch(`/api/analytics?days=${days}`)
-      .then(res => res.json())
+      .then((res) => res.json())
       .then((payload: AnalyticsData) => {
         setData(payload);
         setLoading(false);
@@ -175,20 +279,22 @@ export default function AnalyticsPage() {
 
   const bars = useMemo(() => {
     if (!data) return [];
-    const maxClicks = Math.max(...data.daily.map(item => item.clicks), 1);
+    const maxEvents = Math.max(...data.daily.map((item) => item.events), 1);
     return data.daily.map((item, index) => {
       const day = parseLocalDay(item.day);
       const label = days <= 7 ? dayNames[day.getDay()] : `${day.getMonth() + 1}/${day.getDate()}`;
       return {
         label,
+        events: item.events,
         clicks: item.clicks,
-        height: `${Math.round((item.clicks / maxClicks) * 100)}%`,
+        queries: item.queries,
+        height: `${Math.round((item.events / maxEvents) * 100)}%`,
         active: index === data.daily.length - 1,
       };
     });
   }, [data, days]);
 
-  const maxHourClicks = data ? Math.max(...data.hourly.map(item => item.clicks), 1) : 1;
+  const maxHourEvents = data ? Math.max(...data.hourly.map((item) => item.events), 1) : 1;
 
   return (
     <div className="flex-1 overflow-y-auto p-6 md:p-8 lg:px-12 bg-background-light">
@@ -196,7 +302,7 @@ export default function AnalyticsPage() {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <h2 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">数据分析</h2>
-            <p className="text-slate-500 mt-1">访问行为、内容热度与下载趋势</p>
+            <p className="text-slate-500 mt-1">统一查看导航点击、天气/电话/行政区域查询与客户端来源</p>
           </div>
           <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg p-1 shadow-sm">
             {[7, 30].map((option) => (
@@ -214,38 +320,33 @@ export default function AnalyticsPage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-            <p className="text-sm text-slate-500">总点击量</p>
-            <p className="text-2xl font-bold text-slate-900 mt-1">{loading ? '--' : (data?.summary.total_clicks || 0).toLocaleString()}</p>
-            <p className={`text-xs mt-2 ${(data?.summary.period_change || 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-              较上周期 {loading ? '--' : formatPercent(data?.summary.period_change || 0)}
-            </p>
-          </div>
-          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-            <p className="text-sm text-slate-500">独立访客</p>
-            <p className="text-2xl font-bold text-slate-900 mt-1">{loading ? '--' : (data?.summary.unique_visitors || 0).toLocaleString()}</p>
-            <p className="text-xs text-slate-400 mt-2">去重标识按浏览器设备</p>
-          </div>
-          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-            <p className="text-sm text-slate-500">软件下载点击</p>
-            <p className="text-2xl font-bold text-slate-900 mt-1">{loading ? '--' : (data?.summary.software_clicks || 0).toLocaleString()}</p>
-            <p className="text-xs text-slate-400 mt-2">
-              站点点击 {loading ? '--' : (data?.summary.site_clicks || 0).toLocaleString()}
-            </p>
-          </div>
-          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-            <p className="text-sm text-slate-500">搜索上下文点击率</p>
-            <p className="text-2xl font-bold text-slate-900 mt-1">{loading ? '--' : `${data?.summary.search_context_rate || 0}%`}</p>
-            <p className="text-xs text-slate-400 mt-2">
-              今日 {loading ? '--' : data?.summary.today_clicks || 0} / 昨日 {loading ? '--' : data?.summary.yesterday_clicks || 0}
-            </p>
-          </div>
+          <SummaryCard
+            title="总行为量"
+            value={loading ? '--' : (data?.summary.total_events || 0).toLocaleString()}
+            hint={`较上周期 ${loading ? '--' : formatPercent(data?.summary.period_change || 0)}`}
+            tone={(data?.summary.period_change || 0) >= 0 ? 'positive' : 'warning'}
+          />
+          <SummaryCard
+            title="总查询量"
+            value={loading ? '--' : (data?.summary.total_queries || 0).toLocaleString()}
+            hint={`天气 ${data?.summary.weather_queries || 0} / 电话 ${data?.summary.phonebook_queries || 0}`}
+          />
+          <SummaryCard
+            title="导航点击"
+            value={loading ? '--' : (data?.summary.total_clicks || 0).toLocaleString()}
+            hint={`站点 ${data?.summary.nav_clicks || 0} / 软件 ${data?.summary.software_downloads || 0}`}
+          />
+          <SummaryCard
+            title="独立访客"
+            value={loading ? '--' : (data?.summary.unique_visitors || 0).toLocaleString()}
+            hint={`搜索上下文占比 ${loading ? '--' : `${data?.summary.search_context_rate || 0}%`}`}
+          />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-bold text-slate-900">点击趋势</h3>
+              <h3 className="text-lg font-bold text-slate-900">行为趋势</h3>
               <span className="text-xs text-slate-400">活跃天数 {data?.summary.active_days || 0} / {days}</span>
             </div>
             <div className="flex-1 flex items-end justify-between gap-2 h-64 px-2">
@@ -261,8 +362,8 @@ export default function AnalyticsPage() {
                         }`}
                         style={{ height: bar.height }}
                       />
-                      <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                        {bar.clicks}
+                      <div className="absolute -top-11 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 text-center">
+                        {bar.events} 条\n点 {bar.clicks} / 查 {bar.queries}
                       </div>
                     </div>
                     <span className="text-xs text-slate-400 font-medium">{bar.label}</span>
@@ -274,33 +375,28 @@ export default function AnalyticsPage() {
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col">
-            <h3 className="text-lg font-bold text-slate-900 mb-4">24 小时分布</h3>
-            {loading ? (
-              <div className="flex-1 flex items-center justify-center text-slate-400">加载中...</div>
-            ) : (
-              <div className="grid grid-cols-6 gap-2">
-                {(data?.hourly || []).map((item) => (
-                  <div key={item.hour} className="flex flex-col items-center gap-1">
-                    <div className="w-full h-16 bg-slate-100 rounded-md overflow-hidden flex items-end">
-                      <div
-                        className="w-full bg-primary/70 rounded-md"
-                        style={{ height: `${Math.max(6, Math.round((item.clicks / maxHourClicks) * 100))}%` }}
-                      />
-                    </div>
-                    <span className="text-[10px] text-slate-400">{item.hour.toString().padStart(2, '0')}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          <TopList title="热门站点 Top 10" items={data?.top_sites || []} emptyText="暂无站点点击数据" />
-          <TopList title="热门软件 Top 10" items={data?.top_software || []} emptyText="暂无软件下载数据" />
-
           <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-5">
+            <div>
+              <h3 className="text-lg font-bold text-slate-900 mb-3">24 小时分布</h3>
+              {loading ? (
+                <p className="text-slate-400 text-sm">加载中...</p>
+              ) : (
+                <div className="grid grid-cols-6 gap-2">
+                  {(data?.hourly || []).map((item) => (
+                    <div key={item.hour} className="flex flex-col items-center gap-1">
+                      <div className="w-full h-16 bg-slate-100 rounded-md overflow-hidden flex items-end">
+                        <div
+                          className="w-full bg-primary/70 rounded-md"
+                          style={{ height: `${Math.max(6, Math.round((item.events / maxHourEvents) * 100))}%` }}
+                        />
+                      </div>
+                      <span className="text-[10px] text-slate-400">{item.hour.toString().padStart(2, '0')}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div>
               <h3 className="text-lg font-bold text-slate-900 mb-3">来源页面</h3>
               {loading ? (
@@ -308,9 +404,9 @@ export default function AnalyticsPage() {
               ) : (data?.source_pages.length || 0) > 0 ? (
                 <div className="flex flex-col gap-2">
                   {(data?.source_pages || []).map((item) => (
-                    <div key={item.page} className="flex items-center justify-between text-sm">
+                    <div key={item.page} className="flex items-center justify-between text-sm gap-3">
                       <SourceBadge page={item.page} />
-                      <span className="text-slate-500">{item.clicks} ({item.ratio}%)</span>
+                      <span className="text-slate-500 shrink-0">{item.events} ({item.ratio}%)</span>
                     </div>
                   ))}
                 </div>
@@ -326,9 +422,9 @@ export default function AnalyticsPage() {
               ) : (data?.categories.length || 0) > 0 ? (
                 <div className="flex flex-col gap-2">
                   {(data?.categories || []).slice(0, 6).map((category, index) => (
-                    <div key={`${category.category_id}-${category.label}-${index}`} className="flex items-center justify-between text-sm">
+                    <div key={`${category.category_id}-${category.label}-${index}`} className="flex items-center justify-between text-sm gap-3">
                       <span className="text-slate-700 truncate">{category.label}</span>
-                      <span className="text-slate-500 ml-2 shrink-0">{category.clicks}</span>
+                      <span className="text-slate-500 shrink-0">{category.clicks}</span>
                     </div>
                   ))}
                 </div>
@@ -339,10 +435,21 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <TopList title="热门站点 Top 10" items={data?.top_sites || []} emptyText="暂无站点点击数据" />
+          <TopList title="热门软件 Top 10" items={data?.top_software || []} emptyText="暂无软件下载数据" />
+        </div>
+
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          <SearchList title="热门天气查询" items={data?.top_searches.weather || []} emptyText="暂无天气查询记录" />
+          <SearchList title="热门电话查询" items={data?.top_searches.phonebook || []} emptyText="暂无电话查询记录" />
+          <SearchList title="热门行政区域查询" items={data?.top_searches.regions || []} emptyText="暂无行政区域查询记录" />
+        </div>
+
         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-bold text-slate-900">最近活动</h3>
-            <span className="text-xs text-slate-400">最近 20 条</span>
+            <span className="text-xs text-slate-400">最近 30 条</span>
           </div>
           {loading ? (
             <div className="text-slate-400 text-sm py-8 text-center">加载中...</div>
@@ -352,22 +459,27 @@ export default function AnalyticsPage() {
                 <thead>
                   <tr className="text-left text-slate-400 border-b border-slate-200">
                     <th className="py-2 pr-4 font-medium">时间</th>
-                    <th className="py-2 pr-4 font-medium">目标</th>
-                    <th className="py-2 pr-4 font-medium">类型</th>
+                    <th className="py-2 pr-4 font-medium">行为</th>
+                    <th className="py-2 pr-4 font-medium">目标 / 关键词</th>
                     <th className="py-2 pr-4 font-medium">来源</th>
                     <th className="py-2 pr-4 font-medium">分类</th>
+                    <th className="py-2 pr-4 font-medium">客户端 IP</th>
                     <th className="py-2 font-medium">搜索上下文</th>
                   </tr>
                 </thead>
                 <tbody>
                   {(data?.recent || []).map((item) => (
-                    <tr key={item.id} className="border-b border-slate-100 text-slate-600">
-                      <td className="py-2 pr-4">{formatRelativeTime(item.created_at)}</td>
-                      <td className="py-2 pr-4 truncate max-w-[220px]">{item.target_name}</td>
-                      <td className="py-2 pr-4">{item.target_type === 'site' ? '站点' : '软件'}</td>
-                      <td className="py-2 pr-4"><SourceBadge page={item.page} /></td>
-                      <td className="py-2 pr-4">{item.category_label}</td>
-                      <td className="py-2">{item.has_search ? '是' : '否'}</td>
+                    <tr key={item.id} className="border-b border-slate-100 text-slate-600 align-top">
+                      <td className="py-3 pr-4 whitespace-nowrap">{formatRelativeTime(item.created_at)}</td>
+                      <td className="py-3 pr-4"><EventBadge type={item.event_type} /></td>
+                      <td className="py-3 pr-4 min-w-[240px] max-w-[360px]">
+                        <p className="font-medium text-slate-800 break-words">{item.target_name}</p>
+                        {item.search_query && <p className="text-xs text-slate-500 mt-1 break-all">关键词：{item.search_query}</p>}
+                      </td>
+                      <td className="py-3 pr-4 whitespace-nowrap"><SourceBadge page={item.page} /></td>
+                      <td className="py-3 pr-4 whitespace-nowrap">{item.category_label || '-'}</td>
+                      <td className="py-3 pr-4 whitespace-nowrap font-mono text-xs">{item.client_ip || '-'}</td>
+                      <td className="py-3 whitespace-nowrap">{item.has_search ? '是' : '否'}</td>
                     </tr>
                   ))}
                 </tbody>

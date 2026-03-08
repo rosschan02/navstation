@@ -2,6 +2,62 @@
 
 本文件记录 NavStation 导航站的所有重要更新。
 
+## [2.16.0] - 2026-03-08
+
+### 新增 / 变更
+
+#### 统一行为统计与客户端审计
+- 新增统一行为日志表 `analytics_events`
+- 导航点击、软件下载、天气查询、电话查询、在线行政区域查询、本地行政区查询统一写入行为日志
+- 行为日志统一记录客户端 IP、访客 ID、搜索词、来源页面、分类信息与扩展 metadata
+- `click_events` 保留用于兼容历史点击数据，新流量主写 `analytics_events`
+
+#### 统计页重构
+- `GET /api/analytics` 升级为统一行为聚合接口
+- 后台统计页新增总行为量、总查询量、热门天气/电话/行政区域查询词
+- 最近活动列表新增行为类型、搜索关键词与客户端 IP 展示
+- 聚合逻辑兼容读取旧 `click_events` 历史数据
+
+#### 查询交互降噪
+- 电话本速查由输入即查改为显式点击查询 / 回车查询
+- 天气速查弹窗改为手动查询，不再打开即自动请求
+- 行政区域查询继续保持显式查询，详情查看不计入搜索日志
+
+#### 部署与文档
+- 新增迁移 `src/db/migrations/012_add_analytics_events.sql`
+- README、DEPLOY 更新统一行为统计与升级迁移说明
+- 新增回归测试，锁定“电话本显式查询”和“天气弹窗不自动查询”约束
+
+### 修改文件
+
+```
+src/app/HomeClient.tsx
+src/app/analytics/page.tsx
+src/app/api/admin-divisions/route.ts
+src/app/api/analytics/click/route.ts
+src/app/api/analytics/route.ts
+src/app/api/phonebook/route.ts
+src/app/api/regions/search/route.ts
+src/app/api/software/[id]/download/route.ts
+src/app/api/weather/route.ts
+src/app/legacy/route.ts
+src/app/page.tsx
+src/components/AdministrativeDivisionModal.tsx
+src/components/PhonebookQuickSearchModal.tsx
+src/components/WeatherQuickSearchModal.tsx
+src/db/schema.sql
+src/db/migrations/012_add_analytics_events.sql
+src/lib/analyticsEvents.ts
+src/lib/clientIp.ts
+src/types/index.ts
+tests/analytics-interactions.test.mjs
+README.md
+DEPLOY.md
+CHANGELOG.md
+```
+
+---
+
 ## [2.15.0] - 2026-03-06
 
 ### 新增 / 变更

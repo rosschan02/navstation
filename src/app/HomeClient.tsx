@@ -265,14 +265,17 @@ export function HomeClient({ categories, sites, footerText, clientIP }: HomeClie
       <PhonebookQuickSearchModal
         isOpen={isPhonebookModalOpen}
         onClose={() => setIsPhonebookModalOpen(false)}
+        visitorId={visitorId}
       />
       <AdministrativeDivisionModal
         isOpen={isAdminDivisionModalOpen}
         onClose={() => setIsAdminDivisionModalOpen(false)}
+        visitorId={visitorId}
       />
       <WeatherQuickSearchModal
         isOpen={isWeatherModalOpen}
         onClose={() => setIsWeatherModalOpen(false)}
+        visitorId={visitorId}
       />
     </div>
   );

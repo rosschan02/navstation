@@ -3,7 +3,8 @@ import pool from '@/db';
 import { readFile } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
-import { buildAnalyticsSource } from '@/lib/analyticsSource';
+import { recordAnalyticsEvent } from '@/lib/analyticsEvents';
+import { getClientIpFromRequest } from '@/lib/clientIp';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,7 +17,10 @@ export async function GET(
 
     // Get software info
     const { rows } = await pool.query(
-      'SELECT * FROM software WHERE id = $1',
+      `SELECT sw.*, c.label as category_label
+       FROM software sw
+       LEFT JOIN categories c ON sw.category_id = c.id
+       WHERE sw.id = $1`,
       [id]
     );
 
@@ -42,12 +46,23 @@ export async function GET(
     const category = request.nextUrl.searchParams.get('cat') || 'none';
     const hasSearch = request.nextUrl.searchParams.get('q') === '1';
 
-    // Keep download analytics in sync with click analytics for the dashboard.
     try {
-      await pool.query(
-        'INSERT INTO click_events (target_type, target_id, source) VALUES ($1, $2, $3)',
-        ['software', id, buildAnalyticsSource({ page: 'software', visitorId: sid, category, hasSearch })]
-      );
+      await recordAnalyticsEvent({
+        eventType: 'software_download',
+        targetType: 'software',
+        targetId: Number(id),
+        targetName: software.name,
+        categoryId: software.category_id ?? null,
+        categoryLabel: software.category_label || '',
+        page: 'software',
+        visitorId: sid,
+        clientIp: getClientIpFromRequest(request),
+        hasSearch,
+        metadata: {
+          legacy_category: category,
+          file_name: software.file_name,
+        },
+      });
     } catch (analyticsError) {
       console.error('Failed to track software download analytics:', analyticsError);
     }

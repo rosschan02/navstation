@@ -1,24 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/db';
 import type { Category, SiteData, SoftwareItem, SiteSettings } from '@/types';
-
-function getClientIP(request: NextRequest): string {
-  // 优先从代理头获取真实客户端 IP
-  const forwardedFor = request.headers.get('x-forwarded-for');
-  if (forwardedFor) {
-    const ip = forwardedFor.split(',')[0].trim();
-    if (ip && !ip.includes(':')) {
-      return ip;
-    }
-  }
-
-  const realIP = request.headers.get('x-real-ip');
-  if (realIP && !realIP.includes(':')) {
-    return realIP;
-  }
-
-  return '';
-}
+import { getClientIpFromRequest } from '@/lib/clientIp';
 
 export const dynamic = 'force-dynamic';
 
@@ -48,7 +31,7 @@ async function getSettings(): Promise<SiteSettings> {
 
 export async function GET(request: NextRequest) {
   // 获取客户端 IP
-  const clientIP = getClientIP(request);
+  const clientIP = getClientIpFromRequest(request);
 
   // 获取站点设置
   const settings = await getSettings();

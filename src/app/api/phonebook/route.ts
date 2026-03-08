@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/db';
 import { authenticate, hasPermission, createAuthErrorResponse, extractApiKey } from '@/lib/apiAuth';
+import { recordAnalyticsEvent } from '@/lib/analyticsEvents';
+import { getClientIpFromRequest } from '@/lib/clientIp';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,6 +57,8 @@ export async function GET(request: NextRequest) {
   }
 
   const search = normalizeText(request.nextUrl.searchParams.get('search'));
+  const visitorId = normalizeText(request.nextUrl.searchParams.get('sid')) || 'anon';
+  const page = normalizeText(request.nextUrl.searchParams.get('page')) || 'home';
   const limit = clampLimit(request.nextUrl.searchParams.get('limit'), includeInactive ? 500 : 50);
 
   try {
@@ -81,6 +85,27 @@ export async function GET(request: NextRequest) {
     query += ` ORDER BY sort_order ASC, id ASC LIMIT $${params.length}`;
 
     const { rows } = await pool.query(query, params);
+
+    if (search && !includeInactive) {
+      try {
+        await recordAnalyticsEvent({
+          eventType: 'phonebook_query',
+          targetType: 'tool',
+          targetName: '院内电话速查',
+          page,
+          visitorId,
+          clientIp: getClientIpFromRequest(request),
+          searchQuery: search,
+          metadata: {
+            result_count: rows.length,
+            limit,
+          },
+        });
+      } catch (analyticsError) {
+        console.error('Failed to record phonebook analytics event:', analyticsError);
+      }
+    }
+
     return NextResponse.json(rows);
   } catch (error) {
     const pgError = error as { code?: string };

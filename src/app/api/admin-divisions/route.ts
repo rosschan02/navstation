@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/db';
+import { recordAnalyticsEvent } from '@/lib/analyticsEvents';
+import { getClientIpFromRequest } from '@/lib/clientIp';
 
 export const dynamic = 'force-dynamic';
 
@@ -139,6 +141,8 @@ async function getDivisionDetail(level: number, code: string) {
 //   - detail_level + detail_code
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
+  const visitorId = normalizeText(searchParams.get('sid'), 64) || 'anon';
+  const page = normalizeText(searchParams.get('page'), 32) || 'home';
 
   const detailLevel = parseLevel(searchParams.get('detail_level'));
   const detailCode = normalizeText(searchParams.get('detail_code'), 12);
@@ -161,6 +165,25 @@ export async function GET(request: NextRequest) {
     const limit = parseLimit(searchParams.get('limit'), 50);
     const items = await searchDivisions(keyword, level, limit);
 
+    try {
+      await recordAnalyticsEvent({
+        eventType: 'admin_division_query',
+        targetType: 'tool',
+        targetName: '行政区域查询',
+        page,
+        visitorId,
+        clientIp: getClientIpFromRequest(request),
+        searchQuery: keyword,
+        metadata: {
+          level,
+          limit,
+          result_count: items.length,
+        },
+      });
+    } catch (analyticsError) {
+      console.error('Failed to record admin division analytics event:', analyticsError);
+    }
+
     return NextResponse.json({
       total: items.length,
       items,
@@ -176,4 +199,3 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: '本地行政区查询失败，请稍后重试' }, { status: 500 });
   }
 }
-

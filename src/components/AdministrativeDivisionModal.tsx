@@ -7,6 +7,7 @@ import React, { useEffect, useState } from 'react';
 interface AdministrativeDivisionModalProps {
   isOpen: boolean;
   onClose: () => void;
+  visitorId: string;
 }
 
 type SearchMode = 'online' | 'local';
@@ -120,6 +121,7 @@ async function copyText(text: string): Promise<void> {
 export function AdministrativeDivisionModal({
   isOpen,
   onClose,
+  visitorId,
 }: AdministrativeDivisionModalProps) {
   const [mode, setMode] = useState<SearchMode>('online');
 
@@ -206,7 +208,7 @@ export function AdministrativeDivisionModal({
     setError('');
     setSelectedOnlineItem(null);
     try {
-      const params = new URLSearchParams({ query, region });
+      const params = new URLSearchParams({ query, region, sid: visitorId, page: 'home' });
       const res = await fetch(`/api/regions/search?${params}`, { cache: 'no-store' });
       const data = (await res.json().catch(() => ({}))) as Partial<RegionSearchResponse> & { error?: string };
       if (!res.ok) throw new Error(data.error || '查询失败');
@@ -237,7 +239,7 @@ export function AdministrativeDivisionModal({
     setError('');
     setDetail(null);
     try {
-      const params = new URLSearchParams({ keyword: trimmed, level: String(level), limit: '80' });
+      const params = new URLSearchParams({ keyword: trimmed, level: String(level), limit: '80', sid: visitorId, page: 'home' });
       const res = await fetch(`/api/admin-divisions?${params}`, { cache: 'no-store' });
       const data = (await res.json().catch(() => ({}))) as Partial<LocalSearchResponse> & { error?: string };
       if (!res.ok) throw new Error(data.error || '查询失败');

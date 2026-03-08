@@ -7,6 +7,7 @@
 - [手动部署](#手动部署)
 - [环境变量说明](#环境变量说明)
 - [数据库管理](#数据库管理)
+- [版本升级迁移](#版本升级迁移)
 - [常见问题](#常见问题)
 
 ---
@@ -75,6 +76,12 @@ git pull
 docker-compose up -d --build
 ```
 
+如果是从旧版本升级到统一行为统计版本，请补执行：
+
+```bash
+docker exec -i navstation-db-1 psql -U navstation -d navstation < src/db/migrations/012_add_analytics_events.sql
+```
+
 ### 导入四级行政区数据（Docker 数据库）
 
 如果你要启用首页「本地行政区查询」按钮，请执行以下步骤：
@@ -133,6 +140,12 @@ psql -h 数据库地址 -U 用户名 -d 数据库名 -f src/db/schema.sql
 psql -h 数据库地址 -U 用户名 -d 数据库名 -f src/db/seed.sql
 ```
 
+如为增量升级，再执行：
+
+```bash
+psql -h 数据库地址 -U 用户名 -d 数据库名 -f src/db/migrations/012_add_analytics_events.sql
+```
+
 ---
 
 ## 手动部署
@@ -183,6 +196,9 @@ npm run import:weather-districts
 # 可选：导入本地四级行政区（本地行政区查询按钮会用到）
 psql -h localhost -U 用户名 -d 数据库名 -f src/db/migrations/011_add_admin_divisions.sql
 psql -h localhost -U 用户名 -d 数据库名 -f scripts/import-admin-divisions.sql
+
+# 旧版本升级到统一行为统计时，追加执行
+psql -h localhost -U 用户名 -d 数据库名 -f src/db/migrations/012_add_analytics_events.sql
 ```
 
 #### 4. 构建
@@ -246,6 +262,30 @@ server {
 
 ## 数据库管理
 
+### 版本升级迁移
+
+### 升级到统一行为统计版本
+
+本版本新增 `analytics_events` 表，后台统计页与查询审计依赖该表。
+
+执行方式：
+
+```bash
+psql -h localhost -U 用户名 -d 数据库名 -f src/db/migrations/012_add_analytics_events.sql
+```
+
+Docker Compose 默认数据库：
+
+```bash
+docker exec -i navstation-db-1 psql -U navstation -d navstation < src/db/migrations/012_add_analytics_events.sql
+```
+
+校验：
+
+```bash
+psql -h localhost -U 用户名 -d 数据库名 -c "\\d+ analytics_events"
+```
+
 ### 表结构
 
 ```
@@ -254,6 +294,7 @@ sites                  - 导航站点
 software               - 软件下载
 users                  - 管理员
 click_events           - 点击事件统计
+analytics_events       - 统一行为日志（点击/下载/查询）
 site_settings          - 站点设置
 api_keys               - API 密钥
 phonebook_entries      - 电话本条目
