@@ -2,6 +2,26 @@
 
 本文件记录 NavStation 导航站的所有重要更新。
 
+## [2.18.0] - 2026-03-12
+
+### 新增 / 变更
+
+#### `next-intl` 国际化主干迁移完成
+- 全站多语言运行时从自定义 `LocaleContext + DOM 自动翻译` 迁移到 `next-intl`
+- 新增 `src/i18n/routing.ts`、`src/i18n/navigation.ts`、`src/i18n/request.ts`，统一 locale 路由、请求上下文与导航 API
+- `next.config.ts` 接入 `next-intl` 插件，`src/proxy.ts` 继续保留默认语言读取、IE 兼容跳转与 API/静态资源跳过逻辑
+- 删除旧实现：`src/components/LocaleAutoTranslate.tsx`、`src/contexts/LocaleContext.tsx`、`src/lib/i18n/translate.ts`
+
+#### 后台与查询弹窗页面迁移
+- 首页、软件下载页、站点管理、分类管理、软件管理、站点设置、账号设置、API 密钥、电话本、DNS 管理、管理工具、分析页全部切换到 `next-intl`
+- 行政区域速查、行政区域查询、电话本速查、本地行政区查询、天气速查弹窗全部接入消息字典
+- 新增并扩充消息文件：`messages/en.json`、`messages/zh-CN.json`、`messages/ko.json`、`messages/ja.json`
+- 新增命名空间：`dns`、`tools`、`analytics`、`regionSearch`、`phonebookQuickSearch`、`weatherQuickSearch`
+
+#### 验证
+- `npm test` 通过
+- `npm run build` 通过
+
 ## [2.17.1] - 2026-03-09
 
 ### 修复

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 type ToolType = 'ping' | 'tracert';
 
@@ -10,21 +11,18 @@ interface ToolResult {
 }
 
 export function ToolsClient() {
-    // Ping 状态
+    const t = useTranslations('tools');
     const [pingHost, setPingHost] = useState('');
     const [pingCount, setPingCount] = useState(4);
     const [pingResult, setPingResult] = useState<ToolResult | null>(null);
     const [pingLoading, setPingLoading] = useState(false);
 
-    // Traceroute 状态
     const [tracertHost, setTracertHost] = useState('');
     const [tracertResult, setTracertResult] = useState<ToolResult | null>(null);
     const [tracertLoading, setTracertLoading] = useState(false);
 
-    // 当前活动标签
     const [activeTab, setActiveTab] = useState<ToolType>('ping');
 
-    // 执行 Ping
     const handlePing = async () => {
         if (!pingHost.trim()) return;
         setPingLoading(true);
@@ -38,13 +36,12 @@ export function ToolsClient() {
             const data = await res.json();
             setPingResult(data);
         } catch {
-            setPingResult({ error: '请求失败，请检查网络连接' });
+            setPingResult({ error: t('requestFailed') });
         } finally {
             setPingLoading(false);
         }
     };
 
-    // 执行 Traceroute
     const handleTracert = async () => {
         if (!tracertHost.trim()) return;
         setTracertLoading(true);
@@ -58,13 +55,12 @@ export function ToolsClient() {
             const data = await res.json();
             setTracertResult(data);
         } catch {
-            setTracertResult({ error: '请求失败，请检查网络连接' });
+            setTracertResult({ error: t('requestFailed') });
         } finally {
             setTracertLoading(false);
         }
     };
 
-    // 键盘回车触发
     const handleKeyDown = (e: React.KeyboardEvent, action: () => void) => {
         if (e.key === 'Enter') action();
     };
@@ -72,15 +68,13 @@ export function ToolsClient() {
     return (
         <div className="flex-1 flex flex-col h-full overflow-hidden relative bg-background-light">
             <div className="flex-1 overflow-y-auto p-6 md:p-8 lg:px-12">
-                {/* 页面标题 */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">管理工具</h1>
-                        <p className="text-slate-500 mt-1">网络诊断工具 — Ping 测试 与 Traceroute 路由追踪</p>
+                        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{t('title')}</h1>
+                        <p className="text-slate-500 mt-1">{t('subtitle')}</p>
                     </div>
                 </div>
 
-                {/* 标签切换 */}
                 <div className="flex gap-1 bg-slate-100 rounded-xl p-1 mb-6 w-fit">
                     <button
                         onClick={() => setActiveTab('ping')}
@@ -88,9 +82,9 @@ export function ToolsClient() {
                             ? 'bg-white text-primary shadow-sm'
                             : 'text-slate-500 hover:text-slate-700'
                             }`}
-                    >
-                        <span className="material-symbols-outlined text-[18px]">network_ping</span>
-                        Ping 测试
+                        >
+                            <span className="material-symbols-outlined text-[18px]">network_ping</span>
+                        {t('pingTab')}
                     </button>
                     <button
                         onClick={() => setActiveTab('tracert')}
@@ -98,31 +92,30 @@ export function ToolsClient() {
                             ? 'bg-white text-primary shadow-sm'
                             : 'text-slate-500 hover:text-slate-700'
                             }`}
-                    >
-                        <span className="material-symbols-outlined text-[18px]">route</span>
-                        Traceroute 路由追踪
+                        >
+                            <span className="material-symbols-outlined text-[18px]">route</span>
+                        {t('tracerouteTab')}
                     </button>
                 </div>
 
-                {/* Ping 面板 */}
                 {activeTab === 'ping' && (
                     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                         <div className="p-5 border-b border-slate-100">
                             <div className="flex flex-col sm:flex-row gap-3">
                                 <div className="flex-1">
-                                    <label className="text-xs font-medium text-slate-500 mb-1.5 block">目标地址</label>
+                                    <label className="text-xs font-medium text-slate-500 mb-1.5 block">{t('targetAddress')}</label>
                                     <input
                                         type="text"
                                         value={pingHost}
                                         onChange={(e) => setPingHost(e.target.value)}
                                         onKeyDown={(e) => handleKeyDown(e, handlePing)}
-                                        placeholder="输入 IP 或域名，例如 192.168.1.1"
+                                        placeholder={t('pingPlaceholder')}
                                         className="w-full px-3. py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-slate-400"
                                         disabled={pingLoading}
                                     />
                                 </div>
                                 <div className="w-24">
-                                    <label className="text-xs font-medium text-slate-500 mb-1.5 block">次数</label>
+                                    <label className="text-xs font-medium text-slate-500 mb-1.5 block">{t('count')}</label>
                                     <input
                                         type="number"
                                         value={pingCount}
@@ -142,12 +135,12 @@ export function ToolsClient() {
                                         {pingLoading ? (
                                             <>
                                                 <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
-                                                执行中...
+                                                {t('running')}
                                             </>
                                         ) : (
                                             <>
                                                 <span className="material-symbols-outlined text-[18px]">play_arrow</span>
-                                                执行 Ping
+                                                {t('runPing')}
                                             </>
                                         )}
                                     </button>
@@ -155,18 +148,17 @@ export function ToolsClient() {
                             </div>
                         </div>
 
-                        {/* Ping 结果 */}
                         {(pingResult || pingLoading) && (
                             <div className="p-5">
                                 <div className="flex items-center gap-2 mb-3">
                                     <span className="material-symbols-outlined text-[16px] text-slate-400">terminal</span>
-                                    <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">输出结果</span>
+                                    <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t('output')}</span>
                                 </div>
                                 <div className="bg-slate-900 rounded-xl p-4 overflow-x-auto">
                                     {pingLoading ? (
                                         <div className="flex items-center gap-2 text-green-400 text-sm font-mono">
                                             <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
-                                            正在执行 Ping 测试，请稍候...
+                                            {t('pingRunningHint')}
                                         </div>
                                     ) : pingResult?.error ? (
                                         <pre className="text-red-400 text-sm font-mono whitespace-pre-wrap break-all">{pingResult.error}</pre>
@@ -179,19 +171,18 @@ export function ToolsClient() {
                     </div>
                 )}
 
-                {/* Traceroute 面板 */}
                 {activeTab === 'tracert' && (
                     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                         <div className="p-5 border-b border-slate-100">
                             <div className="flex flex-col sm:flex-row gap-3">
                                 <div className="flex-1">
-                                    <label className="text-xs font-medium text-slate-500 mb-1.5 block">目标地址</label>
+                                    <label className="text-xs font-medium text-slate-500 mb-1.5 block">{t('targetAddress')}</label>
                                     <input
                                         type="text"
                                         value={tracertHost}
                                         onChange={(e) => setTracertHost(e.target.value)}
                                         onKeyDown={(e) => handleKeyDown(e, handleTracert)}
-                                        placeholder="输入 IP 或域名，例如 baidu.com"
+                                        placeholder={t('traceroutePlaceholder')}
                                         className="w-full px-3 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-slate-400"
                                         disabled={tracertLoading}
                                     />
@@ -205,12 +196,12 @@ export function ToolsClient() {
                                         {tracertLoading ? (
                                             <>
                                                 <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
-                                                执行中...
+                                                {t('running')}
                                             </>
                                         ) : (
                                             <>
                                                 <span className="material-symbols-outlined text-[18px]">play_arrow</span>
-                                                执行 Traceroute
+                                                {t('runTraceroute')}
                                             </>
                                         )}
                                     </button>
@@ -219,23 +210,22 @@ export function ToolsClient() {
                             {tracertLoading && (
                                 <p className="text-xs text-amber-600 mt-2 flex items-center gap-1">
                                     <span className="material-symbols-outlined text-[14px]">info</span>
-                                    Traceroute 可能需要较长时间，请耐心等待（最长 60 秒）
+                                    {t('tracerouteHint')}
                                 </p>
                             )}
                         </div>
 
-                        {/* Traceroute 结果 */}
                         {(tracertResult || tracertLoading) && (
                             <div className="p-5">
                                 <div className="flex items-center gap-2 mb-3">
                                     <span className="material-symbols-outlined text-[16px] text-slate-400">terminal</span>
-                                    <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">输出结果</span>
+                                    <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t('output')}</span>
                                 </div>
                                 <div className="bg-slate-900 rounded-xl p-4 overflow-x-auto">
                                     {tracertLoading ? (
                                         <div className="flex items-center gap-2 text-green-400 text-sm font-mono">
                                             <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
-                                            正在执行路由追踪，请稍候...
+                                            {t('tracerouteRunningHint')}
                                         </div>
                                     ) : tracertResult?.error ? (
                                         <pre className="text-red-400 text-sm font-mono whitespace-pre-wrap break-all">{tracertResult.error}</pre>

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import type { PhonebookEntry } from '@/types';
 import { useMessage } from '@/contexts/MessageContext';
 
@@ -38,6 +39,7 @@ async function copyText(text: string): Promise<void> {
 }
 
 export function PhonebookQuickSearchModal({ isOpen, onClose, visitorId }: PhonebookQuickSearchModalProps) {
+  const t = useTranslations('phonebookQuickSearch');
   const message = useMessage();
   const [keyword, setKeyword] = useState('');
   const [items, setItems] = useState<PhonebookEntry[]>([]);
@@ -72,7 +74,7 @@ export function PhonebookQuickSearchModal({ isOpen, onClose, visitorId }: Phoneb
 
     if (!trimmed) {
       setItems([]);
-      setError('请输入关键词');
+      setError(t('enterKeyword'));
       return;
     }
 
@@ -82,13 +84,13 @@ export function PhonebookQuickSearchModal({ isOpen, onClose, visitorId }: Phoneb
       const res = await fetch(buildQueryUrl(trimmed, visitorId), { cache: 'no-store' });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || '查询失败');
+        throw new Error(data.error || t('searchFailed'));
       }
       const data = await res.json();
       setItems(Array.isArray(data) ? data : []);
     } catch (err) {
       setItems([]);
-      setError((err as Error).message || '查询失败，请稍后重试');
+      setError((err as Error).message || t('searchFailedRetry'));
     } finally {
       setIsLoading(false);
     }
@@ -102,7 +104,7 @@ export function PhonebookQuickSearchModal({ isOpen, onClose, visitorId }: Phoneb
         setCopiedKey((prev) => (prev === key ? '' : prev));
       }, 1500);
     } catch {
-      message.error('复制失败，请手动复制');
+      message.error(t('copyFailed'));
     }
   };
 
@@ -113,8 +115,8 @@ export function PhonebookQuickSearchModal({ isOpen, onClose, visitorId }: Phoneb
       return (
         <div className="py-16 flex flex-col items-center text-slate-400">
           <span className="material-symbols-outlined text-[48px] mb-3 text-slate-300">search</span>
-          <p className="text-base">输入关键词开始搜索</p>
-          <p className="text-sm mt-1 text-slate-300">支持科室名称、短码、长码</p>
+          <p className="text-base">{t('initialPrompt')}</p>
+          <p className="text-sm mt-1 text-slate-300">{t('initialSubtitle')}</p>
         </div>
       );
     }
@@ -123,7 +125,7 @@ export function PhonebookQuickSearchModal({ isOpen, onClose, visitorId }: Phoneb
       return (
         <div className="py-16 flex flex-col items-center text-slate-400">
           <span className="material-symbols-outlined text-[36px] mb-3 animate-spin">progress_activity</span>
-          <p className="text-base">查询中...</p>
+          <p className="text-base">{t('searching')}</p>
         </div>
       );
     }
@@ -136,22 +138,20 @@ export function PhonebookQuickSearchModal({ isOpen, onClose, visitorId }: Phoneb
       return (
         <div className="py-16 flex flex-col items-center text-slate-400">
           <span className="material-symbols-outlined text-[48px] mb-3 text-slate-300">search_off</span>
-          <p className="text-base">没有找到匹配结果</p>
-          <p className="text-sm mt-1 text-slate-300">试试其他关键词</p>
+          <p className="text-base">{t('emptyTitle')}</p>
+          <p className="text-sm mt-1 text-slate-300">{t('emptySubtitle')}</p>
         </div>
       );
     }
 
     return (
       <div>
-        <p className="text-sm text-slate-500 px-1 mb-2">找到 {items.length} 条结果</p>
-        {/* Table header */}
+        <p className="text-sm text-slate-500 px-1 mb-2">{t('resultsFound', { count: items.length })}</p>
         <div className="flex items-center px-4 py-2 text-sm text-slate-500 font-medium border-b border-slate-100">
-          <span className="flex-1 min-w-0">科室</span>
-          <span className="w-24 text-center shrink-0">短码</span>
-          <span className="w-36 text-center shrink-0">长码</span>
+          <span className="flex-1 min-w-0">{t('department')}</span>
+          <span className="w-24 text-center shrink-0">{t('shortCode')}</span>
+          <span className="w-36 text-center shrink-0">{t('longCode')}</span>
         </div>
-        {/* Rows */}
         <div className="divide-y divide-slate-100">
           {items.map((item) => {
             const shortCopied = copiedKey === `${item.id}-short`;
@@ -174,10 +174,10 @@ export function PhonebookQuickSearchModal({ isOpen, onClose, visitorId }: Phoneb
                     <button
                       onClick={() => handleCopy(item.short_code, `${item.id}-short`)}
                       className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md hover:bg-primary/10 transition-colors group"
-                      title="点击复制"
+                      title={t('copy')}
                     >
                       {shortCopied ? (
-                        <span className="text-sm text-green-600 font-medium">已复制</span>
+                        <span className="text-sm text-green-600 font-medium">{t('copied')}</span>
                       ) : (
                         <>
                           <span className="text-xl font-mono font-semibold text-slate-800">{item.short_code}</span>
@@ -196,10 +196,10 @@ export function PhonebookQuickSearchModal({ isOpen, onClose, visitorId }: Phoneb
                     <button
                       onClick={() => handleCopy(item.long_code, `${item.id}-long`)}
                       className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md hover:bg-primary/10 transition-colors group"
-                      title="点击复制"
+                      title={t('copy')}
                     >
                       {longCopied ? (
-                        <span className="text-sm text-green-600 font-medium">已复制</span>
+                        <span className="text-sm text-green-600 font-medium">{t('copied')}</span>
                       ) : (
                         <>
                           <span className="text-base font-mono font-semibold text-slate-800">{item.long_code}</span>
@@ -227,11 +227,11 @@ export function PhonebookQuickSearchModal({ isOpen, onClose, visitorId }: Phoneb
         <div className="relative w-full max-w-xl rounded-2xl bg-white shadow-xl border border-slate-200 overflow-hidden">
           <div className="px-5 py-4 border-b border-slate-200">
             <div className="flex items-center justify-between gap-3">
-              <h3 className="text-lg font-semibold text-slate-900">电话本速查</h3>
+              <h3 className="text-lg font-semibold text-slate-900">{t('title')}</h3>
               <button
                 onClick={onClose}
                 className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100"
-                aria-label="关闭"
+                aria-label={t('close')}
               >
                 <span className="material-symbols-outlined text-[20px]">close</span>
               </button>
@@ -250,7 +250,7 @@ export function PhonebookQuickSearchModal({ isOpen, onClose, visitorId }: Phoneb
                     void handleSearch();
                   }
                 }}
-                placeholder="搜索科室名称、短码或长码..."
+                placeholder={t('placeholder')}
                 className="w-full pl-10 pr-24 py-3 bg-slate-50 border border-slate-200 rounded-xl text-base focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white transition-colors"
               />
               <button
@@ -259,7 +259,7 @@ export function PhonebookQuickSearchModal({ isOpen, onClose, visitorId }: Phoneb
                 disabled={isLoading}
                 className="absolute right-2 top-1/2 -translate-y-1/2 h-9 px-3 rounded-lg bg-primary text-white text-sm font-medium hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed transition-opacity"
               >
-                {isLoading ? '查询中' : '查询'}
+                {isLoading ? t('searchingShort') : t('search')}
               </button>
             </div>
           </div>

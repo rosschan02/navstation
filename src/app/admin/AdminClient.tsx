@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import type { SiteData, Category, SoftwareItem, SiteTranslationFields } from '@/types';
 import { IconPicker } from '@/components/IconPicker';
@@ -26,6 +27,8 @@ function buildSiteTranslations(site?: SiteData) {
 }
 
 export function AdminClient({ initialSites, categories }: AdminClientProps) {
+  const t = useTranslations('admin');
+  const tm = useTranslations('messages');
   const router = useRouter();
   const message = useMessage();
   const [sites, setSites] = useState(initialSites);
@@ -163,7 +166,7 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
       }
     } catch (error) {
       console.error('Upload failed:', error);
-      message.error('上传失败');
+      message.error(tm('上传失败'));
     }
   };
 
@@ -191,10 +194,10 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
       // Refresh local state
       const newSites = await fetch('/api/sites').then(r => r.json());
       setSites(newSites);
-      message.success(editingSite ? '站点更新成功' : '站点创建成功');
+      message.success(tm(editingSite ? '站点更新成功' : '站点创建成功'));
     } else {
       const data = await res.json();
-      message.error(data.error || '操作失败');
+      message.error(data.error || tm('操作失败'));
     }
   };
 
@@ -203,12 +206,12 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
     if (res.ok) {
       setSites((prev) => prev.filter(s => s.id !== id));
       router.refresh();
-      message.success('站点删除成功');
+      message.success(tm('站点删除成功'));
       return;
     }
 
     const data = await res.json().catch(() => ({}));
-    message.error(data.error || '删除失败');
+    message.error(data.error || tm('删除失败'));
   };
 
   const handleDelete = (site: SiteData) => {
@@ -344,12 +347,12 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
             },
           },
         }));
-        message.success('二维码生成成功');
+        message.success(tm('二维码生成成功'));
       } else {
-        message.error('二维码生成失败');
+        message.error(tm('二维码生成失败'));
       }
     } catch {
-      message.error('二维码生成失败');
+      message.error(tm('二维码生成失败'));
     } finally {
       setGeneratingQr(false);
     }
@@ -361,15 +364,15 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">站点管理</h1>
-            <p className="text-slate-500 mt-1">管理所有导航站点和二维码</p>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{t('title')}</h1>
+            <p className="text-slate-500 mt-1">{t('subtitle')}</p>
           </div>
           <button
             onClick={openAddModal}
             className="flex items-center justify-center gap-2 rounded-lg h-10 px-4 bg-primary hover:bg-blue-600 text-white text-sm font-bold shadow-md shadow-primary/20 transition-all"
           >
             <span className="material-symbols-outlined text-[20px]">add</span>
-            <span>添加站点</span>
+            <span>{t('addSite')}</span>
           </button>
         </div>
 
@@ -383,7 +386,7 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="搜索站点名称、描述或链接..."
+                placeholder={t('searchPlaceholder')}
                 className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
               />
             </div>
@@ -394,9 +397,9 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
               onChange={(e) => setFilterType(e.target.value)}
               className="px-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
             >
-              <option value="all">全部类型</option>
-              <option value="site">普通站点</option>
-              <option value="qrcode">二维码</option>
+              <option value="all">{t('allTypes')}</option>
+              <option value="site">{t('siteType')}</option>
+              <option value="qrcode">{t('qrcodeType')}</option>
             </select>
 
             {/* Category Filter */}
@@ -405,7 +408,7 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
               onChange={(e) => setFilterCategory(e.target.value)}
               className="px-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
             >
-              <option value="all">全部分类</option>
+              <option value="all">{t('allCategories')}</option>
               {siteCategories.map(cat => (
                 <option key={cat.id} value={cat.id.toString()}>{cat.label}</option>
               ))}
@@ -416,19 +419,19 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-white rounded-xl p-4 border border-slate-200">
-            <p className="text-slate-500 text-sm">总数</p>
+            <p className="text-slate-500 text-sm">{t('total')}</p>
             <p className="text-2xl font-bold text-slate-900">{sites.length}</p>
           </div>
           <div className="bg-white rounded-xl p-4 border border-slate-200">
-            <p className="text-slate-500 text-sm">普通站点</p>
+            <p className="text-slate-500 text-sm">{t('siteCount')}</p>
             <p className="text-2xl font-bold text-slate-900">{sites.filter(s => s.category_type === 'site').length}</p>
           </div>
           <div className="bg-white rounded-xl p-4 border border-slate-200">
-            <p className="text-slate-500 text-sm">二维码</p>
+            <p className="text-slate-500 text-sm">{t('qrcodeCount')}</p>
             <p className="text-2xl font-bold text-slate-900">{sites.filter(s => s.category_type === 'qrcode').length}</p>
           </div>
           <div className="bg-white rounded-xl p-4 border border-slate-200">
-            <p className="text-slate-500 text-sm">筛选结果</p>
+            <p className="text-slate-500 text-sm">{t('filterResults')}</p>
             <p className="text-2xl font-bold text-slate-900">{filteredSites.length}</p>
           </div>
         </div>
@@ -454,7 +457,7 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
 
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-slate-900 truncate">{site.name}</h3>
-                  <p className="text-sm text-slate-500 truncate">{site.description || site.url || '无描述'}</p>
+                  <p className="text-sm text-slate-500 truncate">{site.description || site.url || t('noDescription')}</p>
                 </div>
 
                 {/* Actions */}
@@ -491,7 +494,7 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
                 <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
                   site.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'
                 }`}>
-                  {site.status === 'active' ? '活跃' : '停用'}
+                  {site.status === 'active' ? t('active') : t('inactive')}
                 </span>
               </div>
             </div>
@@ -501,16 +504,16 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
         {filteredSites.length === 0 && (
           <div className="text-center py-12 text-slate-400">
             <span className="material-symbols-outlined text-[48px] mb-4">search_off</span>
-            <p className="text-lg font-medium">没有找到匹配的站点</p>
+            <p className="text-lg font-medium">{t('noMatchingSites')}</p>
           </div>
         )}
       </div>
 
       <ConfirmDialog
         open={Boolean(pendingDeleteSite)}
-        title="删除站点"
-        description={pendingDeleteSite ? `确定删除站点「${pendingDeleteSite.name}」吗？` : ''}
-        confirmText="删除"
+        title={t('deleteSite')}
+        description={pendingDeleteSite ? t('deleteSiteConfirm', { name: pendingDeleteSite.name }) : ''}
+        confirmText={t('deleteSite')}
         loading={isDeleting}
         onConfirm={handleConfirmDelete}
         onClose={() => !isDeleting && setPendingDeleteSite(null)}
@@ -526,7 +529,7 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
               <form onSubmit={handleSubmit}>
                 <div className="px-6 py-5 border-b border-slate-200">
                   <h3 className="text-lg font-semibold text-slate-900">
-                    {editingSite ? '编辑站点' : '添加站点'}
+                    {editingSite ? t('editSite') : t('addSite')}
                   </h3>
                 </div>
 
@@ -534,7 +537,7 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
                   {/* Category */}
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">
-                      分类 <span className="text-red-500">*</span>
+                      {t('siteCategory')} <span className="text-red-500">*</span>
                     </label>
                     <select
                       required
@@ -542,10 +545,10 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
                       onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
                       className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
                     >
-                      <option value="">选择分类</option>
+                      <option value="">{t('selectCategory')}</option>
                       {siteCategories.map(cat => (
                         <option key={cat.id} value={cat.id.toString()}>
-                          {cat.label} ({cat.type === 'qrcode' ? '二维码' : '普通站点'})
+                          {cat.label} ({cat.type === 'qrcode' ? t('qrcodeLabel') : t('siteLabel')})
                         </option>
                       ))}
                     </select>
@@ -554,7 +557,7 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
                   {/* Name */}
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">
-                      名称 <span className="text-red-500">*</span>
+                      {t('siteName')} <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -572,13 +575,13 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
                         },
                       })}
                       className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                      placeholder="站点名称"
+                      placeholder={t('siteNamePlaceholder')}
                     />
                   </div>
 
                   {/* Description */}
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">描述</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">{t('description')}</label>
                     <textarea
                       value={formData.description}
                       onChange={(e) => setFormData({
@@ -594,14 +597,14 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
                       })}
                       className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
                       rows={2}
-                      placeholder="简短描述"
+                      placeholder={t('descriptionPlaceholder')}
                     />
                   </div>
 
                   {/* URL (not required for QR codes) */}
                   {!isQrCategory && (
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">链接</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">{t('link')}</label>
                       <input
                         type="url"
                         value={formData.url}
@@ -614,7 +617,7 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
 
                   {/* Logo Upload */}
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Logo</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">{t('logo')}</label>
                     <div className="flex items-center gap-4">
                       <div
                         onClick={() => logoInputRef.current?.click()}
@@ -639,8 +642,8 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
                         }}
                       />
                       <div className="text-sm text-slate-500">
-                        <p>点击上传 Logo</p>
-                        <p className="text-xs">支持 PNG, JPG, SVG</p>
+                        <p>{t('uploadLogo')}</p>
+                        <p className="text-xs">{t('logoHint')}</p>
                       </div>
                     </div>
                   </div>
@@ -649,12 +652,12 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
                   {isQrCategory && (
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1">
-                        二维码图片 <span className="text-red-500">*</span>
+                        {t('qrImage')} <span className="text-red-500">*</span>
                       </label>
 
                       {/* Generate from software */}
                       <div className="border border-slate-200 rounded-lg p-3 mb-3">
-                        <p className="text-sm font-medium text-slate-600 mb-2">从已上传软件生成</p>
+                        <p className="text-sm font-medium text-slate-600 mb-2">{t('generateFromSoftware')}</p>
                         <div className="flex gap-2">
                           <div className="flex-1 relative" ref={softwareDropdownRef}>
                             <div
@@ -664,7 +667,7 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
                               <span className={selectedSoftwareItem ? 'text-slate-900' : 'text-slate-400'}>
                                 {selectedSoftwareItem
                                   ? `${selectedSoftwareItem.name} ${selectedSoftwareItem.version ? `v${selectedSoftwareItem.version}` : ''}`
-                                  : '选择软件...'}
+                                  : t('selectSoftware')}
                               </span>
                               <span className="material-symbols-outlined text-slate-400 text-[18px]">
                                 {softwareDropdownOpen ? 'expand_less' : 'expand_more'}
@@ -679,7 +682,7 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
                                       type="text"
                                       value={softwareSearch}
                                       onChange={(e) => setSoftwareSearch(e.target.value)}
-                                      placeholder="搜索软件名称..."
+                                      placeholder={t('searchSoftware')}
                                       className="w-full pl-7 pr-3 py-1.5 border border-slate-200 rounded text-sm focus:ring-1 focus:ring-primary/20 focus:border-primary focus:outline-none"
                                       autoFocus
                                       onClick={(e) => e.stopPropagation()}
@@ -688,7 +691,7 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
                                 </div>
                                 <div className="overflow-y-auto max-h-44">
                                   {filteredSoftwareList.length === 0 ? (
-                                    <div className="px-3 py-2 text-sm text-slate-400 text-center">无匹配结果</div>
+                                    <div className="px-3 py-2 text-sm text-slate-400 text-center">{t('noMatches')}</div>
                                   ) : (
                                     filteredSoftwareList.map(sw => (
                                       <div
@@ -716,13 +719,13 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
                             disabled={!selectedSoftware || generatingQr}
                             className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                           >
-                            {generatingQr ? '生成中...' : '生成二维码'}
+                            {generatingQr ? t('generating') : t('generateQr')}
                           </button>
                         </div>
                       </div>
 
                       {/* Manual upload */}
-                      <p className="text-xs text-slate-400 mb-2">或手动上传二维码图片</p>
+                      <p className="text-xs text-slate-400 mb-2">{t('manualQrUpload')}</p>
                       <div className="flex items-center gap-4">
                         <div
                           onClick={() => qrInputRef.current?.click()}
@@ -747,8 +750,8 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
                           }}
                         />
                         <div className="text-sm text-slate-500">
-                          <p>点击上传二维码图片</p>
-                          <p className="text-xs">支持 PNG, JPG</p>
+                          <p>{t('uploadQr')}</p>
+                          <p className="text-xs">{t('qrHint')}</p>
                         </div>
                       </div>
                     </div>
@@ -757,7 +760,7 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
                   {/* Icon Picker (if no logo) */}
                   {!logoPreview && (
                     <div className="border-t border-slate-200 pt-4">
-                      <label className="block text-sm font-medium text-slate-700 mb-2">或选择图标</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">{t('chooseIcon')}</label>
                       <IconPicker
                         selectedIcon={formData.icon}
                         selectedBg={formData.icon_bg}
@@ -771,7 +774,7 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
 
                   {/* Tags */}
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">标签</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">{t('tags')}</label>
                     <div className="flex gap-2">
                       <input
                         type="text"
@@ -779,10 +782,10 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
                         onChange={(e) => setTagInput(e.target.value)}
                         onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(); } }}
                         className="flex-1 px-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                        placeholder="输入标签后回车添加"
+                        placeholder={t('tagPlaceholder')}
                       />
                       <button type="button" onClick={addTag} className="px-4 py-2 bg-slate-100 rounded-lg text-sm font-medium hover:bg-slate-200">
-                        添加
+                        {t('add')}
                       </button>
                     </div>
                     {formData.tags.length > 0 && (
@@ -800,21 +803,21 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
                   </div>
 
                   <TranslationEditor<SiteTranslationFields>
-                    title="多语言内容"
-                    description="英文作为默认值；站点名称、描述和标签均可按语言维护。标签使用英文逗号分隔。"
+                    title={t('multilingualTitle')}
+                    description={t('multilingualDescription')}
                     translations={formData.translations}
                     onChange={handleTranslationChange}
                     fields={[
-                      { key: 'name', label: '名称', placeholder: 'Site name' },
-                      { key: 'description', label: '描述', placeholder: 'Short description', multiline: true },
-                      { key: 'tags', label: '标签', placeholder: 'vpn, intranet, docs', tags: true },
+                      { key: 'name', label: t('nameField'), placeholder: 'Site name' },
+                      { key: 'description', label: t('descriptionField'), placeholder: 'Short description', multiline: true },
+                      { key: 'tags', label: t('tagsField'), placeholder: 'vpn, intranet, docs', tags: true },
                     ]}
                   />
 
                   {/* Sort Order & Status */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">排序</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">{t('sortOrder')}</label>
                       <input
                         type="number"
                         value={formData.sort_order}
@@ -823,14 +826,14 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">状态</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">{t('status')}</label>
                       <select
                         value={formData.status}
                         onChange={(e) => setFormData({ ...formData, status: e.target.value as 'active' | 'inactive' })}
                         className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
                       >
-                        <option value="active">活跃</option>
-                        <option value="inactive">停用</option>
+                        <option value="active">{t('active')}</option>
+                        <option value="inactive">{t('inactive')}</option>
                       </select>
                     </div>
                   </div>
@@ -842,13 +845,13 @@ export function AdminClient({ initialSites, categories }: AdminClientProps) {
                     onClick={() => setIsModalOpen(false)}
                     className="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg"
                   >
-                    取消
+                    {t('cancel')}
                   </button>
                   <button
                     type="submit"
                     className="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-blue-600 rounded-lg"
                   >
-                    {editingSite ? '保存' : '添加'}
+                    {editingSite ? t('save') : t('create')}
                   </button>
                 </div>
               </form>

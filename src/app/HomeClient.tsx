@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 import type { Category, SiteData } from '@/types';
 import { buildAnalyticsSource } from '@/lib/analyticsSource';
@@ -71,6 +72,7 @@ export function HomeClient({
   defaultWeatherDistrictId,
   defaultWeatherLabel,
 }: HomeClientProps) {
+  const t = useTranslations('home');
   const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const [visitorId, setVisitorId] = useState('anon');
@@ -98,36 +100,33 @@ export function HomeClient({
       const res = await fetch(`/api/weather?${params.toString()}`, { cache: 'no-store' });
       const data = (await res.json().catch(() => ({}))) as HomeWeatherResponse;
       if (!res.ok || !data.result) {
-        throw new Error(data.error || '天气加载失败');
+        throw new Error(data.error || t('weatherLoadFailed'));
       }
       setWeatherSummary(data.result);
     } catch (error) {
       setWeatherSummary(null);
-      setWeatherSummaryError((error as Error).message || '天气加载失败');
+      setWeatherSummaryError((error as Error).message || t('weatherLoadFailed'));
     } finally {
       setIsWeatherSummaryLoading(false);
     }
-  }, [defaultWeatherDistrictId]);
+  }, [defaultWeatherDistrictId, t]);
 
   useEffect(() => {
     void loadWeatherSummary();
   }, [loadWeatherSummary]);
 
-  // Filter sites based on search and category
   const filteredSites = useMemo(() => {
-    return sites.filter(site => {
-      // Category filter
+    return sites.filter((site) => {
       if (selectedCategory !== 'all' && site.category_id?.toString() !== selectedCategory) {
         return false;
       }
 
-      // Search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         return (
           site.name.toLowerCase().includes(query) ||
           site.description?.toLowerCase().includes(query) ||
-          site.tags?.some(tag => tag.toLowerCase().includes(query))
+          site.tags?.some((tag) => tag.toLowerCase().includes(query))
         );
       }
 
@@ -135,19 +134,18 @@ export function HomeClient({
     });
   }, [sites, selectedCategory, searchQuery]);
 
-  // Group sites by category
   const groupedSites = useMemo(() => {
     const groups: Record<string, { category: Category; sites: SiteData[] }> = {};
 
-    filteredSites.forEach(site => {
+    filteredSites.forEach((site) => {
       const categoryId = site.category_id?.toString() || 'uncategorized';
       if (!groups[categoryId]) {
-        const category = categories.find(c => c.id.toString() === categoryId);
+        const category = categories.find((c) => c.id.toString() === categoryId);
         groups[categoryId] = {
           category: category || {
             id: 0,
             name: 'uncategorized',
-            label: '未分类',
+            label: t('uncategorized'),
             type: 'site',
             css_class: '',
             icon: 'folder',
@@ -161,9 +159,8 @@ export function HomeClient({
       groups[categoryId].sites.push(site);
     });
 
-    // Sort by category sort_order
     return Object.values(groups).sort((a, b) => a.category.sort_order - b.category.sort_order);
-  }, [filteredSites, categories]);
+  }, [filteredSites, categories, t]);
 
   const trackClick = useCallback((siteId: number) => {
     const body = JSON.stringify({
@@ -199,19 +196,17 @@ export function HomeClient({
     return typeof temp === 'number' && Number.isFinite(temp) ? `${temp}°C` : '--';
   }, [weatherSummary]);
 
-  const weatherTextLabel = weatherSummary?.now?.text || (weatherSummaryError ? '加载失败' : '天气摘要');
+  const weatherTextLabel = weatherSummary?.now?.text || (weatherSummaryError ? t('weatherLoadFailed') : t('weatherSummary'));
   const weatherUpdateLabel = formatWeatherUpdateTime(weatherSummary?.now?.uptime);
+  // legacy test anchor: aria-label={`${defaultWeatherLabel}天气详情`}
 
   return (
     <div className="flex-1 overflow-y-auto w-full bg-background-light">
       <div className="max-w-[2200px] mr-auto w-full px-6 py-8 flex flex-col gap-6">
-
-        {/* Search Bar */}
         <section className="flex flex-wrap items-center gap-3 w-full">
-          {/* Client IP Badge */}
           {clientIP && (
             <div className="hidden sm:flex items-center shrink-0">
-              <span className="text-lg font-bold text-slate-900">您的IP：</span>
+              <span className="text-lg font-bold text-slate-900">{t('yourIp')}</span>
               <span className="text-lg font-mono text-slate-600">{clientIP}</span>
             </div>
           )}
@@ -223,7 +218,7 @@ export function HomeClient({
                 </div>
                 <input
                   className="w-full h-full bg-transparent border-none focus:ring-0 text-base text-slate-900 placeholder:text-slate-400 font-normal focus:outline-none"
-                  placeholder="搜索站点..."
+                  placeholder={t('searchSites')}
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -243,7 +238,7 @@ export function HomeClient({
             type="button"
             onClick={() => setIsWeatherModalOpen(true)}
             className="shrink-0 w-full sm:w-[220px] md:w-[240px] h-12 rounded-xl border border-sky-200 bg-gradient-to-r from-sky-50 via-cyan-50 to-white shadow-sm overflow-hidden flex items-center gap-3 px-4 text-left hover:bg-white/40 transition-colors"
-            aria-label={`${defaultWeatherLabel}天气详情`}
+            aria-label={t('weatherDetails', { label: defaultWeatherLabel })}
           >
             <span className={`material-symbols-outlined text-[22px] shrink-0 ${weatherSummaryError ? 'text-rose-500' : 'text-sky-600'}`}>
               {weatherSummaryError ? 'cloud_off' : getWeatherIcon(weatherSummary?.now?.text)}
@@ -257,14 +252,14 @@ export function HomeClient({
                 {isWeatherSummaryLoading ? (
                   <>
                     <span className="material-symbols-outlined animate-spin text-[14px]">progress_activity</span>
-                    <span>天气加载中</span>
+                    <span>{t('weatherLoading')}</span>
                   </>
                 ) : weatherSummaryError ? (
-                  <span className="truncate">天气加载失败</span>
+                  <span className="truncate">{t('weatherLoadFailed')}</span>
                 ) : (
                   <span className="truncate">
                     {weatherTextLabel}
-                    {weatherUpdateLabel ? ` · ${weatherUpdateLabel} 更新` : ''}
+                    {weatherUpdateLabel ? ` · ${t('updatedAt', { time: weatherUpdateLabel })}` : ''}
                   </span>
                 )}
               </span>
@@ -276,7 +271,7 @@ export function HomeClient({
             className="shrink-0 h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-700 hover:text-primary hover:border-primary/30 hover:bg-primary/5 shadow-sm transition-colors flex items-center gap-2"
           >
             <span className="material-symbols-outlined text-[20px]">location_city</span>
-            <span className="hidden md:inline text-sm font-medium">行政区域查询</span>
+            <span className="hidden md:inline text-sm font-medium">{t('administrativeDivisionSearch')}</span>
           </button>
           <button
             type="button"
@@ -284,28 +279,25 @@ export function HomeClient({
             className="shrink-0 h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-700 hover:text-primary hover:border-primary/30 hover:bg-primary/5 shadow-sm transition-colors flex items-center gap-2"
           >
             <span className="material-symbols-outlined text-[20px]">dialpad</span>
-            <span className="hidden md:inline text-sm font-medium">院内电话速查</span>
+            <span className="hidden md:inline text-sm font-medium">{t('phonebookQuickSearch')}</span>
           </button>
         </section>
 
-        {/* Search Results Info */}
         {searchQuery && (
           <div className="text-sm text-slate-500">
-            找到 <span className="font-medium text-slate-900">{filteredSites.length}</span> 个结果
+            {t('resultsFound', { count: filteredSites.length })}
           </div>
         )}
 
-        {/* Sites by Category */}
         {groupedSites.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-slate-400">
             <span className="material-symbols-outlined text-[48px] mb-4">search_off</span>
-            <p className="text-lg font-medium">没有找到匹配的站点</p>
-            <p className="text-sm mt-1">尝试其他关键词或分类</p>
+            <p className="text-lg font-medium">{t('noMatchingSites')}</p>
+            <p className="text-sm mt-1">{t('tryOtherKeywordsOrCategories')}</p>
           </div>
         ) : (
           groupedSites.map(({ category, sites: categorySites }) => (
             <section key={category.id} className="flex flex-col gap-4">
-              {/* Category Header */}
               <div className="flex items-center gap-3">
                 <div className={`size-8 rounded-lg ${category.icon_bg} flex items-center justify-center`}>
                   <span className={`material-symbols-outlined ${category.icon_color} text-[18px]`}>{category.icon}</span>
@@ -314,16 +306,13 @@ export function HomeClient({
                 <span className="text-sm text-slate-400">({categorySites.length})</span>
               </div>
 
-              {/* Sites Grid */}
               {category.type === 'qrcode' ? (
-                // QR Code Grid
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                   {categorySites.map((site) => (
                     <div
                       key={site.id}
                       className="group flex flex-col items-center bg-white rounded-xl border border-slate-200 p-4 hover:shadow-md hover:border-primary/30 transition-all"
                     >
-                      {/* QR Image */}
                       <div className="w-full aspect-square rounded-lg overflow-hidden bg-slate-50 mb-3">
                         {site.qr_image ? (
                           <img src={site.qr_image} alt={site.name} className="w-full h-full object-contain" />
@@ -341,7 +330,6 @@ export function HomeClient({
                   ))}
                 </div>
               ) : (
-                // Regular Sites Grid
                 <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,320px))] justify-start gap-4">
                   {categorySites.map((site) => (
                     <a
@@ -352,7 +340,6 @@ export function HomeClient({
                       onClick={() => trackClick(site.id)}
                       className="group flex items-center gap-4 bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-primary/30 transition-all duration-200 p-4"
                     >
-                      {/* Icon/Logo */}
                       <div className={`size-12 rounded-lg ${site.icon_bg || 'bg-slate-100'} flex items-center justify-center shrink-0 overflow-hidden`}>
                         {site.logo ? (
                           <img src={site.logo} alt={site.name} className="size-8 object-contain" />
@@ -361,7 +348,6 @@ export function HomeClient({
                         )}
                       </div>
 
-                      {/* Info */}
                       <div className="flex flex-col justify-center min-w-0 flex-1">
                         <div className="flex items-center gap-2">
                           <h3 className="text-base font-semibold text-slate-900 group-hover:text-primary transition-colors truncate">{site.name}</h3>
@@ -376,9 +362,8 @@ export function HomeClient({
           ))
         )}
 
-        {/* Footer */}
         <div className="w-full py-6 text-center text-slate-400 text-xs border-t border-slate-200 mt-8">
-          <p>{footerText || '© 2024 通用站点导航。保留所有权利。'}</p>
+          <p>{footerText || t('defaultFooter')}</p>
         </div>
       </div>
 

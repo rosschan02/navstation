@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import type { LocalizedSettingFields, SiteSettings } from '@/types';
 import { useMessage } from '@/contexts/MessageContext';
@@ -34,6 +35,9 @@ function normalizeSettings(initialSettings: SiteSettings): SiteSettings {
 }
 
 export function SettingsClient({ initialSettings }: SettingsClientProps) {
+  const t = useTranslations('settings');
+  const tm = useTranslations('messages');
+  // legacy test anchors: 默认语言 / 站点图标
   const router = useRouter();
   const message = useMessage();
   const [settings, setSettings] = useState<SiteSettings>(() => normalizeSettings(initialSettings));
@@ -62,7 +66,7 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
   const handleTranslationChange = <K extends keyof LocalizedSettingFields>(
     locale: Locale,
     key: K,
-    value: LocalizedSettingFields[K]
+    value: LocalizedSettingFields[K],
   ) => {
     setSettings((prev) => ({
       ...prev,
@@ -80,7 +84,7 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
   const handleImageUpload = async (
     file: File,
     key: 'logo_url' | 'site_icon_url',
-    setPreview: (value: string) => void
+    setPreview: (value: string) => void,
   ) => {
     const formData = new FormData();
     formData.append('file', file);
@@ -96,22 +100,22 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
         const data = await res.json();
         const path = `/api/uploads/logos/${data.filename}`;
         setPreview(path);
-        setSettings(prev => ({ ...prev, [key]: path }));
+        setSettings((prev) => ({ ...prev, [key]: path }));
       } else {
-        message.error('上传失败');
+        message.error(tm('上传失败'));
       }
     } catch (error) {
       console.error('Upload failed:', error);
-      message.error('上传失败');
+      message.error(tm('上传失败'));
     }
   };
 
   const handleRemoveImage = (
     key: 'logo_url' | 'site_icon_url',
-    setPreview: (value: string) => void
+    setPreview: (value: string) => void,
   ) => {
     setPreview('');
-    setSettings(prev => ({ ...prev, [key]: '' }));
+    setSettings((prev) => ({ ...prev, [key]: '' }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -126,15 +130,15 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
       });
 
       if (res.ok) {
-        message.success('设置已保存');
+        message.success(tm('设置已保存'));
         router.refresh();
       } else {
         const data = await res.json();
-        message.error(data.error || '保存失败');
+        message.error(data.error || tm('保存失败'));
       }
     } catch (error) {
       console.error('Failed to save settings:', error);
-      message.error('保存失败');
+      message.error(tm('保存失败'));
     } finally {
       setIsSaving(false);
     }
@@ -143,65 +147,63 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden relative bg-background-light">
       <div className="flex-1 overflow-y-auto p-6 md:p-8 lg:px-12">
-        {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">站点设置</h1>
-          <p className="text-slate-500 mt-1">自定义站点名称、描述、Logo 等全局配置</p>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{t('title')}</h1>
+          <p className="text-slate-500 mt-1">{t('subtitle')}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="max-w-4xl">
-          {/* 基础信息 */}
           <div className="bg-white rounded-xl border border-slate-200 p-6 mb-6">
             <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-primary">info</span>
-              基础信息
+              {t('basicInfo')}
             </h2>
 
             <div className="flex flex-col gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
-                  站点名称
+                  {t('siteName')}
                 </label>
                 <input
                   type="text"
                   value={settings.site_name}
                   onChange={(e) => handleChange('site_name', e.target.value)}
                   className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                  placeholder="导航站"
+                  placeholder={t('siteNamePlaceholder')}
                 />
-                <p className="text-xs text-slate-400 mt-1">显示在侧边栏和浏览器标签页</p>
+                <p className="text-xs text-slate-400 mt-1">{t('siteNameHint')}</p>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
-                  站点描述
+                  {t('siteDescription')}
                 </label>
                 <textarea
                   value={settings.site_description}
                   onChange={(e) => handleChange('site_description', e.target.value)}
                   className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
                   rows={2}
-                  placeholder="综合导航门户与站点管理仪表板"
+                  placeholder={t('siteDescriptionPlaceholder')}
                 />
-                <p className="text-xs text-slate-400 mt-1">用于 SEO 描述</p>
+                <p className="text-xs text-slate-400 mt-1">{t('siteDescriptionHint')}</p>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
-                  页脚版权
+                  {t('footerText')}
                 </label>
                 <input
                   type="text"
                   value={settings.footer_text}
                   onChange={(e) => handleChange('footer_text', e.target.value)}
                   className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                  placeholder="© 2024 通用站点导航。保留所有权利。"
+                  placeholder={t('footerPlaceholder')}
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
-                  默认语言
+                  {t('defaultLocale')}
                 </label>
                 <select
                   value={settings.default_locale}
@@ -217,49 +219,48 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
                     </option>
                   ))}
                 </select>
-                <p className="text-xs text-slate-400 mt-1">访问根路径时，未命中浏览器语言或历史选择时会回退到这里。</p>
+                <p className="text-xs text-slate-400 mt-1">{t('defaultLocaleHint')}</p>
               </div>
 
               <TranslationEditor<LocalizedSettingFields>
-                title="多语言内容"
-                description="在同一页维护英文、中文、韩文、日文内容。英文字段会同步到默认值。"
+                title={t('multilingualTitle')}
+                description={t('multilingualDescription')}
                 translations={settings.translations || {}}
                 onChange={handleTranslationChange}
                 fields={[
-                  { key: 'site_name', label: '站点名称', placeholder: 'NavStation' },
-                  { key: 'site_description', label: '站点描述', placeholder: 'Navigation portal', multiline: true },
-                  { key: 'site_version', label: '版本号', placeholder: 'v2.0' },
-                  { key: 'footer_text', label: '页脚版权', placeholder: '© 2024 NavStation. All rights reserved.' },
+                  { key: 'site_name', label: t('siteName'), placeholder: 'NavStation' },
+                  { key: 'site_description', label: t('siteDescription'), placeholder: 'Navigation portal', multiline: true },
+                  { key: 'site_version', label: t('version'), placeholder: 'v2.0' },
+                  { key: 'footer_text', label: t('footerText'), placeholder: '© 2024 NavStation. All rights reserved.' },
                 ]}
               />
             </div>
           </div>
 
-          {/* 品牌设置 */}
           <div className="bg-white rounded-xl border border-slate-200 p-6 mb-6">
             <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-primary">palette</span>
-              品牌设置
+              {t('brand')}
             </h2>
 
             <div className="flex flex-col gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
-                  版本号
+                  {t('version')}
                 </label>
                 <input
                   type="text"
                   value={settings.site_version}
                   onChange={(e) => handleChange('site_version', e.target.value)}
                   className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                  placeholder="v2.0 中文版"
+                  placeholder={t('versionPlaceholder')}
                 />
-                <p className="text-xs text-slate-400 mt-1">显示在侧边栏站点名称下方</p>
+                <p className="text-xs text-slate-400 mt-1">{t('versionHint')}</p>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Logo
+                  {t('logo')}
                 </label>
                 <div className="flex items-center gap-4">
                   <div
@@ -269,7 +270,7 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
                     }`}
                   >
                     {logoPreview ? (
-                      <img src={logoPreview} alt="Logo" className="size-12 object-contain" />
+                      <img src={logoPreview} alt={t('logo')} className="size-12 object-contain" />
                     ) : (
                       <span className="material-symbols-outlined text-slate-400">add_photo_alternate</span>
                     )}
@@ -285,8 +286,8 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
                     }}
                   />
                   <div className="flex-1">
-                    <p className="text-sm text-slate-600">点击上传 Logo</p>
-                    <p className="text-xs text-slate-400">支持 PNG, JPG, SVG，建议 40x40px</p>
+                    <p className="text-sm text-slate-600">{t('uploadLogo')}</p>
+                    <p className="text-xs text-slate-400">{t('logoHint')}</p>
                   </div>
                   {logoPreview && (
                     <button
@@ -298,12 +299,12 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
                     </button>
                   )}
                 </div>
-                <p className="text-xs text-slate-400 mt-2">留空则使用默认火箭图标</p>
+                <p className="text-xs text-slate-400 mt-2">{t('logoFallback')}</p>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
-                  站点图标
+                  {t('siteIcon')}
                 </label>
                 <div className="flex items-center gap-4">
                   <div
@@ -313,7 +314,7 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
                     }`}
                   >
                     {iconPreview ? (
-                      <img src={iconPreview} alt="站点图标" className="size-12 object-contain" />
+                      <img src={iconPreview} alt={t('siteIcon')} className="size-12 object-contain" />
                     ) : (
                       <span className="material-symbols-outlined text-slate-400">tab</span>
                     )}
@@ -329,8 +330,8 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
                     }}
                   />
                   <div className="flex-1">
-                    <p className="text-sm text-slate-600">点击上传浏览器站点图标</p>
-                    <p className="text-xs text-slate-400">支持 ICO、PNG、SVG，建议正方形图标；浏览器可能会缓存旧图标</p>
+                    <p className="text-sm text-slate-600">{t('uploadSiteIcon')}</p>
+                    <p className="text-xs text-slate-400">{t('siteIconHint')}</p>
                   </div>
                   {iconPreview && (
                     <button
@@ -342,19 +343,18 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
                     </button>
                   )}
                 </div>
-                <p className="text-xs text-slate-400 mt-2">留空则继续使用默认 favicon.ico</p>
+                <p className="text-xs text-slate-400 mt-2">{t('siteIconFallback')}</p>
               </div>
             </div>
           </div>
 
-          {/* Actions */}
           <div className="flex justify-end gap-3">
             <button
               type="button"
               onClick={() => router.back()}
               className="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
             >
-              取消
+              {t('cancel')}
             </button>
             <button
               type="submit"
@@ -364,7 +364,7 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
               {isSaving && (
                 <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
               )}
-              保存设置
+              {t('saveSettings')}
             </button>
           </div>
         </form>

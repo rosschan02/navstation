@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslations } from 'next-intl';
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -25,13 +26,15 @@ export function ConfirmDialog({
   open,
   title,
   description,
-  confirmText = '确认',
-  cancelText = '取消',
+  confirmText,
+  cancelText,
   tone = 'danger',
   loading = false,
   onConfirm,
   onClose,
 }: ConfirmDialogProps) {
+  const t = useTranslations('common');
+
   if (!open) return null;
 
   return (
@@ -55,7 +58,7 @@ export function ConfirmDialog({
             disabled={loading}
             className="rounded-lg px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 disabled:opacity-60"
           >
-            {cancelText}
+            {cancelText || t('cancel')}
           </button>
           <button
             type="button"
@@ -63,7 +66,7 @@ export function ConfirmDialog({
             disabled={loading}
             className={`rounded-lg px-4 py-2 text-sm font-semibold ${confirmButtonClass(tone)}`}
           >
-            {loading ? '处理中...' : confirmText}
+            {loading ? t('processing') : (confirmText || t('confirm'))}
           </button>
         </div>
       </div>

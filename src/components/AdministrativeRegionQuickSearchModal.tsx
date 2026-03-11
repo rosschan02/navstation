@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 interface AdministrativeRegionQuickSearchModalProps {
   isOpen: boolean;
@@ -32,13 +33,6 @@ interface RegionSearchResponse {
   total: number;
   items: RegionSearchItem[];
 }
-
-const LEVEL_NAMES: Record<number, string> = {
-  1: '省/直辖市',
-  2: '市/地级',
-  3: '区/县',
-  4: '街道/乡镇',
-};
 
 const LEVEL_COLORS: Record<number, string> = {
   1: 'bg-red-100 text-red-700',
@@ -95,6 +89,7 @@ export function AdministrativeRegionQuickSearchModal({
   isOpen,
   onClose,
 }: AdministrativeRegionQuickSearchModalProps) {
+  const t = useTranslations('regionSearch');
   const [keyword, setKeyword] = useState('');
   const [province, setProvince] = useState('');
   const [items, setItems] = useState<RegionSearchItem[]>([]);
@@ -167,12 +162,12 @@ export function AdministrativeRegionQuickSearchModal({
 
     setHasSearched(true);
     if (!region) {
-      setError('请先选择省份');
+      setError(t('selectProvinceFirst'));
       setItems([]);
       return;
     }
     if (!query) {
-      setError('请输入关键词');
+      setError(t('enterKeyword'));
       setItems([]);
       return;
     }
@@ -184,7 +179,7 @@ export function AdministrativeRegionQuickSearchModal({
       const res = await fetch(buildSearchUrl(query, region), { cache: 'no-store' });
       const data = (await res.json().catch(() => ({}))) as Partial<RegionSearchResponse> & { error?: string };
       if (!res.ok) {
-        throw new Error(data.error || '查询失败');
+        throw new Error(data.error || t('searchFailed'));
       }
       const nextItems = Array.isArray(data.items) ? data.items : [];
       setItems(nextItems);
@@ -204,7 +199,7 @@ export function AdministrativeRegionQuickSearchModal({
         queryType: '',
         total: 0,
       });
-      setError((err as Error).message || '查询失败，请稍后重试');
+      setError((err as Error).message || t('searchFailedRetry'));
     } finally {
       setIsLoading(false);
     }
@@ -234,23 +229,22 @@ export function AdministrativeRegionQuickSearchModal({
           className="inline-flex items-center gap-1.5 text-base text-primary hover:opacity-80"
         >
           <span className="material-symbols-outlined text-[20px]">arrow_back</span>
-          返回列表
+          {t('backToList')}
         </button>
 
         <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
           <h4 className="text-xl font-semibold text-slate-900 break-words">{selectedItem.name || '-'}</h4>
           <p className="mt-2 text-base text-slate-700 break-words">
-            <span className="font-medium text-slate-800">详细地址：</span>
+            <span className="font-medium text-slate-800">{t('detailAddress')}</span>
             {selectedItem.address || '-'}
           </p>
         </div>
 
-        {/* 行政区划代码 — 直接由 town_code 推算 */}
         {divisionChain.length > 0 && (
           <div className="rounded-xl border border-slate-200 p-4">
             <div className="flex items-center gap-2 mb-3">
               <span className="material-symbols-outlined text-[18px] text-slate-400">account_tree</span>
-              <p className="text-sm text-slate-500 font-medium">行政区划代码</p>
+              <p className="text-sm text-slate-500 font-medium">{t('divisionCodes')}</p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               {divisionChain.map((div, idx) => (
@@ -259,14 +253,14 @@ export function AdministrativeRegionQuickSearchModal({
                   <button
                     onClick={() => handleCopyCode(div.code)}
                     className="inline-flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-primary/10 transition-colors group"
-                    title="点击复制代码"
+                    title={t('copyCode')}
                   >
                     <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-semibold ${LEVEL_COLORS[div.level] || 'bg-gray-100 text-gray-700'}`}>
-                      {LEVEL_NAMES[div.level]}
+                      {t(`level${div.level}`)}
                     </span>
                     <span className="text-base font-medium text-slate-800">{div.name}</span>
                     {copiedCode === div.code ? (
-                      <span className="text-sm text-green-600 font-semibold">✓{div.code}</span>
+                      <span className="text-sm text-green-600 font-semibold">{t('copiedCode', { code: div.code })}</span>
                     ) : (
                       <span className="text-sm font-mono text-slate-500 group-hover:text-primary">{div.code}</span>
                     )}
@@ -279,11 +273,11 @@ export function AdministrativeRegionQuickSearchModal({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="rounded-xl border border-slate-200 p-3">
-            <p className="text-sm text-slate-500">纬度 (lat)</p>
+            <p className="text-sm text-slate-500">{t('latitude')}</p>
             <p className="mt-1 text-lg font-mono text-slate-800">{selectedItem.location.lat ?? '-'}</p>
           </div>
           <div className="rounded-xl border border-slate-200 p-3">
-            <p className="text-sm text-slate-500">经度 (lng)</p>
+            <p className="text-sm text-slate-500">{t('longitude')}</p>
             <p className="mt-1 text-lg font-mono text-slate-800">{selectedItem.location.lng ?? '-'}</p>
           </div>
         </div>
@@ -300,8 +294,8 @@ export function AdministrativeRegionQuickSearchModal({
       return (
         <div className="py-16 flex flex-col items-center text-slate-400">
           <span className="material-symbols-outlined text-[48px] mb-3 text-slate-300">location_city</span>
-          <p className="text-sm">请选择省份并输入关键词</p>
-          <p className="text-xs mt-1 text-slate-300">示例：维港半岛</p>
+          <p className="text-sm">{t('initialPrompt')}</p>
+          <p className="text-xs mt-1 text-slate-300">{t('initialExample')}</p>
         </div>
       );
     }
@@ -310,7 +304,7 @@ export function AdministrativeRegionQuickSearchModal({
       return (
         <div className="py-16 flex flex-col items-center text-slate-400">
           <span className="material-symbols-outlined text-[36px] mb-3 animate-spin">progress_activity</span>
-          <p className="text-sm">查询中...</p>
+          <p className="text-sm">{t('searching')}</p>
         </div>
       );
     }
@@ -323,8 +317,8 @@ export function AdministrativeRegionQuickSearchModal({
       return (
         <div className="py-16 flex flex-col items-center text-slate-400">
           <span className="material-symbols-outlined text-[48px] mb-3 text-slate-300">search_off</span>
-          <p className="text-sm">没有找到匹配结果</p>
-          <p className="text-xs mt-1 text-slate-300">请尝试更换关键词或省份</p>
+          <p className="text-sm">{t('emptyTitle')}</p>
+          <p className="text-xs mt-1 text-slate-300">{t('emptySubtitle')}</p>
         </div>
       );
     }
@@ -332,9 +326,7 @@ export function AdministrativeRegionQuickSearchModal({
     return (
       <div>
         <div className="px-1 mb-3 flex flex-wrap items-center gap-2">
-          <p className="text-xs text-slate-500">
-            找到 <span className="font-semibold text-slate-900">{items.length}</span> 条结果
-          </p>
+          <p className="text-xs text-slate-500">{t('resultsFound', { count: items.length })}</p>
           {responseMeta.queryType && (
             <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600">
               query_type: {responseMeta.queryType}
@@ -358,19 +350,19 @@ export function AdministrativeRegionQuickSearchModal({
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-slate-900 break-words">{item.name || '-'}</p>
-                    <p className="mt-1 text-xs text-slate-500 break-words">行政区域：{regionText}</p>
+                    <p className="mt-1 text-xs text-slate-500 break-words">{t('regionLabel', { value: regionText })}</p>
                   </div>
                   <button
                     type="button"
                     onClick={() => setSelectedItem(item)}
                     className="shrink-0 px-3 h-8 rounded-lg border border-slate-200 text-xs text-slate-700 hover:text-primary hover:border-primary/40 transition-colors"
                   >
-                    查看详情
+                    {t('viewDetail')}
                   </button>
                 </div>
 
                 <div className="mt-2 rounded-lg bg-slate-50 px-3 py-2">
-                  <p className="text-xs text-slate-400">地址</p>
+                  <p className="text-xs text-slate-400">{t('address')}</p>
                   <p className="text-sm text-slate-700 break-words">{item.address || '-'}</p>
                 </div>
               </div>
@@ -389,11 +381,11 @@ export function AdministrativeRegionQuickSearchModal({
         <div className="relative w-full max-w-3xl rounded-2xl bg-white shadow-xl border border-slate-200 overflow-hidden">
           <div className="px-5 py-4 border-b border-slate-200">
             <div className="flex items-center justify-between gap-3">
-              <h3 className="text-base font-semibold text-slate-900">行政区域速查</h3>
+              <h3 className="text-base font-semibold text-slate-900">{t('quickTitle')}</h3>
               <button
                 onClick={onClose}
                 className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100"
-                aria-label="关闭"
+                aria-label={t('close')}
               >
                 <span className="material-symbols-outlined text-[20px]">close</span>
               </button>
@@ -405,7 +397,7 @@ export function AdministrativeRegionQuickSearchModal({
                 onChange={(e) => setProvince(e.target.value)}
                 className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white transition-colors"
               >
-                <option value="">选择省份</option>
+                <option value="">{t('selectProvince')}</option>
                 {PROVINCES.map((item) => (
                   <option key={item} value={item}>
                     {item}
@@ -426,7 +418,7 @@ export function AdministrativeRegionQuickSearchModal({
                       handleSearch();
                     }
                   }}
-                  placeholder="输入地点关键词..."
+                  placeholder={t('locationPlaceholder')}
                   className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white transition-colors"
                 />
               </div>
@@ -437,7 +429,7 @@ export function AdministrativeRegionQuickSearchModal({
                 disabled={isLoading}
                 className="h-[42px] px-4 rounded-xl bg-primary text-white text-sm font-medium hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed transition-opacity"
               >
-                {isLoading ? '查询中...' : '查询'}
+                {isLoading ? t('searching') : t('search')}
               </button>
             </div>
           </div>

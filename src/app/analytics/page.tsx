@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import type { AnalyticsEventType } from '@/types';
 
 interface DailyItem {
@@ -99,25 +100,23 @@ interface AnalyticsData {
   recent: RecentItem[];
 }
 
-const dayNames = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
-
 function formatPercent(value: number): string {
   return `${value > 0 ? '+' : ''}${value.toFixed(1)}%`;
 }
 
-function formatRelativeTime(isoTime: string): string {
+function formatRelativeTime(isoTime: string, t: ReturnType<typeof useTranslations<'analytics'>>): string {
   const diffMs = Date.now() - new Date(isoTime).getTime();
-  if (diffMs < 60 * 1000) return '刚刚';
-  if (diffMs < 60 * 60 * 1000) return `${Math.floor(diffMs / (60 * 1000))} 分钟前`;
-  if (diffMs < 24 * 60 * 60 * 1000) return `${Math.floor(diffMs / (60 * 60 * 1000))} 小时前`;
-  return `${Math.floor(diffMs / (24 * 60 * 60 * 1000))} 天前`;
+  if (diffMs < 60 * 1000) return t('justNow');
+  if (diffMs < 60 * 60 * 1000) return t('minutesAgo', { count: Math.floor(diffMs / (60 * 1000)) });
+  if (diffMs < 24 * 60 * 60 * 1000) return t('hoursAgo', { count: Math.floor(diffMs / (60 * 60 * 1000)) });
+  return t('daysAgo', { count: Math.floor(diffMs / (24 * 60 * 60 * 1000)) });
 }
 
-function sourcePageLabel(page: string): string {
-  if (page === 'home') return '首页';
-  if (page === 'software') return '软件下载页';
-  if (page === 'direct') return '直达入口';
-  if (page === 'legacy') return '旧版埋点';
+function sourcePageLabel(page: string, t: ReturnType<typeof useTranslations<'analytics'>>): string {
+  if (page === 'home') return t('sourceHome');
+  if (page === 'software') return t('sourceSoftware');
+  if (page === 'direct') return t('sourceDirect');
+  if (page === 'legacy') return t('sourceLegacy');
   return page;
 }
 
@@ -126,20 +125,20 @@ function parseLocalDay(day: string): Date {
   return new Date(year, (month || 1) - 1, date || 1);
 }
 
-function eventTypeLabel(type: AnalyticsEventType): string {
+function eventTypeLabel(type: AnalyticsEventType, t: ReturnType<typeof useTranslations<'analytics'>>): string {
   switch (type) {
     case 'nav_click':
-      return '导航点击';
+      return t('eventNavClick');
     case 'software_download':
-      return '软件下载';
+      return t('eventSoftwareDownload');
     case 'weather_query':
-      return '天气查询';
+      return t('eventWeatherQuery');
     case 'phonebook_query':
-      return '电话查询';
+      return t('eventPhonebookQuery');
     case 'region_online_query':
-      return '在线行政区';
+      return t('eventRegionOnlineQuery');
     case 'admin_division_query':
-      return '本地行政区';
+      return t('eventAdminDivisionQuery');
     default:
       return type;
   }
@@ -164,18 +163,18 @@ function eventTypeClass(type: AnalyticsEventType): string {
   }
 }
 
-function EventBadge({ type }: { type: AnalyticsEventType }) {
+function EventBadge({ type, t }: { type: AnalyticsEventType; t: ReturnType<typeof useTranslations<'analytics'>> }) {
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ${eventTypeClass(type)}`}>
-      {eventTypeLabel(type)}
+      {eventTypeLabel(type, t)}
     </span>
   );
 }
 
-function SourceBadge({ page }: { page: string }) {
+function SourceBadge({ page, t }: { page: string; t: ReturnType<typeof useTranslations<'analytics'>> }) {
   return (
     <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-xs">
-      {sourcePageLabel(page)}
+      {sourcePageLabel(page, t)}
     </span>
   );
 }
@@ -262,6 +261,7 @@ function SearchList({ title, items, emptyText }: { title: string; items: SearchI
 }
 
 export default function AnalyticsPage() {
+  const t = useTranslations('analytics');
   const [days, setDays] = useState(7);
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -282,6 +282,15 @@ export default function AnalyticsPage() {
     const maxEvents = Math.max(...data.daily.map((item) => item.events), 1);
     return data.daily.map((item, index) => {
       const day = parseLocalDay(item.day);
+      const dayNames = [
+        t('daySun'),
+        t('dayMon'),
+        t('dayTue'),
+        t('dayWed'),
+        t('dayThu'),
+        t('dayFri'),
+        t('daySat'),
+      ];
       const label = days <= 7 ? dayNames[day.getDay()] : `${day.getMonth() + 1}/${day.getDate()}`;
       return {
         label,
@@ -292,7 +301,7 @@ export default function AnalyticsPage() {
         active: index === data.daily.length - 1,
       };
     });
-  }, [data, days]);
+  }, [data, days, t]);
 
   const maxHourEvents = data ? Math.max(...data.hourly.map((item) => item.events), 1) : 1;
 
@@ -301,8 +310,8 @@ export default function AnalyticsPage() {
       <div className="max-w-7xl mx-auto flex flex-col gap-6 pb-8">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h2 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">数据分析</h2>
-            <p className="text-slate-500 mt-1">统一查看导航点击、天气/电话/行政区域查询与客户端来源</p>
+            <h2 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">{t('title')}</h2>
+            <p className="text-slate-500 mt-1">{t('subtitle')}</p>
           </div>
           <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg p-1 shadow-sm">
             {[7, 30].map((option) => (
@@ -313,7 +322,7 @@ export default function AnalyticsPage() {
                   days === option ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:bg-slate-50'
                 }`}
               >
-                {option} 天
+                {t('daysOption', { count: option })}
               </button>
             ))}
           </div>
@@ -321,92 +330,100 @@ export default function AnalyticsPage() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           <SummaryCard
-            title="总行为量"
+            title={t('summaryTotalEvents')}
             value={loading ? '--' : (data?.summary.total_events || 0).toLocaleString()}
-            hint={`较上周期 ${loading ? '--' : formatPercent(data?.summary.period_change || 0)}`}
+            hint={t('summaryPeriodChange', { value: loading ? '--' : formatPercent(data?.summary.period_change || 0) })}
             tone={(data?.summary.period_change || 0) >= 0 ? 'positive' : 'warning'}
           />
           <SummaryCard
-            title="总查询量"
+            title={t('summaryTotalQueries')}
             value={loading ? '--' : (data?.summary.total_queries || 0).toLocaleString()}
-            hint={`天气 ${data?.summary.weather_queries || 0} / 电话 ${data?.summary.phonebook_queries || 0}`}
+            hint={t('summaryQueryBreakdown', {
+              weather: data?.summary.weather_queries || 0,
+              phonebook: data?.summary.phonebook_queries || 0,
+            })}
           />
           <SummaryCard
-            title="导航点击"
+            title={t('summaryNavClicks')}
             value={loading ? '--' : (data?.summary.total_clicks || 0).toLocaleString()}
-            hint={`站点 ${data?.summary.nav_clicks || 0} / 软件 ${data?.summary.software_downloads || 0}`}
+            hint={t('summaryClickBreakdown', {
+              site: data?.summary.nav_clicks || 0,
+              software: data?.summary.software_downloads || 0,
+            })}
           />
           <SummaryCard
-            title="独立访客"
+            title={t('summaryUniqueVisitors')}
             value={loading ? '--' : (data?.summary.unique_visitors || 0).toLocaleString()}
-            hint={`搜索上下文占比 ${loading ? '--' : `${data?.summary.search_context_rate || 0}%`}`}
+            hint={t('summarySearchRate', {
+              value: loading ? '--' : `${data?.summary.search_context_rate || 0}%`,
+            })}
           />
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          <TopList title="热门站点 Top 10" items={data?.top_sites || []} emptyText="暂无站点点击数据" />
-          <TopList title="热门软件 Top 10" items={data?.top_software || []} emptyText="暂无软件下载数据" />
+          <TopList title={t('topSites')} items={data?.top_sites || []} emptyText={t('emptyTopSites')} />
+          <TopList title={t('topSoftware')} items={data?.top_software || []} emptyText={t('emptyTopSoftware')} />
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          <SearchList title="热门天气查询" items={data?.top_searches.weather || []} emptyText="暂无天气查询记录" />
-          <SearchList title="热门电话查询" items={data?.top_searches.phonebook || []} emptyText="暂无电话查询记录" />
-          <SearchList title="热门行政区域查询" items={data?.top_searches.regions || []} emptyText="暂无行政区域查询记录" />
+          <SearchList title={t('topWeatherSearches')} items={data?.top_searches.weather || []} emptyText={t('emptyWeatherSearches')} />
+          <SearchList title={t('topPhonebookSearches')} items={data?.top_searches.phonebook || []} emptyText={t('emptyPhonebookSearches')} />
+          <SearchList title={t('topRegionSearches')} items={data?.top_searches.regions || []} emptyText={t('emptyRegionSearches')} />
         </div>
 
         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-bold text-slate-900">最近活动</h3>
-            <span className="text-xs text-slate-400">最近 30 条</span>
+            <h3 className="text-lg font-bold text-slate-900">{t('recentActivity')}</h3>
+            <span className="text-xs text-slate-400">{t('recentCount')}</span>
           </div>
           {loading ? (
-            <div className="text-slate-400 text-sm py-8 text-center">加载中...</div>
+            <div className="text-slate-400 text-sm py-8 text-center">{t('loading')}</div>
           ) : (data?.recent.length || 0) > 0 ? (
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm">
                 <thead>
                   <tr className="text-left text-slate-400 border-b border-slate-200">
-                    <th className="py-2 pr-4 font-medium">时间</th>
-                    <th className="py-2 pr-4 font-medium">行为</th>
-                    <th className="py-2 pr-4 font-medium">目标 / 关键词</th>
-                    <th className="py-2 pr-4 font-medium">来源</th>
-                    <th className="py-2 pr-4 font-medium">分类</th>
-                    <th className="py-2 pr-4 font-medium">客户端 IP</th>
-                    <th className="py-2 font-medium">搜索上下文</th>
+                    <th className="py-2 pr-4 font-medium">{t('tableTime')}</th>
+                    <th className="py-2 pr-4 font-medium">{t('tableEvent')}</th>
+                    <th className="py-2 pr-4 font-medium">{t('tableTarget')}</th>
+                    <th className="py-2 pr-4 font-medium">{t('tableSource')}</th>
+                    <th className="py-2 pr-4 font-medium">{t('tableCategory')}</th>
+                    <th className="py-2 pr-4 font-medium">{t('tableClientIp')}</th>
+                    <th className="py-2 font-medium">{t('tableHasSearch')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {(data?.recent || []).map((item) => (
                     <tr key={item.id} className="border-b border-slate-100 text-slate-600 align-top">
-                      <td className="py-3 pr-4 whitespace-nowrap">{formatRelativeTime(item.created_at)}</td>
-                      <td className="py-3 pr-4"><EventBadge type={item.event_type} /></td>
+                      <td className="py-3 pr-4 whitespace-nowrap">{formatRelativeTime(item.created_at, t)}</td>
+                      <td className="py-3 pr-4"><EventBadge type={item.event_type} t={t} /></td>
                       <td className="py-3 pr-4 min-w-[240px] max-w-[360px]">
                         <p className="font-medium text-slate-800 break-words">{item.target_name}</p>
-                        {item.search_query && <p className="text-xs text-slate-500 mt-1 break-all">关键词：{item.search_query}</p>}
+                        {item.search_query && <p className="text-xs text-slate-500 mt-1 break-all">{t('keywordLabel', { value: item.search_query })}</p>}
                       </td>
-                      <td className="py-3 pr-4 whitespace-nowrap"><SourceBadge page={item.page} /></td>
+                      <td className="py-3 pr-4 whitespace-nowrap"><SourceBadge page={item.page} t={t} /></td>
                       <td className="py-3 pr-4 whitespace-nowrap">{item.category_label || '-'}</td>
                       <td className="py-3 pr-4 whitespace-nowrap font-mono text-xs">{item.client_ip || '-'}</td>
-                      <td className="py-3 whitespace-nowrap">{item.has_search ? '是' : '否'}</td>
+                      <td className="py-3 whitespace-nowrap">{item.has_search ? t('yes') : t('no')}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           ) : (
-            <div className="text-slate-400 text-sm py-8 text-center">暂无活动数据</div>
+            <div className="text-slate-400 text-sm py-8 text-center">{t('emptyRecent')}</div>
           )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-bold text-slate-900">行为趋势</h3>
-              <span className="text-xs text-slate-400">活跃天数 {data?.summary.active_days || 0} / {days}</span>
+              <h3 className="text-lg font-bold text-slate-900">{t('trendTitle')}</h3>
+              <span className="text-xs text-slate-400">{t('activeDays', { active: data?.summary.active_days || 0, total: days })}</span>
             </div>
             <div className="flex-1 flex items-end justify-between gap-2 h-64 px-2">
               {loading ? (
-                <div className="flex-1 flex items-center justify-center text-slate-400">加载中...</div>
+                <div className="flex-1 flex items-center justify-center text-slate-400">{t('loading')}</div>
               ) : bars.length > 0 ? (
                 bars.map((bar, index) => (
                   <div key={`${bar.label}-${index}`} className="flex flex-col items-center gap-2 flex-1 h-full justify-end group">
@@ -418,23 +435,23 @@ export default function AnalyticsPage() {
                         style={{ height: bar.height }}
                       />
                       <div className="absolute -top-11 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 text-center">
-                        {bar.events} 条\n点 {bar.clicks} / 查 {bar.queries}
+                        {t('trendTooltip', { events: bar.events, clicks: bar.clicks, queries: bar.queries })}
                       </div>
                     </div>
                     <span className="text-xs text-slate-400 font-medium">{bar.label}</span>
                   </div>
                 ))
               ) : (
-                <div className="flex-1 flex items-center justify-center text-slate-400">暂无数据</div>
+                <div className="flex-1 flex items-center justify-center text-slate-400">{t('emptyData')}</div>
               )}
             </div>
           </div>
 
           <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-5">
             <div>
-              <h3 className="text-lg font-bold text-slate-900 mb-3">24 小时分布</h3>
+              <h3 className="text-lg font-bold text-slate-900 mb-3">{t('hourlyTitle')}</h3>
               {loading ? (
-                <p className="text-slate-400 text-sm">加载中...</p>
+                <p className="text-slate-400 text-sm">{t('loading')}</p>
               ) : (
                 <div className="grid grid-cols-6 gap-2">
                   {(data?.hourly || []).map((item) => (
@@ -453,27 +470,27 @@ export default function AnalyticsPage() {
             </div>
 
             <div>
-              <h3 className="text-lg font-bold text-slate-900 mb-3">来源页面</h3>
+              <h3 className="text-lg font-bold text-slate-900 mb-3">{t('sourceTitle')}</h3>
               {loading ? (
-                <p className="text-slate-400 text-sm">加载中...</p>
+                <p className="text-slate-400 text-sm">{t('loading')}</p>
               ) : (data?.source_pages.length || 0) > 0 ? (
                 <div className="flex flex-col gap-2">
                   {(data?.source_pages || []).map((item) => (
                     <div key={item.page} className="flex items-center justify-between text-sm gap-3">
-                      <SourceBadge page={item.page} />
+                      <SourceBadge page={item.page} t={t} />
                       <span className="text-slate-500 shrink-0">{item.events} ({item.ratio}%)</span>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-slate-400 text-sm">暂无来源数据</p>
+                <p className="text-slate-400 text-sm">{t('emptySources')}</p>
               )}
             </div>
 
             <div>
-              <h3 className="text-lg font-bold text-slate-900 mb-3">热门分类</h3>
+              <h3 className="text-lg font-bold text-slate-900 mb-3">{t('categoryTitle')}</h3>
               {loading ? (
-                <p className="text-slate-400 text-sm">加载中...</p>
+                <p className="text-slate-400 text-sm">{t('loading')}</p>
               ) : (data?.categories.length || 0) > 0 ? (
                 <div className="flex flex-col gap-2">
                   {(data?.categories || []).slice(0, 6).map((category, index) => (
@@ -484,7 +501,7 @@ export default function AnalyticsPage() {
                   ))}
                 </div>
               ) : (
-                <p className="text-slate-400 text-sm">暂无分类数据</p>
+                <p className="text-slate-400 text-sm">{t('emptyCategories')}</p>
               )}
             </div>
           </div>

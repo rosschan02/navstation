@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -69,13 +70,6 @@ interface DetailResponse {
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const LEVEL_NAMES: Record<number, string> = {
-  1: '省/直辖市',
-  2: '市/地级',
-  3: '区/县',
-  4: '街道/乡镇',
-};
-
 const LEVEL_COLORS: Record<number, string> = {
   1: 'bg-red-100 text-red-700',
   2: 'bg-orange-100 text-orange-700',
@@ -92,10 +86,10 @@ const PROVINCES = [
 ];
 
 const LEVEL_OPTIONS = [
-  { value: 4, label: '街道/乡镇' },
-  { value: 3, label: '区/县' },
-  { value: 2, label: '市/地级' },
-  { value: 1, label: '省/直辖市' },
+  { value: 4, labelKey: 'level4' },
+  { value: 3, labelKey: 'level3' },
+  { value: 2, labelKey: 'level2' },
+  { value: 1, labelKey: 'level1' },
 ] as const;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -123,6 +117,7 @@ export function AdministrativeDivisionModal({
   onClose,
   visitorId,
 }: AdministrativeDivisionModalProps) {
+  const t = useTranslations('regionSearch');
   const [mode, setMode] = useState<SearchMode>('online');
 
   // Shared
@@ -202,8 +197,8 @@ export function AdministrativeDivisionModal({
     const query = keyword.trim();
     const region = province.trim();
     setHasSearched(true);
-    if (!region) { setError('请先选择省份'); setOnlineItems([]); return; }
-    if (!query) { setError('请输入关键词'); setOnlineItems([]); return; }
+    if (!region) { setError(t('selectProvinceFirst')); setOnlineItems([]); return; }
+    if (!query) { setError(t('enterKeyword')); setOnlineItems([]); return; }
     setIsLoading(true);
     setError('');
     setSelectedOnlineItem(null);
@@ -211,7 +206,7 @@ export function AdministrativeDivisionModal({
       const params = new URLSearchParams({ query, region, sid: visitorId, page: 'home' });
       const res = await fetch(`/api/regions/search?${params}`, { cache: 'no-store' });
       const data = (await res.json().catch(() => ({}))) as Partial<RegionSearchResponse> & { error?: string };
-      if (!res.ok) throw new Error(data.error || '查询失败');
+      if (!res.ok) throw new Error(data.error || t('searchFailed'));
       const nextItems = Array.isArray(data.items) ? data.items : [];
       setOnlineItems(nextItems);
       setResponseMeta({
@@ -224,7 +219,7 @@ export function AdministrativeDivisionModal({
     } catch (err) {
       setOnlineItems([]);
       setResponseMeta({ status: 0, message: '', resultType: '', queryType: '', total: 0 });
-      setError((err as Error).message || '查询失败，请稍后重试');
+      setError((err as Error).message || t('searchFailedRetry'));
     } finally {
       setIsLoading(false);
     }
@@ -234,7 +229,7 @@ export function AdministrativeDivisionModal({
   const handleLocalSearch = async () => {
     const trimmed = keyword.trim();
     setHasSearched(true);
-    if (!trimmed) { setError('请输入关键词'); setLocalItems([]); return; }
+    if (!trimmed) { setError(t('enterKeyword')); setLocalItems([]); return; }
     setIsLoading(true);
     setError('');
     setDetail(null);
@@ -242,11 +237,11 @@ export function AdministrativeDivisionModal({
       const params = new URLSearchParams({ keyword: trimmed, level: String(level), limit: '80', sid: visitorId, page: 'home' });
       const res = await fetch(`/api/admin-divisions?${params}`, { cache: 'no-store' });
       const data = (await res.json().catch(() => ({}))) as Partial<LocalSearchResponse> & { error?: string };
-      if (!res.ok) throw new Error(data.error || '查询失败');
+      if (!res.ok) throw new Error(data.error || t('searchFailed'));
       setLocalItems(Array.isArray(data.items) ? data.items : []);
     } catch (err) {
       setLocalItems([]);
-      setError((err as Error).message || '查询失败，请稍后重试');
+      setError((err as Error).message || t('searchFailedRetry'));
     } finally {
       setIsLoading(false);
     }
@@ -259,14 +254,14 @@ export function AdministrativeDivisionModal({
       const params = new URLSearchParams({ detail_level: String(nextLevel), detail_code: code });
       const res = await fetch(`/api/admin-divisions?${params}`, { cache: 'no-store' });
       const data = (await res.json().catch(() => ({}))) as Partial<DetailResponse> & { error?: string };
-      if (!res.ok || !data.node) throw new Error(data.error || '详情查询失败');
+      if (!res.ok || !data.node) throw new Error(data.error || t('detailFailed'));
       setDetail({
         node: data.node,
         ancestors: Array.isArray(data.ancestors) ? data.ancestors : [],
         children: Array.isArray(data.children) ? data.children : [],
       });
     } catch (err) {
-      setError((err as Error).message || '详情查询失败，请稍后重试');
+      setError((err as Error).message || t('detailFailedRetry'));
     } finally {
       setIsLoading(false);
     }
@@ -293,13 +288,13 @@ export function AdministrativeDivisionModal({
       <div className="space-y-4">
         <button type="button" onClick={() => setSelectedOnlineItem(null)} className="inline-flex items-center gap-1.5 text-base text-primary hover:opacity-80">
           <span className="material-symbols-outlined text-[20px]">arrow_back</span>
-          返回列表
+          {t('backToList')}
         </button>
 
         <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
           <h4 className="text-xl font-semibold text-slate-900 break-words">{selectedOnlineItem.name || '-'}</h4>
           <p className="mt-2 text-base text-slate-700 break-words">
-            <span className="font-medium text-slate-800">详细地址：</span>
+            <span className="font-medium text-slate-800">{t('detailAddress')}</span>
             {selectedOnlineItem.address || '-'}
           </p>
         </div>
@@ -308,19 +303,19 @@ export function AdministrativeDivisionModal({
           <div className="rounded-xl border border-slate-200 p-4">
             <div className="flex items-center gap-2 mb-3">
               <span className="material-symbols-outlined text-[18px] text-slate-400">account_tree</span>
-              <p className="text-sm text-slate-500 font-medium">行政区划代码</p>
+              <p className="text-sm text-slate-500 font-medium">{t('divisionCodes')}</p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               {divisionChain.map((div, idx) => (
                 <React.Fragment key={div.code}>
                   {idx > 0 && <span className="text-slate-300 text-base">›</span>}
-                  <button onClick={() => handleCopy(div.code)} className="inline-flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-primary/10 transition-colors group" title="点击复制代码">
+                  <button onClick={() => handleCopy(div.code)} className="inline-flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-primary/10 transition-colors group" title={t('copyCode')}>
                     <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-semibold ${LEVEL_COLORS[div.level] || 'bg-gray-100 text-gray-700'}`}>
-                      {LEVEL_NAMES[div.level]}
+                      {t(`level${div.level}`)}
                     </span>
                     <span className="text-base font-medium text-slate-800">{div.name}</span>
                     {copiedCode === div.code ? (
-                      <span className="text-sm text-green-600 font-semibold">{div.code}</span>
+                      <span className="text-sm text-green-600 font-semibold">{t('copiedCode', { code: div.code })}</span>
                     ) : (
                       <span className="text-sm font-mono text-slate-500 group-hover:text-primary">{div.code}</span>
                     )}
@@ -333,11 +328,11 @@ export function AdministrativeDivisionModal({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="rounded-xl border border-slate-200 p-3">
-            <p className="text-sm text-slate-500">纬度 (lat)</p>
+            <p className="text-sm text-slate-500">{t('latitude')}</p>
             <p className="mt-1 text-lg font-mono text-slate-800">{selectedOnlineItem.location.lat ?? '-'}</p>
           </div>
           <div className="rounded-xl border border-slate-200 p-3">
-            <p className="text-sm text-slate-500">经度 (lng)</p>
+            <p className="text-sm text-slate-500">{t('longitude')}</p>
             <p className="mt-1 text-lg font-mono text-slate-800">{selectedOnlineItem.location.lng ?? '-'}</p>
           </div>
         </div>
@@ -351,8 +346,8 @@ export function AdministrativeDivisionModal({
       return (
         <div className="py-16 flex flex-col items-center text-slate-400">
           <span className="material-symbols-outlined text-[48px] mb-3 text-slate-300">location_city</span>
-          <p className="text-sm">请选择省份并输入关键词</p>
-          <p className="text-xs mt-1 text-slate-300">示例：维港半岛</p>
+          <p className="text-sm">{t('initialPrompt')}</p>
+          <p className="text-xs mt-1 text-slate-300">{t('initialExample')}</p>
         </div>
       );
     }
@@ -360,7 +355,7 @@ export function AdministrativeDivisionModal({
       return (
         <div className="py-16 flex flex-col items-center text-slate-400">
           <span className="material-symbols-outlined text-[36px] mb-3 animate-spin">progress_activity</span>
-          <p className="text-sm">查询中...</p>
+          <p className="text-sm">{t('searching')}</p>
         </div>
       );
     }
@@ -369,17 +364,15 @@ export function AdministrativeDivisionModal({
       return (
         <div className="py-16 flex flex-col items-center text-slate-400">
           <span className="material-symbols-outlined text-[48px] mb-3 text-slate-300">search_off</span>
-          <p className="text-sm">没有找到匹配结果</p>
-          <p className="text-xs mt-1 text-slate-300">请尝试更换关键词或省份</p>
+          <p className="text-sm">{t('emptyTitle')}</p>
+          <p className="text-xs mt-1 text-slate-300">{t('emptySubtitle')}</p>
         </div>
       );
     }
     return (
       <div>
         <div className="px-1 mb-3 flex flex-wrap items-center gap-2">
-          <p className="text-xs text-slate-500">
-            找到 <span className="font-semibold text-slate-900">{onlineItems.length}</span> 条结果
-          </p>
+          <p className="text-xs text-slate-500">{t('resultsFound', { count: onlineItems.length })}</p>
           {responseMeta.queryType && (
             <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600">query_type: {responseMeta.queryType}</span>
           )}
@@ -395,14 +388,14 @@ export function AdministrativeDivisionModal({
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-slate-900 break-words">{item.name || '-'}</p>
-                    <p className="mt-1 text-xs text-slate-500 break-words">行政区域：{regionText}</p>
+                    <p className="mt-1 text-xs text-slate-500 break-words">{t('regionLabel', { value: regionText })}</p>
                   </div>
                   <button type="button" onClick={() => setSelectedOnlineItem(item)} className="shrink-0 px-3 h-8 rounded-lg border border-slate-200 text-xs text-slate-700 hover:text-primary hover:border-primary/40 transition-colors">
-                    查看详情
+                    {t('viewDetail')}
                   </button>
                 </div>
                 <div className="mt-2 rounded-lg bg-slate-50 px-3 py-2">
-                  <p className="text-xs text-slate-400">地址</p>
+                  <p className="text-xs text-slate-400">{t('address')}</p>
                   <p className="text-sm text-slate-700 break-words">{item.address || '-'}</p>
                 </div>
               </div>
@@ -420,27 +413,27 @@ export function AdministrativeDivisionModal({
       <div className="space-y-4">
         <button type="button" onClick={() => setDetail(null)} className="inline-flex items-center gap-1.5 text-base text-primary hover:opacity-80">
           <span className="material-symbols-outlined text-[20px]">arrow_back</span>
-          返回列表
+          {t('backToList')}
         </button>
 
         <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
           <div className="flex flex-wrap items-center gap-2">
             <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-semibold ${LEVEL_COLORS[detail.node.level] || 'bg-slate-100 text-slate-700'}`}>
-              {LEVEL_NAMES[detail.node.level] || `L${detail.node.level}`}
+              {t(`level${detail.node.level}`)}
             </span>
             <h4 className="text-lg font-semibold text-slate-900 break-words">{detail.node.name_zh}</h4>
           </div>
           <p className="mt-2 text-sm text-slate-600 break-words">{detail.node.full_name_zh || '-'}</p>
           <button type="button" onClick={() => handleCopy(detail.node.code)} className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 text-sm text-slate-700 hover:text-primary hover:border-primary/40 transition-colors">
             <span className="material-symbols-outlined text-[16px]">content_copy</span>
-            {copiedCode === detail.node.code ? '已复制' : `代码 ${detail.node.code}`}
+            {copiedCode === detail.node.code ? t('copied') : t('codeValue', { code: detail.node.code })}
           </button>
         </div>
 
         <div className="rounded-xl border border-slate-200 p-4">
           <div className="flex items-center gap-2 mb-3">
             <span className="material-symbols-outlined text-[18px] text-slate-400">account_tree</span>
-            <p className="text-sm text-slate-500 font-medium">上级链路</p>
+            <p className="text-sm text-slate-500 font-medium">{t('ancestorChain')}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {detail.ancestors.map((item, index) => (
@@ -448,7 +441,7 @@ export function AdministrativeDivisionModal({
                 {index > 0 && <span className="text-slate-300 text-base">›</span>}
                 <button type="button" onClick={() => handleOpenDetail(item.level, item.code)} className="inline-flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-primary/10 transition-colors">
                   <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-semibold ${LEVEL_COLORS[item.level] || 'bg-slate-100 text-slate-700'}`}>
-                    {LEVEL_NAMES[item.level] || `L${item.level}`}
+                    {t(`level${item.level}`)}
                   </span>
                   <span className="text-sm text-slate-800">{item.name_zh}</span>
                 </button>
@@ -460,10 +453,10 @@ export function AdministrativeDivisionModal({
         <div className="rounded-xl border border-slate-200 p-4">
           <div className="flex items-center gap-2 mb-3">
             <span className="material-symbols-outlined text-[18px] text-slate-400">nearby</span>
-            <p className="text-sm text-slate-500 font-medium">下级区域</p>
+            <p className="text-sm text-slate-500 font-medium">{t('childrenRegions')}</p>
           </div>
           {detail.children.length === 0 ? (
-            <p className="text-sm text-slate-400">当前区域没有下级可选。</p>
+            <p className="text-sm text-slate-400">{t('noChildren')}</p>
           ) : (
             <div className="space-y-2">
               {detail.children.map((child) => (
@@ -474,7 +467,7 @@ export function AdministrativeDivisionModal({
                       <p className="text-xs text-slate-500 mt-0.5">{child.code}</p>
                     </div>
                     <button type="button" onClick={() => handleOpenDetail(child.level, child.code)} className="shrink-0 px-3 h-8 rounded-lg border border-slate-200 text-xs text-slate-700 hover:text-primary hover:border-primary/40 transition-colors">
-                      查看详情
+                      {t('viewDetail')}
                     </button>
                   </div>
                 </div>
@@ -492,8 +485,8 @@ export function AdministrativeDivisionModal({
       return (
         <div className="py-16 flex flex-col items-center text-slate-400">
           <span className="material-symbols-outlined text-[48px] mb-3 text-slate-300">account_tree</span>
-          <p className="text-sm">输入关键词搜索本地行政区</p>
-          <p className="text-xs mt-1 text-slate-300">示例：合作路、东里、新华区</p>
+          <p className="text-sm">{t('localInitialPrompt')}</p>
+          <p className="text-xs mt-1 text-slate-300">{t('localInitialExample')}</p>
         </div>
       );
     }
@@ -501,7 +494,7 @@ export function AdministrativeDivisionModal({
       return (
         <div className="py-16 flex flex-col items-center text-slate-400">
           <span className="material-symbols-outlined text-[36px] mb-3 animate-spin">progress_activity</span>
-          <p className="text-sm">查询中...</p>
+          <p className="text-sm">{t('searching')}</p>
         </div>
       );
     }
@@ -510,23 +503,21 @@ export function AdministrativeDivisionModal({
       return (
         <div className="py-16 flex flex-col items-center text-slate-400">
           <span className="material-symbols-outlined text-[48px] mb-3 text-slate-300">search_off</span>
-          <p className="text-sm">没有找到匹配结果</p>
-          <p className="text-xs mt-1 text-slate-300">请尝试更换关键词</p>
+          <p className="text-sm">{t('emptyTitle')}</p>
+          <p className="text-xs mt-1 text-slate-300">{t('localEmptySubtitle')}</p>
         </div>
       );
     }
     return (
       <div className="space-y-3">
-        <p className="text-xs text-slate-500 px-1">
-          找到 <span className="font-semibold text-slate-900">{localItems.length}</span> 条结果
-        </p>
+        <p className="text-xs text-slate-500 px-1">{t('resultsFound', { count: localItems.length })}</p>
         {localItems.map((item) => (
           <div key={`${item.level}-${item.code}`} className="rounded-xl border border-slate-200 bg-white px-4 py-3 hover:border-primary/30 hover:bg-primary/5 transition-colors">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold ${LEVEL_COLORS[item.level] || 'bg-slate-100 text-slate-700'}`}>
-                    {LEVEL_NAMES[item.level] || `L${item.level}`}
+                    {t(`level${item.level}`)}
                   </span>
                   <p className="text-sm font-semibold text-slate-900 break-words">{item.name_zh}</p>
                 </div>
@@ -534,7 +525,7 @@ export function AdministrativeDivisionModal({
                 <p className="mt-1 text-xs font-mono text-slate-400">{item.code}</p>
               </div>
               <button type="button" onClick={() => handleOpenDetail(item.level, item.code)} className="shrink-0 px-3 h-8 rounded-lg border border-slate-200 text-xs text-slate-700 hover:text-primary hover:border-primary/40 transition-colors">
-                查看详情
+                {t('viewDetail')}
               </button>
             </div>
           </div>
@@ -561,7 +552,7 @@ export function AdministrativeDivisionModal({
             onChange={(e) => setProvince(e.target.value)}
             className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white transition-colors"
           >
-            <option value="">选择省份</option>
+            <option value="">{t('selectProvince')}</option>
             {PROVINCES.map((item) => (
               <option key={item} value={item}>{item}</option>
             ))}
@@ -575,13 +566,13 @@ export function AdministrativeDivisionModal({
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSearch(); } }}
-              placeholder="输入地点关键词..."
+              placeholder={t('locationPlaceholder')}
               className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white transition-colors"
             />
           </div>
 
           <button type="button" onClick={handleSearch} disabled={isLoading} className="h-[42px] px-4 rounded-xl bg-primary text-white text-sm font-medium hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed transition-opacity">
-            {isLoading ? '查询中...' : '查询'}
+            {isLoading ? t('searching') : t('search')}
           </button>
         </div>
       );
@@ -595,7 +586,7 @@ export function AdministrativeDivisionModal({
           className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white transition-colors"
         >
           {LEVEL_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>{option.label}</option>
+            <option key={option.value} value={option.value}>{t(option.labelKey)}</option>
           ))}
         </select>
 
@@ -607,13 +598,13 @@ export function AdministrativeDivisionModal({
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSearch(); } }}
-            placeholder="输入区域关键词..."
+            placeholder={t('localPlaceholder')}
             className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white transition-colors"
           />
         </div>
 
         <button type="button" onClick={handleSearch} disabled={isLoading} className="h-[42px] px-4 rounded-xl bg-primary text-white text-sm font-medium hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed transition-opacity">
-          {isLoading ? '查询中...' : '查询'}
+          {isLoading ? t('searching') : t('search')}
         </button>
       </div>
     );
@@ -628,7 +619,7 @@ export function AdministrativeDivisionModal({
           <div className="px-5 py-4 border-b border-slate-200">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <h3 className="text-base font-semibold text-slate-900">行政区域查询</h3>
+                <h3 className="text-base font-semibold text-slate-900">{t('title')}</h3>
                 <div className="flex items-center rounded-lg bg-slate-100 p-0.5">
                   <button
                     type="button"
@@ -639,7 +630,7 @@ export function AdministrativeDivisionModal({
                         : 'text-slate-500 hover:text-slate-700'
                     }`}
                   >
-                    在线查询
+                    {t('onlineMode')}
                   </button>
                   <button
                     type="button"
@@ -650,11 +641,11 @@ export function AdministrativeDivisionModal({
                         : 'text-slate-500 hover:text-slate-700'
                     }`}
                   >
-                    本地查询
+                    {t('localMode')}
                   </button>
                 </div>
               </div>
-              <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100" aria-label="关闭">
+              <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100" aria-label={t('close')}>
                 <span className="material-symbols-outlined text-[20px]">close</span>
               </button>
             </div>

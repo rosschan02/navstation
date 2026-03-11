@@ -7,11 +7,13 @@ For release history and change details, see [CHANGELOG.md](./CHANGELOG.md).
 NavStation is a unified navigation portal and site management system that combines site navigation, software distribution, QR display, behavior analytics, and BIND9 DNS management in one application.
 
 It now supports multilingual site routing and content management for `en`, `zh-CN`, `ko`, and `ja`, including a configurable default language in the admin settings page.
+The i18n runtime is now based on `next-intl`, with locale-aware routing, request configuration, navigation helpers, and per-page message loading handled in `src/i18n/*`.
 The locale proxy also skips API routes, internal prefetch requests, and static assets such as `/fonts` to prevent redirect loops or broken asset loads after Docker rebuilds.
 
 ## Tech Stack
 
 - **Frontend**: Next.js 16 (App Router) + React 19 + Tailwind CSS 4 + TypeScript
+- **i18n**: next-intl
 - **Backend**: Next.js API Routes + node-postgres
 - **Database**: PostgreSQL 14+
 - **Authentication**: bcryptjs + HttpOnly Cookie + API Key
@@ -32,6 +34,7 @@ navstation/
 │   │   └── api/                # RESTful APIs
 │   ├── components/             # Client components
 │   ├── contexts/               # Auth and toast/message state
+│   ├── i18n/                   # next-intl routing/request/navigation helpers
 │   ├── lib/                    # Shared utilities
 │   ├── db/                     # PostgreSQL schema, seed, migrations
 │   ├── types/                  # TypeScript types
@@ -126,6 +129,8 @@ npm run dev
 ```
 
 Open `http://localhost:3000`.
+
+Locale-prefixed routes are available at `/en`, `/zh-CN`, `/ko`, and `/ja`. The root path `/` will redirect using the browser locale first, then fall back to the admin-configured default locale.
 
 ### 5. Production Build
 

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface LoginModalProps {
@@ -13,6 +14,8 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const { login } = useAuth();
+  const t = useTranslations('auth');
+  const cancel = useTranslations('common')('cancel');
 
   if (!isOpen) return null;
 
@@ -25,7 +28,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
       setError('');
       onClose();
     } else {
-      setError(result.error || '用户名或密码错误');
+      setError(result.error || t('invalidCredentials'));
     }
   };
 
@@ -39,8 +42,8 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
             <div className="inline-flex items-center justify-center size-16 rounded-2xl bg-gradient-to-br from-primary to-blue-600 text-white shadow-lg shadow-primary/30 mb-4">
               <span className="material-symbols-outlined" style={{ fontSize: 32 }}>lock</span>
             </div>
-            <h2 className="text-2xl font-bold text-slate-900">管理员登录</h2>
-            <p className="text-slate-500 mt-2 text-sm">请输入凭据以访问工作区</p>
+            <h2 className="text-2xl font-bold text-slate-900">{t('adminLogin')}</h2>
+            <p className="text-slate-500 mt-2 text-sm">{t('enterCredentials')}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="p-8 flex flex-col gap-5">
@@ -52,7 +55,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
             )}
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">账号</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">{t('account')}</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
                   <span className="material-symbols-outlined text-[20px]">person</span>
@@ -60,7 +63,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
                 <input
                   type="text"
                   className="block w-full pl-10 pr-3 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm outline-none"
-                  placeholder="请输入用户名"
+                  placeholder={t('enterUsername')}
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                 />
@@ -68,7 +71,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">密码</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">{t('password')}</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
                   <span className="material-symbols-outlined text-[20px]">key</span>
@@ -76,7 +79,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
                 <input
                   type="password"
                   className="block w-full pl-10 pr-3 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm outline-none"
-                  placeholder="请输入密码"
+                  placeholder={t('enterPassword')}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
@@ -87,11 +90,11 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
               type="submit"
               className="w-full bg-primary hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-primary/20 transition-all active:scale-[0.98] mt-2"
             >
-              登录
+              {t('signIn')}
             </button>
 
             <div className="flex items-center justify-end text-xs text-slate-400 mt-2">
-              <button type="button" onClick={onClose} className="hover:text-slate-600">取消</button>
+              <button type="button" onClick={onClose} className="hover:text-slate-600">{cancel}</button>
             </div>
           </form>
         </div>

@@ -1,11 +1,14 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMessage } from '@/contexts/MessageContext';
 
 export function ProfileClient() {
+  const t = useTranslations('profile');
+  const tm = useTranslations('messages');
   const router = useRouter();
   const message = useMessage();
   const { user, refreshUser } = useAuth();
@@ -46,11 +49,11 @@ export function ProfileClient() {
         setAvatarPreview(path);
         setAvatar(path);
       } else {
-        message.error('上传失败');
+        message.error(tm('上传失败'));
       }
     } catch (error) {
       console.error('Upload failed:', error);
-      message.error('上传失败');
+      message.error(tm('上传失败'));
     }
   };
 
@@ -65,16 +68,16 @@ export function ProfileClient() {
       });
 
       if (res.ok) {
-        message.success('头像已保存');
+        message.success(tm('头像已保存'));
         refreshUser?.();
         router.refresh();
       } else {
         const data = await res.json();
-        message.error(data.error || '保存失败');
+        message.error(data.error || tm('保存失败'));
       }
     } catch (error) {
       console.error('Failed to save avatar:', error);
-      message.error('保存失败');
+      message.error(tm('保存失败'));
     } finally {
       setIsSavingAvatar(false);
     }
@@ -84,12 +87,12 @@ export function ProfileClient() {
     e.preventDefault();
 
     if (passwords.new_password !== passwords.confirm_password) {
-      message.error('两次输入的新密码不一致');
+      message.error(tm('两次输入的新密码不一致'));
       return;
     }
 
     if (passwords.new_password.length < 4) {
-      message.error('新密码长度至少4位');
+      message.error(tm('新密码长度至少4位'));
       return;
     }
 
@@ -106,15 +109,15 @@ export function ProfileClient() {
       });
 
       if (res.ok) {
-        message.success('密码修改成功');
+        message.success(tm('密码修改成功'));
         setPasswords({ old_password: '', new_password: '', confirm_password: '' });
       } else {
         const data = await res.json();
-        message.error(data.error || '修改失败');
+        message.error(data.error || tm('修改失败'));
       }
     } catch (error) {
       console.error('Failed to change password:', error);
-      message.error('修改失败');
+      message.error(tm('修改失败'));
     } finally {
       setIsSavingPassword(false);
     }
@@ -123,18 +126,16 @@ export function ProfileClient() {
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden relative bg-background-light">
       <div className="flex-1 overflow-y-auto p-6 md:p-8 lg:px-12">
-        {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">账号设置</h1>
-          <p className="text-slate-500 mt-1">修改头像和密码</p>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{t('title')}</h1>
+          <p className="text-slate-500 mt-1">{t('subtitle')}</p>
         </div>
 
         <div className="max-w-2xl space-y-6">
-          {/* Avatar Section */}
           <div className="bg-white rounded-xl border border-slate-200 p-6">
             <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-primary">account_circle</span>
-              头像
+              {t('avatar')}
             </h2>
 
             <div className="flex items-center gap-6">
@@ -143,7 +144,7 @@ export function ProfileClient() {
                 className="size-20 rounded-full border-2 border-dashed border-slate-200 hover:border-primary/50 flex items-center justify-center cursor-pointer transition-colors overflow-hidden bg-slate-100"
               >
                 {avatarPreview ? (
-                  <img src={avatarPreview} alt="头像" className="size-20 object-cover" />
+                  <img src={avatarPreview} alt={t('avatar')} className="size-20 object-cover" />
                 ) : (
                   <span className="material-symbols-outlined text-slate-400 text-[32px]">person</span>
                 )}
@@ -155,12 +156,12 @@ export function ProfileClient() {
                 className="hidden"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
-                  if (file) handleAvatarUpload(file);
+                  if (file) void handleAvatarUpload(file);
                 }}
               />
               <div className="flex-1">
-                <p className="text-sm text-slate-600">点击上传新头像</p>
-                <p className="text-xs text-slate-400 mt-1">支持 PNG, JPG，建议 200x200px</p>
+                <p className="text-sm text-slate-600">{t('clickUploadAvatar')}</p>
+                <p className="text-xs text-slate-400 mt-1">{t('avatarHint')}</p>
               </div>
               <button
                 onClick={handleSaveAvatar}
@@ -170,57 +171,56 @@ export function ProfileClient() {
                 {isSavingAvatar && (
                   <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
                 )}
-                保存头像
+                {t('saveAvatar')}
               </button>
             </div>
           </div>
 
-          {/* Password Section */}
           <div className="bg-white rounded-xl border border-slate-200 p-6">
             <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-primary">lock</span>
-              修改密码
+              {t('changePassword')}
             </h2>
 
             <form onSubmit={handleChangePassword} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
-                  当前密码
+                  {t('currentPassword')}
                 </label>
                 <input
                   type="password"
                   value={passwords.old_password}
                   onChange={(e) => setPasswords({ ...passwords, old_password: e.target.value })}
                   className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                  placeholder="请输入当前密码"
+                  placeholder={t('currentPasswordPlaceholder')}
                   required
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
-                  新密码
+                  {t('newPassword')}
                 </label>
                 <input
                   type="password"
                   value={passwords.new_password}
                   onChange={(e) => setPasswords({ ...passwords, new_password: e.target.value })}
                   className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                  placeholder="请输入新密码（至少4位）"
+                  placeholder={t('newPasswordPlaceholder')}
                   required
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
-                  确认新密码
+                  {t('confirmNewPassword')}
                 </label>
                 <input
                   type="password"
                   value={passwords.confirm_password}
                   onChange={(e) => setPasswords({ ...passwords, confirm_password: e.target.value })}
                   className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                  placeholder="请再次输入新密码"
+                  placeholder={t('confirmNewPasswordPlaceholder')}
                   required
                 />
               </div>
@@ -234,7 +234,7 @@ export function ProfileClient() {
                   {isSavingPassword && (
                     <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
                   )}
-                  修改密码
+                  {t('submitPassword')}
                 </button>
               </div>
             </form>

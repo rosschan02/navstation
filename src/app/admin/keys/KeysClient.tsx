@@ -1,20 +1,18 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import type { ApiKey } from '@/types';
 import { useMessage } from '@/contexts/MessageContext';
-
-const PERMISSION_OPTIONS = [
-  { value: 'read', label: '只读', description: '读取站点、分类、统计数据' },
-  { value: 'write', label: '读写', description: '包含只读 + 增删改站点、软件等' },
-];
 
 interface KeysClientProps {
   initialKeys: ApiKey[];
 }
 
 export function KeysClient({ initialKeys }: KeysClientProps) {
+  const t = useTranslations('keys');
+  const locale = useLocale();
   const router = useRouter();
   const message = useMessage();
   const [keys, setKeys] = useState(initialKeys);
@@ -22,17 +20,18 @@ export function KeysClient({ initialKeys }: KeysClientProps) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingKey, setEditingKey] = useState<ApiKey | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
-
-  // Created key display
   const [createdKey, setCreatedKey] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-
-  // Form state
   const [formData, setFormData] = useState({
     name: '',
     permissions: 'read' as 'read' | 'write',
     description: '',
   });
+
+  const permissionOptions = [
+    { value: 'read', label: t('permissionRead'), description: t('permissionReadDescription') },
+    { value: 'write', label: t('permissionWrite'), description: t('permissionWriteDescription') },
+  ] as const;
 
   const resetForm = () => {
     setFormData({
@@ -71,12 +70,12 @@ export function KeysClient({ initialKeys }: KeysClientProps) {
       const data = await res.json();
       setCreatedKey(data.key);
       router.refresh();
-      const newKeys = await fetch('/api/keys').then(r => r.json());
+      const newKeys = await fetch('/api/keys').then((r) => r.json());
       setKeys(newKeys);
-      message.success('API 密钥创建成功');
+      message.success(t('toastCreated'));
     } else {
       const data = await res.json();
-      message.error(data.error || '创建失败');
+      message.error(data.error || t('toastCreateFailed'));
     }
   };
 
@@ -94,12 +93,12 @@ export function KeysClient({ initialKeys }: KeysClientProps) {
       setIsEditModalOpen(false);
       setEditingKey(null);
       router.refresh();
-      const newKeys = await fetch('/api/keys').then(r => r.json());
+      const newKeys = await fetch('/api/keys').then((r) => r.json());
       setKeys(newKeys);
-      message.success('API 密钥更新成功');
+      message.success(t('toastUpdated'));
     } else {
       const data = await res.json();
-      message.error(data.error || '更新失败');
+      message.error(data.error || t('toastUpdateFailed'));
     }
   };
 
@@ -112,14 +111,14 @@ export function KeysClient({ initialKeys }: KeysClientProps) {
 
     if (res.ok) {
       router.refresh();
-      const newKeys = await fetch('/api/keys').then(r => r.json());
+      const newKeys = await fetch('/api/keys').then((r) => r.json());
       setKeys(newKeys);
-      message.success(key.is_active ? 'API 密钥已禁用' : 'API 密钥已启用');
+      message.success(key.is_active ? t('toastDisabled') : t('toastEnabled'));
       return;
     }
 
     const data = await res.json().catch(() => ({}));
-    message.error(data.error || '状态更新失败');
+    message.error(data.error || t('toastStatusUpdateFailed'));
   };
 
   const handleDelete = async (id: number) => {
@@ -128,11 +127,11 @@ export function KeysClient({ initialKeys }: KeysClientProps) {
     if (res.ok) {
       setDeleteConfirm(null);
       router.refresh();
-      setKeys(keys.filter(k => k.id !== id));
-      message.success('API 密钥删除成功');
+      setKeys(keys.filter((k) => k.id !== id));
+      message.success(t('toastDeleted'));
     } else {
       const data = await res.json();
-      message.error(data.error || '删除失败');
+      message.error(data.error || t('toastDeleteFailed'));
     }
   };
 
@@ -140,16 +139,16 @@ export function KeysClient({ initialKeys }: KeysClientProps) {
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
-      message.success('已复制到剪贴板');
+      message.success(t('toastCopied'));
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      message.error('复制失败，请手动复制');
+      message.error(t('toastCopyFailed'));
     }
   };
 
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return '-';
-    return new Date(dateStr).toLocaleString('zh-CN', {
+    return new Date(dateStr).toLocaleString(locale, {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -161,28 +160,26 @@ export function KeysClient({ initialKeys }: KeysClientProps) {
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden relative bg-background-light">
       <div className="flex-1 overflow-y-auto p-6 md:p-8 lg:px-12">
-        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">API 密钥管理</h1>
-            <p className="text-slate-500 mt-1">管理外部系统对接的 API 密钥</p>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{t('title')}</h1>
+            <p className="text-slate-500 mt-1">{t('subtitle')}</p>
           </div>
           <button
             onClick={openCreateModal}
             className="flex items-center justify-center gap-2 rounded-lg h-10 px-4 bg-primary hover:bg-blue-600 text-white text-sm font-bold shadow-md shadow-primary/20 transition-all active:scale-[0.98]"
           >
             <span className="material-symbols-outlined text-[20px]">add</span>
-            <span>创建密钥</span>
+            <span>{t('createKey')}</span>
           </button>
         </div>
 
-        {/* Info Banner */}
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
           <div className="flex gap-3">
             <span className="material-symbols-outlined text-amber-600 text-[20px] flex-shrink-0 mt-0.5">info</span>
             <div className="text-sm text-amber-800">
-              <p className="font-medium mb-1">API 密钥使用说明</p>
-              <p>外部系统可通过以下方式调用 API：</p>
+              <p className="font-medium mb-1">{t('usageTitle')}</p>
+              <p>{t('usageDescription')}</p>
               <code className="block mt-2 bg-amber-100 px-2 py-1 rounded text-xs">
                 X-API-Key: nav_sk_xxxx
               </code>
@@ -193,20 +190,19 @@ export function KeysClient({ initialKeys }: KeysClientProps) {
           </div>
         </div>
 
-        {/* Keys List */}
         {keys.length === 0 ? (
           <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
             <div className="size-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
               <span className="material-symbols-outlined text-slate-400 text-[32px]">key</span>
             </div>
-            <h3 className="text-lg font-semibold text-slate-900 mb-2">暂无 API 密钥</h3>
-            <p className="text-slate-500 mb-4">创建一个 API 密钥以允许外部系统访问</p>
+            <h3 className="text-lg font-semibold text-slate-900 mb-2">{t('emptyTitle')}</h3>
+            <p className="text-slate-500 mb-4">{t('emptySubtitle')}</p>
             <button
               onClick={openCreateModal}
               className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors"
             >
               <span className="material-symbols-outlined text-[18px]">add</span>
-              创建第一个密钥
+              {t('createFirstKey')}
             </button>
           </div>
         ) : (
@@ -214,13 +210,13 @@ export function KeysClient({ initialKeys }: KeysClientProps) {
             <table className="w-full">
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">名称</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">密钥前缀</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">权限</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">状态</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">最后使用</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">创建时间</th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">操作</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">{t('name')}</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">{t('keyPrefix')}</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">{t('permissions')}</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">{t('status')}</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">{t('lastUsed')}</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">{t('createdAt')}</th>
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">{t('actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
@@ -241,7 +237,7 @@ export function KeysClient({ initialKeys }: KeysClientProps) {
                           ? 'bg-purple-100 text-purple-700'
                           : 'bg-blue-100 text-blue-700'
                       }`}>
-                        {key.permissions === 'write' ? '读写' : '只读'}
+                        {key.permissions === 'write' ? t('permissionWrite') : t('permissionRead')}
                       </span>
                     </td>
                     <td className="px-4 py-4">
@@ -254,7 +250,7 @@ export function KeysClient({ initialKeys }: KeysClientProps) {
                         }`}
                       >
                         <span className={`size-1.5 rounded-full mr-1.5 ${key.is_active ? 'bg-green-500' : 'bg-slate-400'}`} />
-                        {key.is_active ? '启用' : '禁用'}
+                        {key.is_active ? t('enabled') : t('disabled')}
                       </button>
                     </td>
                     <td className="px-4 py-4 text-sm text-slate-500">
@@ -268,14 +264,14 @@ export function KeysClient({ initialKeys }: KeysClientProps) {
                         <button
                           onClick={() => openEditModal(key)}
                           className="p-1.5 text-slate-400 hover:text-primary hover:bg-slate-100 rounded-lg transition-colors"
-                          title="编辑"
+                          title={t('edit')}
                         >
                           <span className="material-symbols-outlined text-[18px]">edit</span>
                         </button>
                         <button
                           onClick={() => setDeleteConfirm(key.id)}
                           className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title="删除"
+                          title={t('delete')}
                         >
                           <span className="material-symbols-outlined text-[18px]">delete</span>
                         </button>
@@ -289,7 +285,6 @@ export function KeysClient({ initialKeys }: KeysClientProps) {
         )}
       </div>
 
-      {/* Create Modal */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
           <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => !createdKey && setIsCreateModalOpen(false)} />
@@ -297,20 +292,19 @@ export function KeysClient({ initialKeys }: KeysClientProps) {
           <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
             <div className="relative transform overflow-hidden rounded-xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
               {createdKey ? (
-                // Show created key
                 <div className="p-6">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="size-10 rounded-full bg-green-100 flex items-center justify-center">
                       <span className="material-symbols-outlined text-green-600">check</span>
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-slate-900">密钥创建成功</h3>
-                      <p className="text-sm text-slate-500">请立即保存，密钥不会再次显示</p>
+                      <h3 className="text-lg font-semibold text-slate-900">{t('createSuccessTitle')}</h3>
+                      <p className="text-sm text-slate-500">{t('createSuccessSubtitle')}</p>
                     </div>
                   </div>
 
                   <div className="bg-slate-50 rounded-lg p-4 mb-4">
-                    <label className="block text-xs font-medium text-slate-500 mb-2">API 密钥</label>
+                    <label className="block text-xs font-medium text-slate-500 mb-2">{t('apiKey')}</label>
                     <div className="flex items-center gap-2">
                       <code className="flex-1 text-sm bg-white border border-slate-200 px-3 py-2 rounded font-mono break-all">
                         {createdKey}
@@ -332,7 +326,7 @@ export function KeysClient({ initialKeys }: KeysClientProps) {
                     <div className="flex gap-2">
                       <span className="material-symbols-outlined text-amber-600 text-[18px] flex-shrink-0">warning</span>
                       <p className="text-sm text-amber-800">
-                        这是唯一一次显示完整密钥的机会。关闭此窗口后将无法再次查看。
+                        {t('oneTimeWarning')}
                       </p>
                     </div>
                   </div>
@@ -344,38 +338,35 @@ export function KeysClient({ initialKeys }: KeysClientProps) {
                     }}
                     className="w-full px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-blue-600 rounded-lg transition-colors"
                   >
-                    我已保存，关闭
+                    {t('savedAndClose')}
                   </button>
                 </div>
               ) : (
-                // Create form
                 <form onSubmit={handleCreate}>
                   <div className="bg-white px-6 py-5">
-                    <h3 className="text-lg font-semibold text-slate-900 mb-4">创建 API 密钥</h3>
+                    <h3 className="text-lg font-semibold text-slate-900 mb-4">{t('createDialogTitle')}</h3>
 
                     <div className="flex flex-col gap-4">
-                      {/* Name */}
                       <div>
                         <label className="block text-sm font-medium text-slate-700">
-                          密钥名称 <span className="text-red-500">*</span>
+                          {t('keyName')} <span className="text-red-500">*</span>
                         </label>
                         <input
                           type="text"
                           required
                           className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 placeholder-slate-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary text-sm"
-                          placeholder="例如：OA系统对接"
+                          placeholder={t('keyNamePlaceholder')}
                           value={formData.name}
                           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                         />
                       </div>
 
-                      {/* Permissions */}
                       <div>
                         <label className="block text-sm font-medium text-slate-700 mb-2">
-                          权限级别 <span className="text-red-500">*</span>
+                          {t('permissionLevel')} <span className="text-red-500">*</span>
                         </label>
                         <div className="grid grid-cols-2 gap-2">
-                          {PERMISSION_OPTIONS.map((perm) => (
+                          {permissionOptions.map((perm) => (
                             <button
                               key={perm.value}
                               type="button"
@@ -395,13 +386,12 @@ export function KeysClient({ initialKeys }: KeysClientProps) {
                         </div>
                       </div>
 
-                      {/* Description */}
                       <div>
-                        <label className="block text-sm font-medium text-slate-700">备注说明</label>
+                        <label className="block text-sm font-medium text-slate-700">{t('description')}</label>
                         <textarea
                           className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 placeholder-slate-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary text-sm resize-none"
                           rows={2}
-                          placeholder="可选，描述此密钥的用途"
+                          placeholder={t('descriptionPlaceholder')}
                           value={formData.description}
                           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                         />
@@ -415,13 +405,13 @@ export function KeysClient({ initialKeys }: KeysClientProps) {
                       className="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
                       onClick={() => setIsCreateModalOpen(false)}
                     >
-                      取消
+                      {t('cancel')}
                     </button>
                     <button
                       type="submit"
                       className="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-blue-600 rounded-lg transition-colors"
                     >
-                      创建密钥
+                      {t('create')}
                     </button>
                   </div>
                 </form>
@@ -431,7 +421,6 @@ export function KeysClient({ initialKeys }: KeysClientProps) {
         </div>
       )}
 
-      {/* Edit Modal */}
       {isEditModalOpen && editingKey && (
         <div className="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
           <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => setIsEditModalOpen(false)} />
@@ -440,21 +429,19 @@ export function KeysClient({ initialKeys }: KeysClientProps) {
             <div className="relative transform overflow-hidden rounded-xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
               <form onSubmit={handleEdit}>
                 <div className="bg-white px-6 py-5">
-                  <h3 className="text-lg font-semibold text-slate-900 mb-4">编辑 API 密钥</h3>
+                  <h3 className="text-lg font-semibold text-slate-900 mb-4">{t('editDialogTitle')}</h3>
 
                   <div className="flex flex-col gap-4">
-                    {/* Key Prefix (read-only) */}
                     <div>
-                      <label className="block text-sm font-medium text-slate-700">密钥前缀</label>
+                      <label className="block text-sm font-medium text-slate-700">{t('keyPrefix')}</label>
                       <div className="mt-1 block w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-slate-500 text-sm">
                         <code className="font-mono">{editingKey.key_prefix}...</code>
                       </div>
                     </div>
 
-                    {/* Name */}
                     <div>
                       <label className="block text-sm font-medium text-slate-700">
-                        密钥名称 <span className="text-red-500">*</span>
+                        {t('keyName')} <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
@@ -465,11 +452,10 @@ export function KeysClient({ initialKeys }: KeysClientProps) {
                       />
                     </div>
 
-                    {/* Permissions */}
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">权限级别</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">{t('permissionLevel')}</label>
                       <div className="grid grid-cols-2 gap-2">
-                        {PERMISSION_OPTIONS.map((perm) => (
+                        {permissionOptions.map((perm) => (
                           <button
                             key={perm.value}
                             type="button"
@@ -489,13 +475,12 @@ export function KeysClient({ initialKeys }: KeysClientProps) {
                       </div>
                     </div>
 
-                    {/* Description */}
                     <div>
-                      <label className="block text-sm font-medium text-slate-700">备注说明</label>
+                      <label className="block text-sm font-medium text-slate-700">{t('description')}</label>
                       <textarea
                         className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 placeholder-slate-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary text-sm resize-none"
                         rows={2}
-                        placeholder="可选"
+                        placeholder={t('optional')}
                         value={formData.description}
                         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                       />
@@ -509,13 +494,13 @@ export function KeysClient({ initialKeys }: KeysClientProps) {
                     className="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
                     onClick={() => setIsEditModalOpen(false)}
                   >
-                    取消
+                    {t('cancel')}
                   </button>
                   <button
                     type="submit"
                     className="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-blue-600 rounded-lg transition-colors"
                   >
-                    保存修改
+                    {t('saveChanges')}
                   </button>
                 </div>
               </form>
@@ -524,7 +509,6 @@ export function KeysClient({ initialKeys }: KeysClientProps) {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
       {deleteConfirm !== null && (
         <div className="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
           <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => setDeleteConfirm(null)} />
@@ -537,9 +521,9 @@ export function KeysClient({ initialKeys }: KeysClientProps) {
                     <span className="material-symbols-outlined text-red-600">warning</span>
                   </div>
                   <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
-                    <h3 className="text-lg font-semibold leading-6 text-slate-900">确认删除</h3>
+                    <h3 className="text-lg font-semibold leading-6 text-slate-900">{t('deleteConfirmTitle')}</h3>
                     <p className="mt-2 text-sm text-slate-500">
-                      确定要删除这个 API 密钥吗？删除后，使用此密钥的外部系统将无法继续访问。
+                      {t('deleteConfirmDescription')}
                     </p>
                   </div>
                 </div>
@@ -551,14 +535,14 @@ export function KeysClient({ initialKeys }: KeysClientProps) {
                   onClick={() => handleDelete(deleteConfirm)}
                   className="inline-flex w-full justify-center rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-700 sm:ml-3 sm:w-auto transition-colors"
                 >
-                  确认删除
+                  {t('confirmDelete')}
                 </button>
                 <button
                   type="button"
                   className="mt-3 inline-flex w-full justify-center rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50 sm:mt-0 sm:w-auto transition-colors"
                   onClick={() => setDeleteConfirm(null)}
                 >
-                  取消
+                  {t('cancel')}
                 </button>
               </div>
             </div>

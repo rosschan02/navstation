@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import type { DnsChangeLog, DnsForwardZone, DnsRecord, DnsRecordType, DnsZone } from '@/types';
 import { useMessage } from '@/contexts/MessageContext';
@@ -120,6 +121,7 @@ function buildLogsUrl(zoneFilter: string): string {
 }
 
 export function DnsClient({ initialZones, initialRecords, initialLogs, initialForwardZones }: DnsClientProps) {
+  const t = useTranslations('dns');
   const router = useRouter();
   const message = useMessage();
 
@@ -167,6 +169,8 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
   }, [records]);
 
   const activeRecords = records.filter((record) => record.status === 'active').length;
+  const statusLabel = (status: RecordStatus) => (status === 'active' ? t('enabled') : t('inactive'));
+  const policyLabel = (policy: 'only' | 'first') => (policy === 'only' ? t('policyOnly') : t('policyFirst'));
 
   const loadData = async (zoneFilter = logZoneFilter) => {
     const [zoneRes, recordRes, fwdRes] = await Promise.all([
@@ -176,7 +180,7 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
     ]);
 
     if (!zoneRes.ok || !recordRes.ok) {
-      throw new Error('加载 DNS 数据失败');
+      throw new Error(t('loadDataFailed'));
     }
 
     const zoneData: DnsZone[] = await zoneRes.json();
@@ -191,7 +195,7 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
 
     const logRes = await fetch(buildLogsUrl(effectiveFilter));
     if (!logRes.ok) {
-      throw new Error('加载 DNS 日志失败');
+      throw new Error(t('loadLogsFailed'));
     }
     const logData: DnsChangeLog[] = await logRes.json();
 
@@ -218,18 +222,18 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
 
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        message.error(data.error || '创建 Zone 失败');
+        message.error(data.error || t('zoneCreateFailed'));
         return;
       }
 
       await loadData();
       setZoneForm(DEFAULT_ZONE_FORM);
       setIsCreateZoneModalOpen(false);
-      message.success(`Zone ${data.name || ''} 创建成功`);
+      message.success(t('zoneCreated', { name: data.name || '' }));
       router.refresh();
     } catch (error) {
       console.error('Failed to create zone:', error);
-      message.error('创建 Zone 失败');
+      message.error(t('zoneCreateFailed'));
     } finally {
       setIsSavingZone(false);
     }
@@ -278,17 +282,17 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
 
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        message.error(data.error || '更新 Zone 失败');
+        message.error(data.error || t('zoneUpdateFailed'));
         return;
       }
 
       await loadData();
       setEditingZone(null);
-      message.success(`Zone ${data.name || ''} 更新成功`);
+      message.success(t('zoneUpdated', { name: data.name || '' }));
       router.refresh();
     } catch (error) {
       console.error('Failed to update zone:', error);
-      message.error('更新 Zone 失败');
+      message.error(t('zoneUpdateFailed'));
     } finally {
       setIsUpdatingZone(false);
     }
@@ -304,16 +308,16 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
 
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        message.error(data.error || '更新 Zone 状态失败');
+        message.error(data.error || t('zoneStatusFailed'));
         return;
       }
 
       await loadData();
-      message.success(`Zone ${zone.name} 已${zone.is_active ? '停用' : '启用'}`);
+      message.success(zone.is_active ? t('zoneDisabled', { name: zone.name }) : t('zoneEnabled', { name: zone.name }));
       router.refresh();
     } catch (error) {
       console.error('Failed to toggle zone status:', error);
-      message.error('更新 Zone 状态失败');
+      message.error(t('zoneStatusFailed'));
     }
   };
 
@@ -323,25 +327,25 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        message.error(data.error || '删除 Zone 失败');
+        message.error(data.error || t('zoneDeleteFailed'));
         return;
       }
 
       await loadData();
-      message.success(`Zone ${zone.name} 已删除`);
+      message.success(t('zoneDeleted', { name: zone.name }));
       router.refresh();
     } catch (error) {
       console.error('Failed to delete zone:', error);
-      message.error('删除 Zone 失败');
+      message.error(t('zoneDeleteFailed'));
     }
   };
 
   const handleDeleteZone = (zone: DnsZone) => {
     const count = recordCountByZone.get(zone.id) || 0;
     setConfirmDialog({
-      title: '删除 Zone',
-      description: `确定删除 Zone ${zone.name} 吗？\n当前包含 ${count} 条记录。`,
-      confirmText: '删除 Zone',
+      title: t('deleteZoneTitle'),
+      description: t('deleteZoneDescription', { name: zone.name, count }),
+      confirmText: t('deleteZoneConfirm'),
       onConfirm: () => executeDeleteZone(zone),
     });
   };
@@ -366,19 +370,19 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
 
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        message.error(data.error || '创建记录失败');
+        message.error(data.error || t('recordCreateFailed'));
         return;
       }
 
       await loadData();
       setRecordForm(buildRecordForm(recordForm.zone_id || zones[0]?.id || 0));
       setCreateRecordZone(null);
-      const syncMessage = data.record?.last_sync_message || '记录已创建';
+      const syncMessage = data.record?.last_sync_message || t('recordCreated');
       message.success(syncMessage);
       router.refresh();
     } catch (error) {
       console.error('Failed to create record:', error);
-      message.error('创建记录失败');
+      message.error(t('recordCreateFailed'));
     } finally {
       setIsSavingRecord(false);
     }
@@ -389,24 +393,24 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
       const res = await fetch(`/api/dns/records/${record.id}`, { method: 'DELETE' });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        message.error(data.error || '删除记录失败');
+        message.error(data.error || t('recordDeleteFailed'));
         return;
       }
 
       await loadData();
-      message.success('记录已删除');
+      message.success(t('recordDeleted'));
       router.refresh();
     } catch (error) {
       console.error('Failed to delete record:', error);
-      message.error('删除记录失败');
+      message.error(t('recordDeleteFailed'));
     }
   };
 
   const handleDeleteRecord = (record: DnsRecord) => {
     setConfirmDialog({
-      title: '删除记录',
-      description: `确定删除记录 ${record.name} ${record.type} 吗？`,
-      confirmText: '删除记录',
+      title: t('deleteRecordTitle'),
+      description: t('deleteRecordDescription', { name: record.name, type: record.type }),
+      confirmText: t('deleteRecordConfirm'),
       onConfirm: () => executeDeleteRecord(record),
     });
   };
@@ -423,16 +427,16 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
 
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        message.error(data.error || '更新状态失败');
+        message.error(data.error || t('recordStatusFailed'));
         return;
       }
 
       await loadData();
-      message.success(data.record?.last_sync_message || '状态更新成功');
+      message.success(data.record?.last_sync_message || t('recordStatusUpdated'));
       router.refresh();
     } catch (error) {
       console.error('Failed to update record status:', error);
-      message.error('更新状态失败');
+      message.error(t('recordStatusFailed'));
     }
   };
 
@@ -451,18 +455,18 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
 
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        message.error(data.error || '创建转发区域失败');
+        message.error(data.error || t('forwardZoneCreateFailed'));
         return;
       }
 
       await loadData();
       setForwardZoneForm(DEFAULT_FORWARD_ZONE_FORM);
       setIsCreateForwardZoneModalOpen(false);
-      message.success(`转发区域 ${data.name || ''} 创建成功`);
+      message.success(t('forwardZoneCreated', { name: data.name || '' }));
       router.refresh();
     } catch (error) {
       console.error('Failed to create forward zone:', error);
-      message.error('创建转发区域失败');
+      message.error(t('forwardZoneCreateFailed'));
     } finally {
       setIsSavingForwardZone(false);
     }
@@ -514,17 +518,17 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
 
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        message.error(data.error || '更新转发区域失败');
+        message.error(data.error || t('forwardZoneUpdateFailed'));
         return;
       }
 
       await loadData();
       setEditingForwardZone(null);
-      message.success(`转发区域 ${data.name || ''} 更新成功`);
+      message.success(t('forwardZoneUpdated', { name: data.name || '' }));
       router.refresh();
     } catch (error) {
       console.error('Failed to update forward zone:', error);
-      message.error('更新转发区域失败');
+      message.error(t('forwardZoneUpdateFailed'));
     } finally {
       setIsUpdatingForwardZone(false);
     }
@@ -540,16 +544,16 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
 
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        message.error(data.error || '更新状态失败');
+        message.error(data.error || t('recordStatusFailed'));
         return;
       }
 
       await loadData();
-      message.success(`转发区域 ${zone.name} 已${zone.is_active ? '停用' : '启用'}`);
+      message.success(zone.is_active ? t('zoneDisabled', { name: zone.name }) : t('zoneEnabled', { name: zone.name }));
       router.refresh();
     } catch (error) {
       console.error('Failed to toggle forward zone status:', error);
-      message.error('更新状态失败');
+      message.error(t('recordStatusFailed'));
     }
   };
 
@@ -559,24 +563,24 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        message.error(data.error || '删除转发区域失败');
+        message.error(data.error || t('forwardZoneDeleteFailed'));
         return;
       }
 
       await loadData();
-      message.success(`转发区域 ${zone.name} 已删除`);
+      message.success(t('forwardZoneDeleted', { name: zone.name }));
       router.refresh();
     } catch (error) {
       console.error('Failed to delete forward zone:', error);
-      message.error('删除转发区域失败');
+      message.error(t('forwardZoneDeleteFailed'));
     }
   };
 
   const handleDeleteForwardZone = (zone: DnsForwardZone) => {
     setConfirmDialog({
-      title: '删除转发区域',
-      description: `确定删除转发区域 ${zone.name} 吗？`,
-      confirmText: '删除转发区域',
+      title: t('deleteForwardZoneTitle'),
+      description: t('deleteForwardZoneDescription', { name: zone.name }),
+      confirmText: t('deleteForwardZoneConfirm'),
       onConfirm: () => executeDeleteForwardZone(zone),
     });
   };
@@ -598,14 +602,14 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
       const res = await fetch(buildLogsUrl(zoneFilter));
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        message.error(data.error || '加载日志失败');
+        message.error(data.error || t('loadLogsFailed'));
         return;
       }
       const data: DnsChangeLog[] = await res.json();
       setLogs(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Failed to refresh logs:', error);
-      message.error('加载日志失败');
+      message.error(t('loadLogsFailed'));
     } finally {
       setIsLoadingLogs(false);
     }
@@ -615,25 +619,25 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
     <div className="flex-1 overflow-y-auto p-6 md:p-8 lg:px-12 bg-background-light">
       <div className="max-w-7xl mx-auto flex flex-col gap-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">DNS 管理</h1>
-          <p className="text-slate-500 mt-1">BIND9 动态更新（nsupdate）MVP 管理界面</p>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{t('title')}</h1>
+          <p className="text-slate-500 mt-1">{t('subtitle')}</p>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="bg-white rounded-xl border border-slate-200 p-4">
-            <p className="text-sm text-slate-500">Zone 数量</p>
+            <p className="text-sm text-slate-500">{t('zoneCount')}</p>
             <p className="text-2xl font-bold text-slate-900 mt-1">{zones.length}</p>
           </div>
           <div className="bg-white rounded-xl border border-slate-200 p-4">
-            <p className="text-sm text-slate-500">记录总数</p>
+            <p className="text-sm text-slate-500">{t('recordCount')}</p>
             <p className="text-2xl font-bold text-slate-900 mt-1">{records.length}</p>
           </div>
           <div className="bg-white rounded-xl border border-slate-200 p-4">
-            <p className="text-sm text-slate-500">启用记录</p>
+            <p className="text-sm text-slate-500">{t('activeRecords')}</p>
             <p className="text-2xl font-bold text-green-600 mt-1">{activeRecords}</p>
           </div>
           <div className="bg-white rounded-xl border border-slate-200 p-4">
-            <p className="text-sm text-slate-500">转发区域</p>
+            <p className="text-sm text-slate-500">{t('forwardZones')}</p>
             <p className="text-2xl font-bold text-blue-600 mt-1">{forwardZones.length}</p>
           </div>
         </div>
@@ -641,34 +645,34 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
         <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto">
           <div className="p-5 border-b border-slate-100 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-slate-900">Zone 列表</h2>
-              <p className="text-sm text-slate-500 mt-1">支持编辑、启停、删除（删除前需先清空记录）</p>
+              <h2 className="text-lg font-semibold text-slate-900">{t('zoneList')}</h2>
+              <p className="text-sm text-slate-500 mt-1">{t('zoneListHint')}</p>
             </div>
             <button
               onClick={openCreateZoneModal}
               className="inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-blue-600"
             >
               <span className="material-symbols-outlined text-[18px]">add</span>
-              新增 Zone
+              {t('addZone')}
             </button>
           </div>
 
           <table className="w-full min-w-[980px]">
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Zone</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">DNS 服务器</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">TSIG Key</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">记录数</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">状态</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">更新时间</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">操作</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">{t('zone')}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">{t('dnsServer')}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">{t('tsigKey')}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">{t('recordCount')}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">{t('status')}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">{t('updatedAt')}</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">{t('actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {zones.length === 0 ? (
                 <tr>
-                  <td className="px-4 py-10 text-center text-slate-500" colSpan={7}>暂无 Zone</td>
+                  <td className="px-4 py-10 text-center text-slate-500" colSpan={7}>{t('emptyZones')}</td>
                 </tr>
               ) : (
                 zones.map((zone) => (
@@ -686,7 +690,7 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
                             : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                         }`}
                       >
-                        {zone.is_active ? 'active' : 'inactive'}
+                        {zone.is_active ? t('enabled') : t('inactive')}
                       </button>
                     </td>
                     <td className="px-4 py-3 text-sm text-slate-700">{formatDate(zone.updated_at)}</td>
@@ -695,21 +699,21 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
                         <button
                           onClick={() => openCreateRecordModal(zone)}
                           className="inline-flex items-center justify-center size-8 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                          title="新增记录"
+                          title={t('addRecord')}
                         >
                           <span className="material-symbols-outlined text-[18px]">add_circle</span>
                         </button>
                         <button
                           onClick={() => openEditZone(zone)}
                           className="inline-flex items-center justify-center size-8 rounded-lg text-slate-400 hover:text-primary hover:bg-slate-100 transition-colors"
-                          title="编辑"
+                          title={t('edit')}
                         >
                           <span className="material-symbols-outlined text-[18px]">edit</span>
                         </button>
                         <button
                           onClick={() => handleDeleteZone(zone)}
                           className="inline-flex items-center justify-center size-8 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                          title="删除"
+                          title={t('delete')}
                         >
                           <span className="material-symbols-outlined text-[18px]">delete</span>
                         </button>
@@ -727,20 +731,20 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Zone</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">主机名</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">类型</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">值</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">{t('hostname')}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">{t('type')}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">{t('value')}</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">TTL</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">状态</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">同步状态</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">操作</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">{t('status')}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">{t('syncStatus')}</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">{t('actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {records.length === 0 ? (
                 <tr>
                   <td className="px-4 py-10 text-center text-slate-500" colSpan={8}>
-                    暂无 DNS 记录
+                    {t('recordsEmpty')}
                   </td>
                 </tr>
               ) : (
@@ -763,7 +767,7 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
                             : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                         }`}
                       >
-                        {record.status}
+                        {statusLabel(record.status)}
                       </button>
                     </td>
                     <td className="px-4 py-3 text-sm">
@@ -782,7 +786,7 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
                       <button
                         onClick={() => handleDeleteRecord(record)}
                         className="inline-flex items-center justify-center size-8 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                        title="删除"
+                        title={t('delete')}
                       >
                         <span className="material-symbols-outlined text-[18px]">delete</span>
                       </button>
@@ -798,34 +802,34 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
         <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto">
           <div className="p-5 border-b border-slate-100 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-slate-900">转发区域</h2>
-              <p className="text-sm text-slate-500 mt-1">条件转发（Conditional Forwarding）— 将指定域名的 DNS 查询转发到目标 DNS 服务器</p>
+              <h2 className="text-lg font-semibold text-slate-900">{t('forwardZonesTitle')}</h2>
+              <p className="text-sm text-slate-500 mt-1">{t('forwardZonesHint')}</p>
             </div>
             <button
               onClick={openCreateForwardZoneModal}
               className="inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-blue-600"
             >
               <span className="material-symbols-outlined text-[18px]">add</span>
-              新增转发区域
+              {t('addForwardZone')}
             </button>
           </div>
 
           <table className="w-full min-w-[980px]">
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">域名</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">转发 DNS</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">策略</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">状态</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">同步状态</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">备注</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">操作</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">{t('domain')}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">{t('forwardDns')}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">{t('policy')}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">{t('status')}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">{t('syncStatus')}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">{t('remark')}</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">{t('actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {forwardZones.length === 0 ? (
                 <tr>
-                  <td className="px-4 py-10 text-center text-slate-500" colSpan={7}>暂无转发区域</td>
+                  <td className="px-4 py-10 text-center text-slate-500" colSpan={7}>{t('emptyForwardZones')}</td>
                 </tr>
               ) : (
                 forwardZones.map((fz) => (
@@ -834,7 +838,7 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
                     <td className="px-4 py-3 text-sm text-slate-700">{fz.forwarders.split(',').join(', ')}</td>
                     <td className="px-4 py-3 text-sm text-slate-700">
                       <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
-                        {fz.forward_policy}
+                        {policyLabel(fz.forward_policy)}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-sm">
@@ -846,7 +850,7 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
                             : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                         }`}
                       >
-                        {fz.is_active ? 'active' : 'inactive'}
+                        {fz.is_active ? t('enabled') : t('inactive')}
                       </button>
                     </td>
                     <td className="px-4 py-3 text-sm">
@@ -869,14 +873,14 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
                         <button
                           onClick={() => openEditForwardZone(fz)}
                           className="inline-flex items-center justify-center size-8 rounded-lg text-slate-400 hover:text-primary hover:bg-slate-100 transition-colors"
-                          title="编辑"
+                          title={t('edit')}
                         >
                           <span className="material-symbols-outlined text-[18px]">edit</span>
                         </button>
                         <button
                           onClick={() => handleDeleteForwardZone(fz)}
                           className="inline-flex items-center justify-center size-8 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                          title="删除"
+                          title={t('delete')}
                         >
                           <span className="material-symbols-outlined text-[18px]">delete</span>
                         </button>
@@ -892,8 +896,8 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
         <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto">
           <div className="p-5 border-b border-slate-100 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-slate-900">变更日志</h2>
-              <p className="text-sm text-slate-500 mt-1">记录 DNS 下发与操作结果（最近 100 条）</p>
+              <h2 className="text-lg font-semibold text-slate-900">{t('logsTitle')}</h2>
+              <p className="text-sm text-slate-500 mt-1">{t('logsHint')}</p>
             </div>
 
             <div className="flex items-center gap-2">
@@ -906,7 +910,7 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
                 }}
                 className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
               >
-                <option value="all">全部 Zone</option>
+                <option value="all">{t('allZones')}</option>
                 {zones.map((zone) => (
                   <option key={zone.id} value={zone.id}>{zone.name}</option>
                 ))}
@@ -916,7 +920,7 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
                 disabled={isLoadingLogs}
                 className="px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-60"
               >
-                {isLoadingLogs ? '刷新中...' : '刷新日志'}
+                {isLoadingLogs ? t('refreshing') : t('refreshLogs')}
               </button>
             </div>
           </div>
@@ -924,19 +928,19 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
           <table className="w-full min-w-[1100px]">
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">时间</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">动作</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">结果</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">{t('time')}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">{t('action')}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">{t('result')}</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Zone</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">记录</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">操作人</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">消息</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">{t('record')}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">{t('operator')}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">{t('message')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {logs.length === 0 ? (
                 <tr>
-                  <td className="px-4 py-10 text-center text-slate-500" colSpan={7}>暂无变更日志</td>
+                  <td className="px-4 py-10 text-center text-slate-500" colSpan={7}>{t('emptyLogs')}</td>
                 </tr>
               ) : (
                 logs.map((log) => (
@@ -968,7 +972,7 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
         open={Boolean(confirmDialog)}
         title={confirmDialog?.title || ''}
         description={confirmDialog?.description}
-        confirmText={confirmDialog?.confirmText || '确认'}
+        confirmText={confirmDialog?.confirmText || t('confirmDelete')}
         tone="danger"
         loading={isConfirmingDelete}
         onConfirm={handleConfirmDelete}
@@ -983,8 +987,8 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
             className="relative w-full max-w-2xl bg-white rounded-xl border border-slate-200 shadow-2xl p-5 flex flex-col gap-4"
           >
             <div>
-              <h3 className="text-lg font-semibold text-slate-900">新增 Zone</h3>
-              <p className="text-sm text-slate-500 mt-1">用于定义 BIND9 的目标域和认证信息</p>
+              <h3 className="text-lg font-semibold text-slate-900">{t('createZoneTitle')}</h3>
+              <p className="text-sm text-slate-500 mt-1">{t('createZoneHint')}</p>
             </div>
 
             <input
@@ -1021,7 +1025,7 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
               type="text"
               value={zoneForm.tsig_key_name}
               onChange={(e) => setZoneForm((prev) => ({ ...prev, tsig_key_name: e.target.value }))}
-              placeholder="tsig-key-name (可选)"
+              placeholder={t('optionalTsigKey')}
               className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
             />
 
@@ -1037,7 +1041,7 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
                 type="text"
                 value={zoneForm.tsig_secret}
                 onChange={(e) => setZoneForm((prev) => ({ ...prev, tsig_secret: e.target.value }))}
-                placeholder="TSIG Secret (可选)"
+                placeholder={t('optionalTsigSecret')}
                 className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
               />
             </div>
@@ -1045,7 +1049,7 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
             <textarea
               value={zoneForm.description}
               onChange={(e) => setZoneForm((prev) => ({ ...prev, description: e.target.value }))}
-              placeholder="备注"
+              placeholder={t('remarkPlaceholder')}
               rows={2}
               className="px-3 py-2 border border-slate-200 rounded-lg text-sm resize-none"
             />
@@ -1056,14 +1060,14 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
                 onClick={() => setIsCreateZoneModalOpen(false)}
                 className="px-4 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-100"
               >
-                取消
+                {t('cancel')}
               </button>
               <button
                 type="submit"
                 disabled={isSavingZone}
                 className="px-4 py-2 rounded-lg text-sm font-semibold bg-primary text-white hover:bg-blue-600 disabled:opacity-60"
               >
-                {isSavingZone ? '创建中...' : '创建 Zone'}
+                {isSavingZone ? t('creating') : t('createZone')}
               </button>
             </div>
           </form>
@@ -1078,9 +1082,9 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
             className="relative w-full max-w-2xl bg-white rounded-xl border border-slate-200 shadow-2xl p-5 flex flex-col gap-4"
           >
             <div>
-              <h3 className="text-lg font-semibold text-slate-900">新增记录</h3>
+              <h3 className="text-lg font-semibold text-slate-900">{t('createRecordTitle')}</h3>
               <p className="text-sm text-slate-500 mt-1">
-                Zone: {zoneById.get(recordForm.zone_id)?.name || createRecordZone.name}
+                {t('zoneLabel', { name: zoneById.get(recordForm.zone_id)?.name || createRecordZone.name })}
               </p>
             </div>
 
@@ -1120,7 +1124,7 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
               type="text"
               value={recordForm.value}
               onChange={(e) => setRecordForm((prev) => ({ ...prev, value: e.target.value }))}
-              placeholder={recordForm.type === 'MX' ? 'mail.example.com' : '记录值'}
+              placeholder={recordForm.type === 'MX' ? t('mxValuePlaceholder') : t('recordValuePlaceholder')}
               className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
               required
             />
@@ -1130,7 +1134,7 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
                 type="number"
                 value={recordForm.priority}
                 onChange={(e) => setRecordForm((prev) => ({ ...prev, priority: e.target.value === '' ? '' : Number(e.target.value) }))}
-                placeholder="优先级"
+                placeholder={t('priorityPlaceholder')}
                 min={0}
                 max={65535}
                 className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
@@ -1144,8 +1148,8 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
                 onChange={(e) => setRecordForm((prev) => ({ ...prev, status: e.target.value as RecordStatus }))}
                 className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
               >
-                <option value="active">active</option>
-                <option value="inactive">inactive</option>
+                <option value="active">{t('enabled')}</option>
+                <option value="inactive">{t('inactive')}</option>
               </select>
 
               <label className="flex items-center gap-2 px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-700">
@@ -1154,7 +1158,7 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
                   checked={recordForm.sync_now}
                   onChange={(e) => setRecordForm((prev) => ({ ...prev, sync_now: e.target.checked }))}
                 />
-                立即同步到 BIND9
+                {t('syncNow')}
               </label>
             </div>
 
@@ -1164,14 +1168,14 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
                 onClick={() => setCreateRecordZone(null)}
                 className="px-4 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-100"
               >
-                取消
+                {t('cancel')}
               </button>
               <button
                 type="submit"
                 disabled={isSavingRecord || !zoneById.has(recordForm.zone_id)}
                 className="px-4 py-2 rounded-lg text-sm font-semibold bg-primary text-white hover:bg-blue-600 disabled:opacity-60"
               >
-                {isSavingRecord ? '创建中...' : '创建记录'}
+                {isSavingRecord ? t('creating') : t('createRecord')}
               </button>
             </div>
           </form>
@@ -1186,8 +1190,8 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
             className="relative w-full max-w-2xl bg-white rounded-xl border border-slate-200 shadow-2xl p-5 flex flex-col gap-4"
           >
             <div>
-              <h3 className="text-lg font-semibold text-slate-900">新增转发区域</h3>
-              <p className="text-sm text-slate-500 mt-1">添加后将自动同步到 BIND9 配置并重启服务</p>
+              <h3 className="text-lg font-semibold text-slate-900">{t('createForwardZoneTitle')}</h3>
+              <p className="text-sm text-slate-500 mt-1">{t('createForwardZoneHint')}</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -1195,7 +1199,7 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
                 type="text"
                 value={forwardZoneForm.name}
                 onChange={(e) => setForwardZoneForm((prev) => ({ ...prev, name: e.target.value }))}
-                placeholder="域名（如 yibao.example.com）"
+                placeholder={t('domainPlaceholder')}
                 className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
                 required
               />
@@ -1204,15 +1208,15 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
                 onChange={(e) => setForwardZoneForm((prev) => ({ ...prev, forward_policy: e.target.value as 'only' | 'first' }))}
                 className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
               >
-                <option value="only">forward only（仅转发）</option>
-                <option value="first">forward first（优先转发，失败回退）</option>
+                <option value="only">{t('policyOnly')}</option>
+                <option value="first">{t('policyFirst')}</option>
               </select>
             </div>
 
             <textarea
               value={forwardZoneForm.forwarders}
               onChange={(e) => setForwardZoneForm((prev) => ({ ...prev, forwarders: e.target.value }))}
-              placeholder="转发 DNS 地址（每行一个或逗号分隔，如 10.1.1.1,10.1.1.2）"
+              placeholder={t('forwardersPlaceholder')}
               rows={2}
               className="px-3 py-2 border border-slate-200 rounded-lg text-sm resize-none"
               required
@@ -1221,7 +1225,7 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
             <textarea
               value={forwardZoneForm.description}
               onChange={(e) => setForwardZoneForm((prev) => ({ ...prev, description: e.target.value }))}
-              placeholder="备注（可选）"
+              placeholder={t('optionalRemarkPlaceholder')}
               rows={1}
               className="px-3 py-2 border border-slate-200 rounded-lg text-sm resize-none"
             />
@@ -1232,14 +1236,14 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
                 onClick={() => setIsCreateForwardZoneModalOpen(false)}
                 className="px-4 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-100"
               >
-                取消
+                {t('cancel')}
               </button>
               <button
                 type="submit"
                 disabled={isSavingForwardZone}
                 className="px-4 py-2 rounded-lg text-sm font-semibold bg-primary text-white hover:bg-blue-600 disabled:opacity-60"
               >
-                {isSavingForwardZone ? '创建中...' : '创建转发区域'}
+                {isSavingForwardZone ? t('creating') : t('createForwardZone')}
               </button>
             </div>
           </form>
@@ -1254,7 +1258,7 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
             className="relative w-full max-w-2xl bg-white rounded-xl border border-slate-200 shadow-2xl p-5 flex flex-col gap-4"
           >
             <div>
-              <h3 className="text-lg font-semibold text-slate-900">编辑转发区域</h3>
+              <h3 className="text-lg font-semibold text-slate-900">{t('editForwardZoneTitle')}</h3>
               <p className="text-sm text-slate-500 mt-1">{editingForwardZone.name}</p>
             </div>
 
@@ -1262,7 +1266,7 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
               type="text"
               value={editingForwardZone.name}
               onChange={(e) => setEditingForwardZone((prev) => prev ? { ...prev, name: e.target.value } : prev)}
-              placeholder="域名"
+              placeholder={t('domain')}
               className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
               required
             />
@@ -1270,7 +1274,7 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
             <textarea
               value={editingForwardZone.forwarders}
               onChange={(e) => setEditingForwardZone((prev) => prev ? { ...prev, forwarders: e.target.value } : prev)}
-              placeholder="转发 DNS 地址（逗号分隔）"
+              placeholder={t('forwardersEditPlaceholder')}
               rows={2}
               className="px-3 py-2 border border-slate-200 rounded-lg text-sm resize-none"
               required
@@ -1281,8 +1285,8 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
               onChange={(e) => setEditingForwardZone((prev) => prev ? { ...prev, forward_policy: e.target.value as 'only' | 'first' } : prev)}
               className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
             >
-              <option value="only">forward only（仅转发）</option>
-              <option value="first">forward first（优先转发，失败回退）</option>
+              <option value="only">{t('policyOnly')}</option>
+              <option value="first">{t('policyFirst')}</option>
             </select>
 
             <textarea
@@ -1290,7 +1294,7 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
               onChange={(e) => setEditingForwardZone((prev) => prev ? { ...prev, description: e.target.value } : prev)}
               rows={2}
               className="px-3 py-2 border border-slate-200 rounded-lg text-sm resize-none"
-              placeholder="备注"
+              placeholder={t('remarkPlaceholder')}
             />
 
             <label className="flex items-center gap-2 text-sm text-slate-700">
@@ -1299,7 +1303,7 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
                 checked={editingForwardZone.is_active}
                 onChange={(e) => setEditingForwardZone((prev) => prev ? { ...prev, is_active: e.target.checked } : prev)}
               />
-              启用
+              {t('enabled')}
             </label>
 
             <div className="flex justify-end gap-2">
@@ -1308,14 +1312,14 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
                 onClick={() => setEditingForwardZone(null)}
                 className="px-4 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-100"
               >
-                取消
+                {t('cancel')}
               </button>
               <button
                 type="submit"
                 disabled={isUpdatingForwardZone}
                 className="px-4 py-2 rounded-lg text-sm font-semibold bg-primary text-white hover:bg-blue-600 disabled:opacity-60"
               >
-                {isUpdatingForwardZone ? '保存中...' : '保存'}
+                {isUpdatingForwardZone ? t('saving') : t('save')}
               </button>
             </div>
           </form>
@@ -1330,7 +1334,7 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
             className="relative w-full max-w-2xl bg-white rounded-xl border border-slate-200 shadow-2xl p-5 flex flex-col gap-4"
           >
             <div>
-              <h3 className="text-lg font-semibold text-slate-900">编辑 Zone</h3>
+              <h3 className="text-lg font-semibold text-slate-900">{t('editZoneTitle')}</h3>
               <p className="text-sm text-slate-500 mt-1">{editingZone.name}</p>
             </div>
 
@@ -1365,7 +1369,7 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
               type="text"
               value={editingZone.tsig_key_name}
               onChange={(e) => setEditingZone((prev) => prev ? { ...prev, tsig_key_name: e.target.value } : prev)}
-              placeholder="tsig-key-name (可选)"
+              placeholder={t('optionalTsigKey')}
               className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
             />
 
@@ -1382,7 +1386,7 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
                   checked={editingZone.update_tsig_secret}
                   onChange={(e) => setEditingZone((prev) => prev ? { ...prev, update_tsig_secret: e.target.checked } : prev)}
                 />
-                更新 TSIG Secret
+                {t('updateTsig')}
               </label>
             </div>
 
@@ -1391,7 +1395,7 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
                 type="text"
                 value={editingZone.tsig_secret}
                 onChange={(e) => setEditingZone((prev) => prev ? { ...prev, tsig_secret: e.target.value } : prev)}
-                placeholder="输入新的 TSIG Secret（留空将清空）"
+                placeholder={t('newTsigPlaceholder')}
                 className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
               />
             )}
@@ -1401,7 +1405,7 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
               onChange={(e) => setEditingZone((prev) => prev ? { ...prev, description: e.target.value } : prev)}
               rows={2}
               className="px-3 py-2 border border-slate-200 rounded-lg text-sm resize-none"
-              placeholder="备注"
+              placeholder={t('remarkPlaceholder')}
             />
 
             <label className="flex items-center gap-2 text-sm text-slate-700">
@@ -1410,7 +1414,7 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
                 checked={editingZone.is_active}
                 onChange={(e) => setEditingZone((prev) => prev ? { ...prev, is_active: e.target.checked } : prev)}
               />
-              Zone 启用
+              {t('zoneEnabledLabel')}
             </label>
 
             <div className="flex justify-end gap-2">
@@ -1419,14 +1423,14 @@ export function DnsClient({ initialZones, initialRecords, initialLogs, initialFo
                 onClick={() => setEditingZone(null)}
                 className="px-4 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-100"
               >
-                取消
+                {t('cancel')}
               </button>
               <button
                 type="submit"
                 disabled={isUpdatingZone}
                 className="px-4 py-2 rounded-lg text-sm font-semibold bg-primary text-white hover:bg-blue-600 disabled:opacity-60"
               >
-                {isUpdatingZone ? '保存中...' : '保存 Zone'}
+                {isUpdatingZone ? t('saving') : t('saveZone')}
               </button>
             </div>
           </form>

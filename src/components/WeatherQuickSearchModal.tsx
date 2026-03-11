@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 interface WeatherQuickSearchModalProps {
   isOpen: boolean;
@@ -130,8 +131,8 @@ function getHourFromDataTime(value?: string): number | null {
   return null;
 }
 
-function formatHourLabel(value?: string, idx = 0): string {
-  if (idx === 0) return '现在';
+function formatHourLabel(value?: string, idx = 0, nowLabel = 'Now'): string {
+  if (idx === 0) return nowLabel;
   const hour = getHourFromDataTime(value);
   if (hour === null || hour < 0 || hour > 23) return `+${idx}h`;
   return `${hour.toString().padStart(2, '0')}:00`;
@@ -152,14 +153,14 @@ function getWeatherIcon(text?: string, isNight = false): string {
 }
 
 function getAqiVisual(aqiValue: number | null): {
-  label: string;
+  labelKey: string;
   ringClass: string;
   textClass: string;
   dotClass: string;
 } {
   if (aqiValue === null) {
     return {
-      label: '暂无数据',
+      labelKey: 'aqiNoData',
       ringClass: 'border-slate-300',
       textClass: 'text-slate-600',
       dotClass: 'bg-slate-400',
@@ -167,7 +168,7 @@ function getAqiVisual(aqiValue: number | null): {
   }
   if (aqiValue <= 50) {
     return {
-      label: '优',
+      labelKey: 'aqiExcellent',
       ringClass: 'border-emerald-500',
       textClass: 'text-emerald-700',
       dotClass: 'bg-emerald-500',
@@ -175,7 +176,7 @@ function getAqiVisual(aqiValue: number | null): {
   }
   if (aqiValue <= 100) {
     return {
-      label: '良',
+      labelKey: 'aqiGood',
       ringClass: 'border-lime-500',
       textClass: 'text-lime-700',
       dotClass: 'bg-lime-500',
@@ -183,7 +184,7 @@ function getAqiVisual(aqiValue: number | null): {
   }
   if (aqiValue <= 150) {
     return {
-      label: '轻度污染',
+      labelKey: 'aqiLightPollution',
       ringClass: 'border-amber-500',
       textClass: 'text-amber-700',
       dotClass: 'bg-amber-500',
@@ -191,7 +192,7 @@ function getAqiVisual(aqiValue: number | null): {
   }
   if (aqiValue <= 200) {
     return {
-      label: '中度污染',
+      labelKey: 'aqiModeratePollution',
       ringClass: 'border-orange-500',
       textClass: 'text-orange-700',
       dotClass: 'bg-orange-500',
@@ -199,14 +200,14 @@ function getAqiVisual(aqiValue: number | null): {
   }
   if (aqiValue <= 300) {
     return {
-      label: '重度污染',
+      labelKey: 'aqiHeavyPollution',
       ringClass: 'border-red-500',
       textClass: 'text-red-700',
       dotClass: 'bg-red-500',
     };
   }
   return {
-    label: '严重污染',
+    labelKey: 'aqiSeverePollution',
     ringClass: 'border-purple-600',
     textClass: 'text-purple-700',
     dotClass: 'bg-purple-600',
@@ -290,6 +291,7 @@ export function WeatherQuickSearchModal({
   autoLoadKeyword,
   autoLoadTrack = true,
 }: WeatherQuickSearchModalProps) {
+  const t = useTranslations('weatherQuickSearch');
   const [keyword, setKeyword] = useState(defaultKeyword);
   const [weather, setWeather] = useState<WeatherResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -324,19 +326,19 @@ export function WeatherQuickSearchModal({
       });
       const data = (await res.json().catch(() => ({}))) as WeatherResponse;
       if (!res.ok) {
-        throw new Error(data.error || '天气查询失败');
+        throw new Error(data.error || t('searchFailed'));
       }
       if (!data.result) {
-        throw new Error('天气数据为空');
+        throw new Error(t('emptyWeather'));
       }
       setWeather(data.result);
     } catch (err) {
       setWeather(null);
-      setError((err as Error).message || '天气查询失败');
+      setError((err as Error).message || t('searchFailed'));
     } finally {
       setIsLoading(false);
     }
-  }, [visitorId]);
+  }, [visitorId, t]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -387,7 +389,7 @@ export function WeatherQuickSearchModal({
       return (
         <div className="py-16 flex flex-col items-center text-slate-400">
           <span className="material-symbols-outlined text-[40px] mb-3 animate-spin text-[#137fec]">progress_activity</span>
-          <p className="text-sm">查询中...</p>
+          <p className="text-sm">{t('searching')}</p>
         </div>
       );
     }
@@ -405,7 +407,7 @@ export function WeatherQuickSearchModal({
       return (
         <div className="py-16 flex flex-col items-center text-slate-400">
           <span className="material-symbols-outlined text-[48px] mb-3 text-slate-300">partly_cloudy_day</span>
-          <p className="text-sm">输入中文地区名或 district_id 后点击查询</p>
+          <p className="text-sm">{t('emptyPrompt')}</p>
         </div>
       );
     }
@@ -414,10 +416,10 @@ export function WeatherQuickSearchModal({
       <div className="space-y-5 p-5">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
-            { label: '风向风力', value: `${toText(now?.wind_dir)} ${toText(now?.wind_class)}` },
-            { label: '相对湿度', value: toText(now?.rh, '%') },
-            { label: '1h降水', value: toText(now?.prec_1h, 'mm') },
-            { label: '能见度', value: toText(now?.vis, 'm') },
+            { label: t('wind'), value: `${toText(now?.wind_dir)} ${toText(now?.wind_class)}` },
+            { label: t('humidity'), value: toText(now?.rh, '%') },
+            { label: t('precipitation1h'), value: toText(now?.prec_1h, 'mm') },
+            { label: t('visibility'), value: toText(now?.vis, 'm') },
           ].map((item) => (
             <div key={item.label} className="rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-3">
               <p className="text-xs text-slate-400 mb-1">{item.label}</p>
@@ -430,13 +432,13 @@ export function WeatherQuickSearchModal({
           <div className="rounded-xl bg-amber-50 border-l-4 border-amber-400 px-4 py-3">
             <div className="flex items-center gap-2 mb-1">
               <span className="material-symbols-outlined text-amber-500 text-[18px]">warning</span>
-              <p className="text-sm font-semibold text-amber-800">天气预警</p>
+              <p className="text-sm font-semibold text-amber-800">{t('alertsTitle')}</p>
             </div>
             <div className="space-y-2">
               {alerts.map((alert, idx) => (
                 <div key={`${alert.title || alert.type || 'alert'}-${idx}`}>
                   <p className="text-sm font-medium text-amber-700">
-                    {[alert.type, alert.level, alert.title].filter(Boolean).join(' ') || '预警信息'}
+                    {[alert.type, alert.level, alert.title].filter(Boolean).join(' ') || t('alertFallback')}
                   </p>
                   {alert.desc && <p className="text-xs text-amber-600 mt-0.5">{alert.desc}</p>}
                 </div>
@@ -447,8 +449,8 @@ export function WeatherQuickSearchModal({
 
         <div className="rounded-2xl border border-slate-100 bg-white p-4">
           <div className="flex items-center justify-between mb-3">
-            <p className="text-sm font-semibold text-slate-800">24小时预报</p>
-            <span className="text-[11px] uppercase tracking-wide font-semibold text-[#137fec]">Next 24 Hours</span>
+            <p className="text-sm font-semibold text-slate-800">{t('hourlyForecast')}</p>
+            <span className="text-[11px] uppercase tracking-wide font-semibold text-[#137fec]">{t('next24Hours')}</span>
           </div>
           {forecastHours.length > 0 ? (
             <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
@@ -463,25 +465,25 @@ export function WeatherQuickSearchModal({
                     }`}
                   >
                     <p className={`text-xs mb-2 ${idx === 0 ? 'text-[#137fec] font-semibold' : 'text-slate-500'}`}>
-                      {formatHourLabel(item.data_time, idx)}
+                      {formatHourLabel(item.data_time, idx, t('now'))}
                     </p>
                     <span className={`material-symbols-outlined text-[24px] ${idx === 0 ? 'text-[#137fec]' : 'text-slate-500'}`}>
                       {getWeatherIcon(item.text, isNight)}
                     </span>
                     <p className="mt-2 text-base font-semibold text-slate-900">{toText(item.temp_fc, '°')}</p>
-                    <p className="text-[11px] text-slate-400 mt-0.5">{toText(item.pop, '%')} 降水</p>
+                    <p className="text-[11px] text-slate-400 mt-0.5">{t('precipitationLabel', { value: toText(item.pop, '%') })}</p>
                   </div>
                 );
               })}
             </div>
           ) : (
-            <p className="text-sm text-slate-400">暂无 24 小时预报数据</p>
+            <p className="text-sm text-slate-400">{t('emptyHourlyForecast')}</p>
           )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="lg:col-span-2 rounded-2xl border border-slate-100 bg-white p-4">
-            <p className="text-sm font-semibold text-slate-700 mb-2">7日预报</p>
+            <p className="text-sm font-semibold text-slate-700 mb-2">{t('sevenDayForecast')}</p>
             <div className="overflow-x-auto">
               {forecasts.length > 0 ? (
                 forecasts.slice(0, 7).map((item, idx) => (
@@ -490,28 +492,28 @@ export function WeatherQuickSearchModal({
                     className="grid grid-cols-[154px_minmax(200px,1fr)_88px] items-center gap-3 px-3 py-2.5 min-w-[490px] rounded-xl hover:bg-slate-50 border-b border-slate-100 last:border-0 transition-colors"
                   >
                     <p className="text-sm text-slate-500 whitespace-nowrap">{item.date || '-'} {item.week || ''}</p>
-                    <p className="text-sm text-slate-600 whitespace-nowrap overflow-hidden text-ellipsis">{toText(item.text_day)} 转 {toText(item.text_night)}</p>
+                    <p className="text-sm text-slate-600 whitespace-nowrap overflow-hidden text-ellipsis">{t('dayToNight', { day: toText(item.text_day), night: toText(item.text_night) })}</p>
                     <p className="text-sm font-semibold text-slate-800 whitespace-nowrap text-right">
                       {toText(item.low)}~{toText(item.high)}°
                     </p>
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-slate-400 px-4 py-3">暂无预报数据</p>
+                <p className="text-sm text-slate-400 px-4 py-3">{t('emptyForecast')}</p>
               )}
             </div>
           </div>
 
           <div className="rounded-2xl border border-slate-100 bg-white p-4">
-            <p className="text-sm font-semibold text-slate-700 mb-3">空气指数</p>
+            <p className="text-sm font-semibold text-slate-700 mb-3">{t('airQualityTitle')}</p>
             <div className="flex items-center gap-4 mb-4">
               <div className={`h-[72px] w-[72px] rounded-full border-[6px] ${aqiVisual.ringClass} flex flex-col items-center justify-center`}>
                 <p className="text-xl font-bold text-slate-900">{aqiValue === null ? '-' : aqiValue}</p>
-                <p className={`text-[10px] font-semibold ${aqiVisual.textClass}`}>{aqiVisual.label}</p>
+                <p className={`text-[10px] font-semibold ${aqiVisual.textClass}`}>{t(aqiVisual.labelKey)}</p>
               </div>
               <div className="text-xs text-slate-500 leading-5">
-                <p className="font-medium text-slate-700">空气质量等级</p>
-                <p>AQI 越低越好，建议结合 PM2.5 与 PM10 判断出行。</p>
+                <p className="font-medium text-slate-700">{t('airQualityLevel')}</p>
+                <p>{t('airQualityHint')}</p>
               </div>
             </div>
             <div className="space-y-2.5">
@@ -536,7 +538,7 @@ export function WeatherQuickSearchModal({
         </div>
 
         <div>
-          <p className="text-sm font-semibold text-slate-700 mb-2">生活指数</p>
+          <p className="text-sm font-semibold text-slate-700 mb-2">{t('lifeIndexTitle')}</p>
           {indexes.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {indexes.map((item, idx) => {
@@ -547,7 +549,7 @@ export function WeatherQuickSearchModal({
                       <span className={`inline-flex items-center justify-center size-7 rounded-lg ${visual.badgeClass}`}>
                         <span className={`material-symbols-outlined text-[18px] ${visual.iconClass}`}>{visual.icon}</span>
                       </span>
-                      <p className="text-sm font-semibold text-slate-800">{item.name || '指数'}</p>
+                      <p className="text-sm font-semibold text-slate-800">{item.name || t('indexFallback')}</p>
                     </div>
                     <p className={`text-xs mt-1 font-medium ${visual.briefClass}`}>{item.brief || '-'}</p>
                     <p className="text-xs text-slate-500 mt-1 leading-relaxed">{item.detail || '-'}</p>
@@ -556,15 +558,19 @@ export function WeatherQuickSearchModal({
               })}
             </div>
           ) : (
-            <p className="text-sm text-slate-400">暂无生活指数数据</p>
+            <p className="text-sm text-slate-400">{t('emptyLifeIndexes')}</p>
           )}
         </div>
       </div>
     );
   };
 
+  const locationLabel = weather
+    ? [location?.province, location?.city, location?.name].filter(Boolean).join(' ') || t('title')
+    : t('title');
+
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true" aria-label="天气速查">
+    <div className="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true" aria-label={t('title')}>
       <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
 
       <div className="flex min-h-full items-center justify-center p-4">
@@ -574,16 +580,12 @@ export function WeatherQuickSearchModal({
             <div className="flex items-center justify-between gap-3 mb-4">
               <div className="flex items-center gap-1.5 min-w-0">
                 <span className="material-symbols-outlined text-white/80 text-[18px]">pin_drop</span>
-                <span className="text-sm font-medium text-white truncate">
-                  {weather
-                    ? [location?.province, location?.city, location?.name].filter(Boolean).join(' ') || '天气速查'
-                    : '天气速查'}
-                </span>
+                <span className="text-sm font-medium text-white truncate">{locationLabel}</span>
               </div>
               <button
                 onClick={onClose}
                 className="p-1.5 rounded-lg bg-white/20 text-white/70 hover:text-white hover:bg-white/30 shrink-0"
-                aria-label="关闭"
+                aria-label={t('close')}
               >
                 <span className="material-symbols-outlined text-[20px]">close</span>
               </button>
@@ -598,14 +600,18 @@ export function WeatherQuickSearchModal({
                 </div>
                 <div className="flex items-center justify-between mt-2 mb-4">
                   <p className="text-sm text-white/70">
-                    体感 {toText(now.feels_like, '°C')} · 湿度 {toText(now.rh, '%')} · 更新 {formatUpdateTime(now.uptime)}
+                    {t('currentSummary', {
+                      feelsLike: toText(now.feels_like, '°C'),
+                      humidity: toText(now.rh, '%'),
+                      updatedAt: formatUpdateTime(now.uptime),
+                    })}
                   </p>
                   <button
                     type="button"
                     onClick={() => void queryWeather(keyword, true)}
                     disabled={isLoading}
                     className="p-1.5 rounded-lg text-white/70 hover:text-white hover:bg-white/20 disabled:opacity-40"
-                    aria-label="刷新"
+                    aria-label={t('refresh')}
                   >
                     <span className={`material-symbols-outlined text-[20px] ${isLoading ? 'animate-spin' : ''}`}>refresh</span>
                   </button>
@@ -629,8 +635,8 @@ export function WeatherQuickSearchModal({
                       void queryWeather(keyword);
                     }
                   }}
-                  aria-label="地区名或 district_id"
-                  placeholder="输入地区名或 district_id"
+                  aria-label={t('searchAria')}
+                  placeholder={t('placeholder')}
                   className="w-full pl-9 pr-4 py-2.5 bg-white/20 backdrop-blur-sm border border-white/30 rounded-xl text-sm text-white placeholder:text-white/50 focus:outline-none focus:bg-white/30 transition-colors"
                 />
               </div>
@@ -640,7 +646,7 @@ export function WeatherQuickSearchModal({
                 disabled={isLoading}
                 className="px-4 py-2.5 rounded-xl bg-white text-[#137fec] text-sm font-semibold hover:bg-white/90 disabled:opacity-60 disabled:cursor-not-allowed transition-opacity shrink-0"
               >
-                查询
+                {t('search')}
               </button>
             </div>
 

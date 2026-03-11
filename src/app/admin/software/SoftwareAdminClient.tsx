@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { IconPicker } from '@/components/IconPicker';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
@@ -33,6 +34,8 @@ function formatFileSize(bytes: number): string {
 }
 
 export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdminClientProps) {
+  const t = useTranslations('softwareAdmin');
+  const tm = useTranslations('messages');
   const message = useMessage();
   const [software, setSoftware] = useState<SoftwareItem[]>(initialSoftware);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -115,13 +118,13 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
           setLogoPreview(logoPath);
           setFormData(prev => ({ ...prev, logo: logoPath }));
         }
-        message.success('Logo 上传成功');
+        message.success(tm('Logo 上传成功'));
       } else {
-        message.error('Logo 上传失败');
+        message.error(tm('Logo 上传失败'));
       }
     } catch (error) {
       console.error('Logo upload failed:', error);
-      message.error('Logo 上传失败');
+      message.error(tm('Logo 上传失败'));
     }
   };
 
@@ -131,7 +134,7 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
       // Check file size (4GB limit)
       const maxSize = 4 * 1024 * 1024 * 1024;
       if (file.size > maxSize) {
-        message.warning('文件大小超过 4GB 限制');
+        message.warning(tm('文件大小超过 4GB 限制'));
         return;
       }
       setSelectedFile(file);
@@ -156,11 +159,11 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedFile) {
-      message.warning('请选择要上传的文件');
+      message.warning(tm('请选择要上传的文件'));
       return;
     }
     if (!formData.name.trim()) {
-      message.warning('请输入软件名称');
+      message.warning(tm('请输入软件名称'));
       return;
     }
 
@@ -199,16 +202,16 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
           setIsModalOpen(false);
           resetForm();
           router.refresh();
-          message.success('软件上传成功');
+          message.success(tm('软件上传成功'));
         } else {
           const error = JSON.parse(xhr.responseText);
-          message.error(error.error || '上传失败');
+          message.error(error.error || tm('上传失败'));
         }
         setIsUploading(false);
       };
 
       xhr.onerror = () => {
-        message.error('上传失败，请重试');
+        message.error(tm('上传失败，请重试'));
         setIsUploading(false);
       };
 
@@ -216,7 +219,7 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
       xhr.send(data);
     } catch (error) {
       console.error('Upload failed:', error);
-      message.error('上传失败，请重试');
+      message.error(tm('上传失败，请重试'));
       setIsUploading(false);
     }
   };
@@ -227,13 +230,13 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
       if (res.ok) {
         setSoftware(prev => prev.filter(s => s.id !== id));
         router.refresh();
-        message.success('软件删除成功');
+        message.success(tm('软件删除成功'));
       } else {
-        message.error('删除失败');
+        message.error(tm('删除失败'));
       }
     } catch (error) {
       console.error('Delete failed:', error);
-      message.error('删除失败');
+      message.error(tm('删除失败'));
     }
   };
 
@@ -273,7 +276,7 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
     e.preventDefault();
     if (!editingItem) return;
     if (!editFormData.name.trim()) {
-      message.warning('请输入软件名称');
+      message.warning(tm('请输入软件名称'));
       return;
     }
 
@@ -291,13 +294,13 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
         setIsEditModalOpen(false);
         setEditingItem(null);
         router.refresh();
-        message.success('软件信息更新成功');
+        message.success(tm('软件信息更新成功'));
       } else {
-        message.error('保存失败');
+        message.error(tm('保存失败'));
       }
     } catch (error) {
       console.error('Edit failed:', error);
-      message.error('保存失败');
+      message.error(tm('保存失败'));
     } finally {
       setIsSaving(false);
     }
@@ -344,15 +347,15 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-6">
           <div>
-            <h2 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">软件管理</h2>
-            <p className="text-slate-500 text-base mt-2">上传和管理可供用户下载的软件（单文件最大 4GB）</p>
+            <h2 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">{t('title')}</h2>
+            <p className="text-slate-500 text-base mt-2">{t('subtitle')}</p>
           </div>
           <button
             onClick={() => setIsModalOpen(true)}
             className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
           >
             <span className="material-symbols-outlined text-[20px]">add</span>
-            <span className="font-medium">上传软件</span>
+            <span className="font-medium">{t('uploadSoftware')}</span>
           </button>
         </div>
 
@@ -365,7 +368,7 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
               </div>
               <div>
                 <p className="text-2xl font-bold text-slate-900">{software.length}</p>
-                <p className="text-sm text-slate-500">软件总数</p>
+                <p className="text-sm text-slate-500">{t('totalSoftware')}</p>
               </div>
             </div>
           </div>
@@ -378,7 +381,7 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
                 <p className="text-2xl font-bold text-slate-900">
                   {software.reduce((sum, s) => sum + s.download_count, 0)}
                 </p>
-                <p className="text-sm text-slate-500">总下载次数</p>
+                <p className="text-sm text-slate-500">{t('totalDownloads')}</p>
               </div>
             </div>
           </div>
@@ -391,7 +394,7 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
                 <p className="text-2xl font-bold text-slate-900">
                   {formatFileSize(software.reduce((sum, s) => sum + s.file_size, 0))}
                 </p>
-                <p className="text-sm text-slate-500">存储占用</p>
+                <p className="text-sm text-slate-500">{t('storageUsed')}</p>
               </div>
             </div>
           </div>
@@ -401,19 +404,19 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
         {software.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-slate-400 bg-white rounded-xl border border-slate-200">
             <span className="material-symbols-outlined text-[48px] mb-4">cloud_upload</span>
-            <p className="text-lg font-medium">暂无软件</p>
-            <p className="text-sm mt-1">点击上方按钮上传软件</p>
+            <p className="text-lg font-medium">{t('emptyTitle')}</p>
+            <p className="text-sm mt-1">{t('emptySubtitle')}</p>
           </div>
         ) : (
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
             <table className="w-full">
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-600">软件</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-600 hidden md:table-cell">文件名</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-600 hidden sm:table-cell">大小</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-600 hidden lg:table-cell">下载次数</th>
-                  <th className="px-4 py-3 text-right text-sm font-semibold text-slate-600">操作</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-600">{t('software')}</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-600 hidden md:table-cell">{t('fileName')}</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-600 hidden sm:table-cell">{t('size')}</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-600 hidden lg:table-cell">{t('downloads')}</th>
+                  <th className="px-4 py-3 text-right text-sm font-semibold text-slate-600">{t('actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -448,21 +451,21 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
                         <button
                           onClick={() => handleEdit(item)}
                           className="p-2 text-slate-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
-                          title="编辑"
+                          title={t('edit')}
                         >
                           <span className="material-symbols-outlined text-[20px]">edit</span>
                         </button>
                         <a
                           href={`/api/software/${item.id}/download`}
                           className="p-2 text-slate-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
-                          title="下载"
+                          title={t('download')}
                         >
                           <span className="material-symbols-outlined text-[20px]">download</span>
                         </a>
                         <button
                           onClick={() => handleDelete(item)}
                           className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                          title="删除"
+                          title={t('delete')}
                         >
                           <span className="material-symbols-outlined text-[20px]">delete</span>
                         </button>
@@ -478,9 +481,9 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
 
       <ConfirmDialog
         open={Boolean(pendingDeleteItem)}
-        title="删除软件"
-        description={pendingDeleteItem ? `确定删除软件「${pendingDeleteItem.name}」吗？` : ''}
-        confirmText="删除"
+        title={t('deleteTitle')}
+        description={pendingDeleteItem ? t('deleteDescription', { name: pendingDeleteItem.name }) : ''}
+        confirmText={t('delete')}
         loading={isDeleting}
         onConfirm={handleConfirmDelete}
         onClose={() => !isDeleting && setPendingDeleteItem(null)}
@@ -491,7 +494,7 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-6 border-b border-slate-200">
-              <h3 className="text-xl font-bold text-slate-900">上传软件</h3>
+              <h3 className="text-xl font-bold text-slate-900">{t('uploadDialogTitle')}</h3>
               <button
                 onClick={() => { setIsModalOpen(false); resetForm(); }}
                 className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
@@ -504,7 +507,7 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
               {/* File Upload */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
-                  选择文件 <span className="text-red-500">*</span>
+                  {t('selectFile')} <span className="text-red-500">*</span>
                 </label>
                 <div
                   onClick={() => fileInputRef.current?.click()}
@@ -521,8 +524,8 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
                   ) : (
                     <div className="flex flex-col items-center gap-2 text-slate-400">
                       <span className="material-symbols-outlined text-[32px]">cloud_upload</span>
-                      <p className="text-sm">点击选择文件或拖拽到此处</p>
-                      <p className="text-xs">支持所有格式，最大 4GB</p>
+                      <p className="text-sm">{t('fileDropPrompt')}</p>
+                      <p className="text-xs">{t('fileDropHint')}</p>
                     </div>
                   )}
                 </div>
@@ -537,7 +540,7 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
               {/* Name */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
-                  软件名称 <span className="text-red-500">*</span>
+                  {t('softwareName')} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -554,26 +557,26 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
                     },
                   }))}
                   className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                  placeholder="例如：Visual Studio Code"
+                  placeholder={t('softwareNamePlaceholder')}
                 />
               </div>
 
               {/* Version */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">版本号</label>
+                <label className="block text-sm font-medium text-slate-700 mb-2">{t('version')}</label>
                 <input
                   type="text"
                   value={formData.version}
                   onChange={(e) => setFormData(prev => ({ ...prev, version: e.target.value }))}
                   className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                  placeholder="例如：1.85.0"
+                  placeholder={t('versionPlaceholder')}
                 />
               </div>
 
               {/* Category */}
               {categories.length > 0 && (
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">分类</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">{t('category')}</label>
                   <select
                     value={formData.category_id}
                     onChange={(e) => setFormData(prev => ({ ...prev, category_id: e.target.value }))}
@@ -590,7 +593,7 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
 
               {/* Description */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">软件说明</label>
+                <label className="block text-sm font-medium text-slate-700 mb-2">{t('description')}</label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData(prev => ({
@@ -606,24 +609,24 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
                   }))}
                   rows={2}
                   className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none"
-                  placeholder="简要描述软件用途..."
+                  placeholder={t('descriptionPlaceholder')}
                 />
               </div>
 
               <TranslationEditor<SoftwareTranslationFields>
-                title="多语言内容"
-                description="英文作为默认值；其他语言为空时会自动回退到英文。"
+                title={t('multilingualTitle')}
+                description={t('multilingualDescriptionCreate')}
                 translations={formData.translations}
                 onChange={(locale, key, value) => handleTranslationChange('create', locale, key, value)}
                 fields={[
-                  { key: 'name', label: '软件名称', placeholder: 'Visual Studio Code' },
-                  { key: 'description', label: '软件说明', placeholder: 'Describe the software', multiline: true },
+                  { key: 'name', label: t('softwareName'), placeholder: 'Visual Studio Code' },
+                  { key: 'description', label: t('description'), placeholder: 'Describe the software', multiline: true },
                 ]}
               />
 
               {/* Logo Upload */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Logo</label>
+                <label className="block text-sm font-medium text-slate-700 mb-2">{t('logo')}</label>
                 <div className="flex items-center gap-4">
                   <div
                     onClick={() => logoInputRef.current?.click()}
@@ -648,8 +651,8 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
                     }}
                   />
                   <div className="text-sm text-slate-500">
-                    <p>点击上传 Logo</p>
-                    <p className="text-xs">支持 PNG, JPG, SVG</p>
+                    <p>{t('uploadLogo')}</p>
+                    <p className="text-xs">{t('logoHint')}</p>
                   </div>
                   {logoPreview && (
                     <button
@@ -660,7 +663,7 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
                       }}
                       className="text-red-500 hover:text-red-700 text-sm"
                     >
-                      移除
+                      {t('remove')}
                     </button>
                   )}
                 </div>
@@ -669,7 +672,7 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
               {/* Icon Picker (if no logo) */}
               {!logoPreview && (
                 <div className="border-t border-slate-200 pt-4">
-                  <label className="block text-sm font-medium text-slate-700 mb-2">或选择图标</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">{t('chooseIcon')}</label>
                   <IconPicker
                     selectedIcon={formData.icon}
                     selectedBg={formData.icon_bg}
@@ -685,7 +688,7 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
               {isUploading && (
                 <div className="mt-2">
                   <div className="flex items-center justify-between text-sm text-slate-600 mb-1">
-                    <span>上传中...</span>
+                    <span>{t('uploading')}</span>
                     <span>{uploadProgress}%</span>
                   </div>
                   <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
@@ -705,7 +708,7 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
                   disabled={isUploading}
                   className="px-4 py-2.5 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-50"
                 >
-                  取消
+                  {t('cancel')}
                 </button>
                 <button
                   type="submit"
@@ -715,12 +718,12 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
                   {isUploading ? (
                     <>
                       <span className="material-symbols-outlined animate-spin text-[20px]">progress_activity</span>
-                      上传中
+                      {t('uploadingShort')}
                     </>
                   ) : (
                     <>
                       <span className="material-symbols-outlined text-[20px]">cloud_upload</span>
-                      上传
+                      {t('upload')}
                     </>
                   )}
                 </button>
@@ -735,7 +738,7 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-6 border-b border-slate-200">
-              <h3 className="text-xl font-bold text-slate-900">编辑软件</h3>
+              <h3 className="text-xl font-bold text-slate-900">{t('editDialogTitle')}</h3>
               <button
                 onClick={() => { setIsEditModalOpen(false); setEditingItem(null); }}
                 className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
@@ -759,7 +762,7 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
               {/* Name */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
-                  软件名称 <span className="text-red-500">*</span>
+                  {t('softwareName')} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -776,32 +779,32 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
                     },
                   }))}
                   className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                  placeholder="例如：Visual Studio Code"
+                  placeholder={t('softwareNamePlaceholder')}
                 />
               </div>
 
               {/* Version */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">版本号</label>
+                <label className="block text-sm font-medium text-slate-700 mb-2">{t('version')}</label>
                 <input
                   type="text"
                   value={editFormData.version}
                   onChange={(e) => setEditFormData(prev => ({ ...prev, version: e.target.value }))}
                   className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                  placeholder="例如：1.85.0"
+                  placeholder={t('versionPlaceholder')}
                 />
               </div>
 
               {/* Category */}
               {categories.length > 0 && (
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">分类</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">{t('category')}</label>
                   <select
                     value={editFormData.category_id}
                     onChange={(e) => setEditFormData(prev => ({ ...prev, category_id: e.target.value }))}
                     className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all bg-white"
                   >
-                    <option value="">未分类</option>
+                    <option value="">{t('uncategorized')}</option>
                     {categories.map((cat) => (
                       <option key={cat.id} value={cat.id}>
                         {cat.label}
@@ -813,7 +816,7 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
 
               {/* Description */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">软件说明</label>
+                <label className="block text-sm font-medium text-slate-700 mb-2">{t('description')}</label>
                 <textarea
                   value={editFormData.description}
                   onChange={(e) => setEditFormData(prev => ({
@@ -829,24 +832,24 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
                   }))}
                   rows={2}
                   className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none"
-                  placeholder="简要描述软件用途..."
+                  placeholder={t('descriptionPlaceholder')}
                 />
               </div>
 
               <TranslationEditor<SoftwareTranslationFields>
-                title="多语言内容"
-                description="在当前页面维护四种语言的软件名称与说明。"
+                title={t('multilingualTitle')}
+                description={t('multilingualDescriptionEdit')}
                 translations={editFormData.translations}
                 onChange={(locale, key, value) => handleTranslationChange('edit', locale, key, value)}
                 fields={[
-                  { key: 'name', label: '软件名称', placeholder: 'Visual Studio Code' },
-                  { key: 'description', label: '软件说明', placeholder: 'Describe the software', multiline: true },
+                  { key: 'name', label: t('softwareName'), placeholder: 'Visual Studio Code' },
+                  { key: 'description', label: t('description'), placeholder: 'Describe the software', multiline: true },
                 ]}
               />
 
               {/* Logo Upload */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Logo</label>
+                <label className="block text-sm font-medium text-slate-700 mb-2">{t('logo')}</label>
                 <div className="flex items-center gap-4">
                   <div
                     onClick={() => editLogoInputRef.current?.click()}
@@ -871,8 +874,8 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
                     }}
                   />
                   <div className="text-sm text-slate-500">
-                    <p>点击上传 Logo</p>
-                    <p className="text-xs">支持 PNG, JPG, SVG</p>
+                    <p>{t('uploadLogo')}</p>
+                    <p className="text-xs">{t('logoHint')}</p>
                   </div>
                   {editLogoPreview && (
                     <button
@@ -883,7 +886,7 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
                       }}
                       className="text-red-500 hover:text-red-700 text-sm"
                     >
-                      移除
+                      {t('remove')}
                     </button>
                   )}
                 </div>
@@ -892,7 +895,7 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
               {/* Icon Picker (if no logo) */}
               {!editLogoPreview && (
                 <div className="border-t border-slate-200 pt-4">
-                  <label className="block text-sm font-medium text-slate-700 mb-2">或选择图标</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">{t('chooseIcon')}</label>
                   <IconPicker
                     selectedIcon={editFormData.icon}
                     selectedBg={editFormData.icon_bg}
@@ -912,7 +915,7 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
                   disabled={isSaving}
                   className="px-4 py-2.5 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-50"
                 >
-                  取消
+                  {t('cancel')}
                 </button>
                 <button
                   type="submit"
@@ -922,12 +925,12 @@ export function SoftwareAdminClient({ initialSoftware, categories }: SoftwareAdm
                   {isSaving ? (
                     <>
                       <span className="material-symbols-outlined animate-spin text-[20px]">progress_activity</span>
-                      保存中
+                      {t('saving')}
                     </>
                   ) : (
                     <>
                       <span className="material-symbols-outlined text-[20px]">check</span>
-                      保存
+                      {t('save')}
                     </>
                   )}
                 </button>

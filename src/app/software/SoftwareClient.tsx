@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
 import type { SoftwareItem, Category } from '@/types';
 import { getOrCreateVisitorId } from '@/lib/visitorId';
 
@@ -17,22 +18,9 @@ function formatFileSize(bytes: number): string {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
-function formatUploadTime(value: string): string {
-  if (!value) return '-';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '-';
-  return new Intl.DateTimeFormat('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-    timeZone: 'Asia/Shanghai',
-  }).format(date);
-}
-
 export function SoftwareClient({ items, categories }: SoftwareClientProps) {
+  const t = useTranslations('software');
+  const locale = useLocale();
   const [searchQuery, setSearchQuery] = useState('');
   const [visitorId, setVisitorId] = useState('anon');
 
@@ -40,30 +28,43 @@ export function SoftwareClient({ items, categories }: SoftwareClientProps) {
     setVisitorId(getOrCreateVisitorId());
   }, []);
 
-  // Filter items based on search
+  const formatUploadTime = useCallback((value: string): string => {
+    if (!value) return '-';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '-';
+    return new Intl.DateTimeFormat(locale, {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+      timeZone: 'Asia/Shanghai',
+    }).format(date);
+  }, [locale]);
+
   const filteredItems = useMemo(() => {
     if (!searchQuery) return items;
     const query = searchQuery.toLowerCase();
-    return items.filter(item =>
+    return items.filter((item) =>
       item.name.toLowerCase().includes(query) ||
       item.description?.toLowerCase().includes(query) ||
-      item.file_name.toLowerCase().includes(query)
+      item.file_name.toLowerCase().includes(query),
     );
   }, [items, searchQuery]);
 
-  // Group items by category
   const groupedItems = useMemo(() => {
     const groups: Record<string, { category: Category; items: SoftwareItem[] }> = {};
 
-    filteredItems.forEach(item => {
+    filteredItems.forEach((item) => {
       const categoryId = item.category_id?.toString() || 'uncategorized';
       if (!groups[categoryId]) {
-        const category = categories.find(c => c.id.toString() === categoryId);
+        const category = categories.find((c) => c.id.toString() === categoryId);
         groups[categoryId] = {
           category: category || {
             id: 0,
             name: 'uncategorized',
-            label: '未分类',
+            label: t('uncategorized'),
             type: 'software',
             css_class: '',
             icon: 'folder',
@@ -77,9 +78,8 @@ export function SoftwareClient({ items, categories }: SoftwareClientProps) {
       groups[categoryId].items.push(item);
     });
 
-    // Sort by category sort_order
     return Object.values(groups).sort((a, b) => a.category.sort_order - b.category.sort_order);
-  }, [filteredItems, categories]);
+  }, [filteredItems, categories, t]);
 
   const buildDownloadUrl = useCallback((item: SoftwareItem) => {
     const params = new URLSearchParams({
@@ -93,12 +93,11 @@ export function SoftwareClient({ items, categories }: SoftwareClientProps) {
   return (
     <div className="flex-1 overflow-y-auto p-6 md:p-8 lg:px-12 bg-background-light">
       <div className="max-w-[2200px] mr-auto w-full flex flex-col gap-8">
-        {/* Header */}
         <div className="flex flex-col gap-4 border-b border-slate-200 pb-6">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">软件下载</h2>
-              <p className="text-slate-500 text-base mt-2">常用软件资源，点击下载</p>
+              <h2 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">{t('title')}</h2>
+              <p className="text-slate-500 text-base mt-2">{t('subtitle')}</p>
             </div>
           </div>
 
@@ -111,30 +110,27 @@ export function SoftwareClient({ items, categories }: SoftwareClientProps) {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="block w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm"
-              placeholder="搜索软件..."
+              placeholder={t('searchPlaceholder')}
             />
           </div>
         </div>
 
-        {/* Search Results Info */}
         {searchQuery && (
           <div className="text-sm text-slate-500">
-            找到 <span className="font-medium text-slate-900">{filteredItems.length}</span> 个结果
+            {t('resultsFound', { count: filteredItems.length })}
           </div>
         )}
 
-        {/* Software List by Category */}
         {groupedItems.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-slate-400">
             <span className="material-symbols-outlined text-[48px] mb-4">folder_open</span>
-            <p className="text-lg font-medium">{searchQuery ? '没有找到匹配的软件' : '暂无可下载的软件'}</p>
-            <p className="text-sm mt-1">{searchQuery ? '尝试其他关键词' : '管理员可在后台上传软件'}</p>
+            <p className="text-lg font-medium">{searchQuery ? t('noMatchingSoftware') : t('noSoftwareAvailable')}</p>
+            <p className="text-sm mt-1">{searchQuery ? t('tryOtherKeywords') : t('adminCanUpload')}</p>
           </div>
         ) : (
           <div className="flex flex-col gap-8 pb-12">
             {groupedItems.map(({ category, items: categoryItems }) => (
               <section key={category.id} className="flex flex-col gap-4">
-                {/* Category Header */}
                 <div className="flex items-center gap-3">
                   <div className={`size-8 rounded-lg ${category.icon_bg} flex items-center justify-center`}>
                     <span className={`material-symbols-outlined ${category.icon_color} text-[18px]`}>{category.icon}</span>
@@ -143,14 +139,12 @@ export function SoftwareClient({ items, categories }: SoftwareClientProps) {
                   <span className="text-sm text-slate-400">({categoryItems.length})</span>
                 </div>
 
-                {/* Software Grid */}
                 <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,340px))] justify-start gap-4">
                   {categoryItems.map((item) => (
                     <div
                       key={item.id}
                       className="group flex items-center gap-4 bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-primary/30 transition-all duration-200 p-4"
                     >
-                      {/* Left: Icon or Logo */}
                       {item.logo ? (
                         <div className="size-14 rounded-lg overflow-hidden shrink-0 bg-white border border-slate-100">
                           <img src={item.logo} alt={item.name} className="w-full h-full object-contain" />
@@ -161,7 +155,6 @@ export function SoftwareClient({ items, categories }: SoftwareClientProps) {
                         </div>
                       )}
 
-                      {/* Middle: Info */}
                       <div className="flex flex-col min-w-0 flex-1">
                         <div className="flex items-center gap-2">
                           <h3 className="text-base font-semibold text-slate-900 truncate">{item.name}</h3>
@@ -170,7 +163,7 @@ export function SoftwareClient({ items, categories }: SoftwareClientProps) {
                           )}
                         </div>
                         <p className="text-xs text-slate-400 mt-0.5">
-                          更新时间：{formatUploadTime(item.created_at)}
+                          {t('updatedAt', { time: formatUploadTime(item.created_at) })}
                         </p>
                         <p className="text-slate-500 text-sm line-clamp-1 mt-0.5">{item.description || item.file_name}</p>
                         <div className="flex items-center gap-3 mt-2 text-xs text-slate-400">
@@ -180,16 +173,15 @@ export function SoftwareClient({ items, categories }: SoftwareClientProps) {
                           </span>
                           <span className="flex items-center gap-1">
                             <span className="material-symbols-outlined text-[14px]">download</span>
-                            {item.download_count} 次下载
+                            {t('downloads', { count: item.download_count })}
                           </span>
                         </div>
                       </div>
 
-                      {/* Right: Download Button */}
                       <a
                         href={buildDownloadUrl(item)}
                         className="shrink-0 flex items-center justify-center size-10 rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-white transition-colors"
-                        title="下载"
+                        title={t('download')}
                       >
                         <span className="material-symbols-outlined text-[20px]">download</span>
                       </a>

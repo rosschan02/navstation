@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import type { PhonebookEntry } from '@/types';
 import { useMessage } from '@/contexts/MessageContext';
@@ -38,6 +39,7 @@ function normalizeDigits(value: string, maxLength: number): string {
 }
 
 export function PhonebookClient({ initialEntries }: PhonebookClientProps) {
+  const t = useTranslations('phonebook');
   const router = useRouter();
   const message = useMessage();
   const [entries, setEntries] = useState<PhonebookEntry[]>(initialEntries);
@@ -51,7 +53,7 @@ export function PhonebookClient({ initialEntries }: PhonebookClientProps) {
   const [formError, setFormError] = useState('');
   const [formData, setFormData] = useState<EntryFormData>(DEFAULT_FORM);
 
-  const activeCount = useMemo(() => entries.filter(item => item.status === 'active').length, [entries]);
+  const activeCount = useMemo(() => entries.filter((item) => item.status === 'active').length, [entries]);
   const inactiveCount = entries.length - activeCount;
 
   const filteredEntries = useMemo(() => {
@@ -99,7 +101,7 @@ export function PhonebookClient({ initialEntries }: PhonebookClientProps) {
     const res = await fetch('/api/phonebook?include_inactive=1&limit=500');
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      throw new Error(data.error || '加载电话本失败');
+      throw new Error(data.error || 'Failed to load phonebook');
     }
     const data = await res.json();
     setEntries(Array.isArray(data) ? data : []);
@@ -110,10 +112,10 @@ export function PhonebookClient({ initialEntries }: PhonebookClientProps) {
     const shortCode = formData.short_code.trim();
     const longCode = formData.long_code.trim();
 
-    if (!name) return '科室名称不能为空';
-    if (name.length > 100) return '科室名称长度不能超过 100 个字符';
-    if (shortCode && !SHORT_CODE_REGEX.test(shortCode)) return '短码必须是 3-4 位数字';
-    if (longCode && !LONG_CODE_REGEX.test(longCode)) return '长码必须是 1-13 位数字';
+    if (!name) return t('validationNameRequired');
+    if (name.length > 100) return t('validationNameTooLong');
+    if (shortCode && !SHORT_CODE_REGEX.test(shortCode)) return t('validationShortCode');
+    if (longCode && !LONG_CODE_REGEX.test(longCode)) return t('validationLongCode');
     return '';
   };
 
@@ -149,7 +151,7 @@ export function PhonebookClient({ initialEntries }: PhonebookClientProps) {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setFormError(data.error || '保存失败');
+        setFormError(data.error || t('saveFailed'));
         return;
       }
 
@@ -157,10 +159,10 @@ export function PhonebookClient({ initialEntries }: PhonebookClientProps) {
       setIsModalOpen(false);
       resetForm();
       router.refresh();
-      message.success(editingEntry ? '电话本条目更新成功' : '电话本条目创建成功');
+      message.success(editingEntry ? t('toastUpdated') : t('toastCreated'));
     } catch (error) {
       console.error('Failed to save phonebook entry:', error);
-      setFormError('保存失败，请稍后重试');
+      setFormError(t('saveFailedLater'));
     } finally {
       setIsSaving(false);
     }
@@ -171,16 +173,16 @@ export function PhonebookClient({ initialEntries }: PhonebookClientProps) {
       const res = await fetch(`/api/phonebook/${id}`, { method: 'DELETE' });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        message.error(data.error || '删除失败');
+        message.error(data.error || t('toastDeleteFailed'));
         return;
       }
 
-      setEntries(prev => prev.filter(item => item.id !== id));
+      setEntries((prev) => prev.filter((item) => item.id !== id));
       router.refresh();
-      message.success('电话本条目删除成功');
+      message.success(t('toastDeleted'));
     } catch (error) {
       console.error('Failed to delete phonebook entry:', error);
-      message.error('删除失败，请稍后重试');
+      message.error(t('toastDeleteFailedLater'));
     }
   };
 
@@ -204,29 +206,29 @@ export function PhonebookClient({ initialEntries }: PhonebookClientProps) {
       <div className="max-w-7xl mx-auto flex flex-col gap-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">电话本管理</h1>
-            <p className="text-slate-500 mt-1">管理科室名称与长码/短码，供首页电话本速查使用</p>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{t('title')}</h1>
+            <p className="text-slate-500 mt-1">{t('subtitle')}</p>
           </div>
           <button
             onClick={openAddModal}
             className="flex items-center justify-center gap-2 rounded-lg h-10 px-4 bg-primary hover:bg-blue-600 text-white text-sm font-bold shadow-md shadow-primary/20 transition-all"
           >
             <span className="material-symbols-outlined text-[20px]">add_call</span>
-            <span>添加号码</span>
+            <span>{t('addNumber')}</span>
           </button>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="bg-white rounded-xl border border-slate-200 p-4">
-            <p className="text-sm text-slate-500">总条目</p>
+            <p className="text-sm text-slate-500">{t('totalEntries')}</p>
             <p className="text-2xl font-bold text-slate-900 mt-1">{entries.length}</p>
           </div>
           <div className="bg-white rounded-xl border border-slate-200 p-4">
-            <p className="text-sm text-slate-500">启用中</p>
+            <p className="text-sm text-slate-500">{t('active')}</p>
             <p className="text-2xl font-bold text-green-600 mt-1">{activeCount}</p>
           </div>
           <div className="bg-white rounded-xl border border-slate-200 p-4">
-            <p className="text-sm text-slate-500">已停用</p>
+            <p className="text-sm text-slate-500">{t('inactive')}</p>
             <p className="text-2xl font-bold text-slate-500 mt-1">{inactiveCount}</p>
           </div>
         </div>
@@ -239,7 +241,7 @@ export function PhonebookClient({ initialEntries }: PhonebookClientProps) {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="搜索科室、短码、长码或备注..."
+                placeholder={t('searchPlaceholder')}
                 className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
               />
             </div>
@@ -248,9 +250,9 @@ export function PhonebookClient({ initialEntries }: PhonebookClientProps) {
               onChange={(e) => setStatusFilter(e.target.value as 'all' | EntryStatus)}
               className="px-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
             >
-              <option value="all">全部状态</option>
-              <option value="active">启用</option>
-              <option value="inactive">停用</option>
+              <option value="all">{t('allStatuses')}</option>
+              <option value="active">{t('active')}</option>
+              <option value="inactive">{t('inactive')}</option>
             </select>
           </div>
         </div>
@@ -258,21 +260,21 @@ export function PhonebookClient({ initialEntries }: PhonebookClientProps) {
         {filteredEntries.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-slate-400 bg-white rounded-xl border border-slate-200">
             <span className="material-symbols-outlined text-[48px] mb-4">dialpad</span>
-            <p className="text-lg font-medium">暂无匹配的电话本条目</p>
-            <p className="text-sm mt-1">请调整筛选条件或添加新条目</p>
+            <p className="text-lg font-medium">{t('emptyTitle')}</p>
+            <p className="text-sm mt-1">{t('emptySubtitle')}</p>
           </div>
         ) : (
           <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto">
             <table className="w-full min-w-[860px]">
               <thead>
                 <tr className="border-b border-slate-200 text-left">
-                  <th className="px-4 py-3 text-xs text-slate-500 font-semibold">科室名称</th>
-                  <th className="px-4 py-3 text-xs text-slate-500 font-semibold">短码</th>
-                  <th className="px-4 py-3 text-xs text-slate-500 font-semibold">长码</th>
-                  <th className="px-4 py-3 text-xs text-slate-500 font-semibold">备注</th>
-                  <th className="px-4 py-3 text-xs text-slate-500 font-semibold">排序</th>
-                  <th className="px-4 py-3 text-xs text-slate-500 font-semibold">状态</th>
-                  <th className="px-4 py-3 text-xs text-slate-500 font-semibold text-right">操作</th>
+                  <th className="px-4 py-3 text-xs text-slate-500 font-semibold">{t('departmentName')}</th>
+                  <th className="px-4 py-3 text-xs text-slate-500 font-semibold">{t('shortCode')}</th>
+                  <th className="px-4 py-3 text-xs text-slate-500 font-semibold">{t('longCode')}</th>
+                  <th className="px-4 py-3 text-xs text-slate-500 font-semibold">{t('remark')}</th>
+                  <th className="px-4 py-3 text-xs text-slate-500 font-semibold">{t('sortOrder')}</th>
+                  <th className="px-4 py-3 text-xs text-slate-500 font-semibold">{t('status')}</th>
+                  <th className="px-4 py-3 text-xs text-slate-500 font-semibold text-right">{t('actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -289,7 +291,7 @@ export function PhonebookClient({ initialEntries }: PhonebookClientProps) {
                           ? 'bg-green-100 text-green-700'
                           : 'bg-slate-100 text-slate-600'
                       }`}>
-                        {entry.status === 'active' ? '启用' : '停用'}
+                        {entry.status === 'active' ? t('active') : t('inactive')}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right">
@@ -297,14 +299,14 @@ export function PhonebookClient({ initialEntries }: PhonebookClientProps) {
                         <button
                           onClick={() => openEditModal(entry)}
                           className="p-1.5 text-slate-400 hover:text-primary hover:bg-slate-100 rounded-lg transition-colors"
-                          title="编辑"
+                          title={t('edit')}
                         >
                           <span className="material-symbols-outlined text-[18px]">edit</span>
                         </button>
                         <button
                           onClick={() => handleDelete(entry)}
                           className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title="删除"
+                          title={t('delete')}
                         >
                           <span className="material-symbols-outlined text-[18px]">delete</span>
                         </button>
@@ -320,9 +322,9 @@ export function PhonebookClient({ initialEntries }: PhonebookClientProps) {
 
       <ConfirmDialog
         open={Boolean(pendingDeleteEntry)}
-        title="删除电话本条目"
-        description={pendingDeleteEntry ? `确定删除科室「${pendingDeleteEntry.department_name}」吗？` : ''}
-        confirmText="删除"
+        title={t('deleteTitle')}
+        description={pendingDeleteEntry ? t('deleteDescription', { name: pendingDeleteEntry.department_name }) : ''}
+        confirmText={t('delete')}
         loading={isDeleting}
         onConfirm={handleConfirmDelete}
         onClose={() => !isDeleting && setPendingDeleteEntry(null)}
@@ -337,19 +339,19 @@ export function PhonebookClient({ initialEntries }: PhonebookClientProps) {
               <form onSubmit={handleSubmit}>
                 <div className="px-6 py-5">
                   <h3 className="text-lg font-semibold text-slate-900 mb-4">
-                    {editingEntry ? '编辑电话本条目' : '添加电话本条目'}
+                    {editingEntry ? t('editEntry') : t('addEntry')}
                   </h3>
 
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1">
-                        科室名称 <span className="text-red-500">*</span>
+                        {t('departmentName')} <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
                         value={formData.department_name}
-                        onChange={(e) => setFormData(prev => ({ ...prev, department_name: e.target.value }))}
-                        placeholder="例如：急诊科"
+                        onChange={(e) => setFormData((prev) => ({ ...prev, department_name: e.target.value }))}
+                        placeholder={t('departmentNamePlaceholder')}
                         maxLength={100}
                         className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
                         required
@@ -359,14 +361,14 @@ export function PhonebookClient({ initialEntries }: PhonebookClientProps) {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <label className="block text-sm font-medium text-slate-700 mb-1">
-                          短码（3-4位）
+                          {t('shortCodeLabel')}
                         </label>
                         <input
                           type="text"
                           inputMode="numeric"
                           value={formData.short_code}
-                          onChange={(e) => setFormData(prev => ({ ...prev, short_code: normalizeDigits(e.target.value, 4) }))}
-                          placeholder="可留空"
+                          onChange={(e) => setFormData((prev) => ({ ...prev, short_code: normalizeDigits(e.target.value, 4) }))}
+                          placeholder={t('optionalPlaceholder')}
                           maxLength={4}
                           className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-primary/20 focus:border-primary"
                         />
@@ -374,14 +376,14 @@ export function PhonebookClient({ initialEntries }: PhonebookClientProps) {
 
                       <div>
                         <label className="block text-sm font-medium text-slate-700 mb-1">
-                          长码（1-13位）
+                          {t('longCodeLabel')}
                         </label>
                         <input
                           type="text"
                           inputMode="numeric"
                           value={formData.long_code}
-                          onChange={(e) => setFormData(prev => ({ ...prev, long_code: normalizeDigits(e.target.value, 13) }))}
-                          placeholder="可留空"
+                          onChange={(e) => setFormData((prev) => ({ ...prev, long_code: normalizeDigits(e.target.value, 13) }))}
+                          placeholder={t('optionalPlaceholder')}
                           maxLength={13}
                           className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-primary/20 focus:border-primary"
                         />
@@ -389,36 +391,36 @@ export function PhonebookClient({ initialEntries }: PhonebookClientProps) {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">备注</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">{t('remark')}</label>
                       <textarea
                         value={formData.remark}
-                        onChange={(e) => setFormData(prev => ({ ...prev, remark: e.target.value }))}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, remark: e.target.value }))}
                         rows={3}
-                        placeholder="例如：白班优先拨打短码"
+                        placeholder={t('remarkPlaceholder')}
                         className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
                       />
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">排序</label>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">{t('sortOrder')}</label>
                         <input
                           type="number"
                           min={0}
                           value={formData.sort_order}
-                          onChange={(e) => setFormData(prev => ({ ...prev, sort_order: Number.parseInt(e.target.value || '0', 10) || 0 }))}
+                          onChange={(e) => setFormData((prev) => ({ ...prev, sort_order: Number.parseInt(e.target.value || '0', 10) || 0 }))}
                           className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">状态</label>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">{t('status')}</label>
                         <select
                           value={formData.status}
-                          onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as EntryStatus }))}
+                          onChange={(e) => setFormData((prev) => ({ ...prev, status: e.target.value as EntryStatus }))}
                           className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
                         >
-                          <option value="active">启用</option>
-                          <option value="inactive">停用</option>
+                          <option value="active">{t('active')}</option>
+                          <option value="inactive">{t('inactive')}</option>
                         </select>
                       </div>
                     </div>
@@ -438,14 +440,14 @@ export function PhonebookClient({ initialEntries }: PhonebookClientProps) {
                     className="px-4 py-2 text-sm text-slate-600 hover:text-slate-900"
                     disabled={isSaving}
                   >
-                    取消
+                    {t('cancel')}
                   </button>
                   <button
                     type="submit"
                     disabled={isSaving}
                     className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isSaving ? '保存中...' : editingEntry ? '保存修改' : '创建条目'}
+                    {isSaving ? t('saving') : editingEntry ? t('saveChanges') : t('createEntry')}
                   </button>
                 </div>
               </form>
